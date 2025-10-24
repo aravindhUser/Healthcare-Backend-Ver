@@ -73,7 +73,7 @@ public class DoctorController {
 	}
 	
 	@GetMapping("get/{doctorEmail}")
-	public ResponseEntity<?> getProfile( String doctorEmail)
+	public ResponseEntity<?> getProfile(@PathVariable String doctorEmail)
 	{
 		Doctor d = service.getProfile(doctorEmail);
 		if(d != null)

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -41,6 +42,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(request -> request
                 .requestMatchers("/doctor/login", "/doctor/register", "/patient/login", "/patient/register").permitAll()
 //                .requestMatchers("/doctor/**").hasAnyAuthority("*")
+                  .requestMatchers(HttpMethod.GET, "/patient/get/**").hasRole("PATIENT")
+                
                 .anyRequest().authenticated())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

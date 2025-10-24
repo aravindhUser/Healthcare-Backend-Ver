@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import com.cts.DoctorAvailablityManagement.config.FeignClientConfig;
 import com.cts.DoctorAvailablityManagement.model.DoctorDTO;
 
-@FeignClient(name="REGISTRATIONPAGE",configuration = FeignClientConfig.class)
+@FeignClient(name="AUTH",configuration = FeignClientConfig.class)
 public interface DoctorAuthService {
 	
 	@GetMapping("doctor/{id}")
-	public DoctorDTO getDoctorById(@PathVariable int id);
+	public DoctorDTO getDoctorById(@PathVariable int id) ;
 	
 	@GetMapping("doctor/getAllDoctors")
 	public List<DoctorDTO> getAllDoctors();

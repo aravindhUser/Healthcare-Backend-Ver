@@ -21,7 +21,7 @@ import com.cts.DoctorAvailablityManagement.service.DoctorAuthService;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/api/doctors")
+@RequestMapping("/slots/doctors")
 public class DoctorAvailablityController {
 	
 	@Autowired

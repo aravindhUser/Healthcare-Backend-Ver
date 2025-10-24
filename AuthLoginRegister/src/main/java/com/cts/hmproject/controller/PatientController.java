@@ -60,7 +60,7 @@ public class PatientController {
 	}
 	
 	@GetMapping("get/{patientEmail}")
-	private ResponseEntity<?> getProfile( String patientEmail)
+	private ResponseEntity<?> getProfile(@PathVariable String patientEmail)
 	{
 		Patient p = service.getProfile(patientEmail);
 		if(p != null)

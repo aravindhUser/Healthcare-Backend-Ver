@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+
 
 import com.cts.DoctorAvailablityManagement.model.AppointmentDTO;
 import com.cts.DoctorAvailablityManagement.model.AvailablitySlot;
@@ -24,9 +24,7 @@ public class DoctorAppointmentImpl implements DoctorAppointmentService{
 //	private AppointmentRepo appointmentRepo;
 	private DoctorAuthService doctorService;
 	private AppointmentClient appointmentService;
-	
-	RestTemplate restTemplate;
-	
+
 	public DoctorDTO getDoctor(int id) {
 //		return doctorRepo.findById(id).orElseThrow();
 		return doctorService.getDoctorById(id);
