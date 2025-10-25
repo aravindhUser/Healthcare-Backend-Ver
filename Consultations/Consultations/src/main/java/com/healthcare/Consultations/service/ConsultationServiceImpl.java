@@ -133,6 +133,7 @@ public class ConsultationServiceImpl implements ConsultationService {
 //                  .dose(p.getDose())  
 //                  .frequency(p.getFrequency())  
 //                  .duration(p.getDuration())  
+//
 //                  .consultation(consultation)  
 //                  .build();  
 //          prescriptionList.add(pres);  
