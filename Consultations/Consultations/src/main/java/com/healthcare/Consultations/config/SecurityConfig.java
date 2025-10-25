@@ -1,5 +1,5 @@
-
 package com.healthcare.Consultations.config;
+
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,83 +9,47 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .cors() // Enable CORS
-            .and()
-            .csrf().disable() // Disable CSRF for development
-            .authorizeHttpRequests()
-            .anyRequest().permitAll(); // Allow all requests without authentication
-        return http.build();
-    }
+   @Bean
+   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+       http
+           // Enable global CORS configuration (check corsConfigurationSource)
+           .cors().and()
+           // Disable CSRF (since this is an API backend)
+           .csrf().disable()
+           // Allow all endpoints 
+           .authorizeHttpRequests(auth -> auth
+               .anyRequest().permitAll()
+           );
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+       return http.build();
+   }
 
-        // Allow requests from any origin (for development)
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+   @Bean
+   public CorsConfigurationSource corsConfigurationSource() {
+       CorsConfiguration config = new CorsConfiguration();
 
-        // Allow common HTTP methods
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+       // Allow frontend origin (adjust if hosted elsewhere)
+       config.setAllowedOriginPatterns(List.of("http://localhost:4200"));
 
-        // Allow all headers
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+       // Allowed HTTP methods
+       config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
-        // Allow credentials (cookies, authorization headers)
-        configuration.setAllowCredentials(true);
+       // Allowed headers
+       config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 
-        // Apply configuration to all endpoints
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+       // Allow credentials if using cookies/JWT tokens
+       config.setAllowCredentials(true);
 
-        return source;
-    }
+       // Register configuration for all endpoints
+       UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+       source.registerCorsConfiguration("/**", config);
+
+       return source;
+   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-//package com.healthcare.Consultations.config;
-//
-//import java.util.Arrays;
-//
-//import org.springframework.context.annotation.Bean;
-//import org.springframework.context.annotation.Configuration;
-//import org.springframework.web.cors.CorsConfiguration;
-//import org.springframework.web.cors.CorsConfigurationSource;
-//import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-//
-//@Configuration
-//public class SecurityConflict {
-//	
-//	@Bean
-//    CorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // or restrict to http://localhost:4200
-//        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//        configuration.setAllowedHeaders(Arrays.asList("*"));
-//        configuration.setAllowCredentials(true);
-//        
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", configuration);
-//        return source;
-//   
-//	}
-//}
