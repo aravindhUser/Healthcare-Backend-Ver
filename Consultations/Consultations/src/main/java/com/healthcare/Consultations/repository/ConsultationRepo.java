@@ -9,8 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
  
 @Repository
-public interface ConsultationRepo extends JpaRepository<Consultation, Long> {
-	List<Consultation> findByDoctorId(Long doctorId);
-	List<Consultation> findByPatientId(String patientId);
-	List<Consultation> getConsultationsByDoctorId(Long doctorId);
+public interface ConsultationRepo extends JpaRepository<Consultation, Integer> {
+	List<Consultation> findByDoctorId(int doctorId);
+	List<Consultation> findByPatientId(int patientId);
 }
