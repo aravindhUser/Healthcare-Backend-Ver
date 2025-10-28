@@ -98,4 +98,13 @@ public class DoctorAppointmentImpl implements DoctorAppointmentService{
 		return false;
 	}
 
+	@Override
+	public AvailablitySlot viewSlot(int slotId) {
+		Optional<AvailablitySlot> al = availablityRepo.findById(slotId);
+		AvailablitySlot found = al.get();
+		DoctorDTO doctor = doctorService.getDoctorById(found.getDoctorId());
+		found.setDoctor(doctor);
+		return found;
+	}
+
 }

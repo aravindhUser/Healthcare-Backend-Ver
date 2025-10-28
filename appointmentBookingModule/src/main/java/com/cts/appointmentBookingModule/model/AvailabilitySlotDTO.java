@@ -19,7 +19,12 @@ public class AvailabilitySlotDTO {
 	private LocalDate date;
 	private LocalTime startTime;
 	private LocalTime endTime;
+	private boolean status;
 	
 	private DoctorDTO doctor;
+	
+	public boolean isStatus() {
+		return status;
+	}
 
 }

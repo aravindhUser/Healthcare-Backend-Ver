@@ -24,5 +24,8 @@ public interface DoctorAvailabilityClient {
 
     @PostMapping("/api/doctors/availablity/{slotId}/cancel")
     boolean cancelSlot(@PathVariable long slotId);
+    
+    @GetMapping("api/doctors/availablity/{slotId}")
+	public AvailabilitySlotDTO viewAvailableSlot(@PathVariable int slotId);
 
 }

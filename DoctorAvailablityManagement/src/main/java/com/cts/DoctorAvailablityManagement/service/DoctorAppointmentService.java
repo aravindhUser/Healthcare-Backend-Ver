@@ -1,6 +1,7 @@
 package com.cts.DoctorAvailablityManagement.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.cts.DoctorAvailablityManagement.model.AppointmentDTO;
 import com.cts.DoctorAvailablityManagement.model.AvailablitySlot;
@@ -20,6 +21,7 @@ public interface DoctorAppointmentService {
 	List<AvailablitySlot> viewAllAvailablity();
 	boolean bookAvailablity(int slotId);
 	boolean cancelBookedSlot(int slotId);
+	AvailablitySlot viewSlot(int slotId);
 	
 	
 

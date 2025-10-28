@@ -1,6 +1,7 @@
 package com.cts.appointmentBookingModule.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,10 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	    if(!bookslot)
 	    	throw new RuntimeException("Slot Already Booked");
 	    appointment.setStatus("Booked");
+	    DoctorDTO doctor = authService.getDoctorById(appointment.getDoctorId());
+	    PatientDTO patient = authService.getPatientById(appointment.getPatientId());
+	    appointment.setDoctor(doctor);
+	    appointment.setPatient(patient);
 	    return repo.save(appointment); 
 	      
 	}
@@ -52,46 +57,25 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 
 
     @Override
-	public BookAppointment updateAppointmentWithSlot(int slotId, BookAppointment updateAppointment) {
-    	List<AvailabilitySlotDTO> slots=docService. getSlotsByDoctor(slotId);
-    	if (slots == null) {
-            throw new RuntimeException("Slot not found for ID: " + slotId);
-        }
-
-    	AvailabilitySlotDTO slot = null;
-
-    // Loop through the list to find the matching slot
-    for (AvailabilitySlotDTO s : slots) {
-        if (s.getId() == slotId) {
-            slot = s;
-            break;
-        }
-    }
-
-    if (slot == null) {
-        throw new RuntimeException("Slot not found for ID: " + slotId);
-    }
-
-    boolean booked = docService.markSlotBooked(slotId);
-    if (!booked) {
-        throw new RuntimeException("Slot already booked or unavailable");
-    }
-    
-
-//    	BookAppointment existingAppointment = repo.findById((long) updateAppointment.getId()).orElseThrow(() -> new RuntimeException("Appointment not found with ID: " + updateAppointment.getId()));
-
-
-    	BookAppointment existingAppointment = repo.findById((long) updateAppointment.getId())
-        .orElseThrow(() -> new RuntimeException("Appointment not found with ID: " + updateAppointment.getId()));
-
-    	existingAppointment.setDoctorName(((AvailabilitySlotDTO) slot).getDoctorName());
-    	existingAppointment.setDate(((AvailabilitySlotDTO) slot).getDate());
-    	existingAppointment.setStartTime(((AvailabilitySlotDTO) slot).getStartTime());
-    	existingAppointment.setEndTime(((AvailabilitySlotDTO) slot).getEndTime());
-    	existingAppointment.setStatus("Booked");
+	public BookAppointment updateAppointmentWithSlot(int slotId, BookAppointment updated) {
+//    	AvailabilitySlotDTO slot = docService.viewAvailableSlot(slotId);
+    	AvailabilitySlotDTO slot = docService.viewAvailableSlot(slotId);
+    	if(slot.isStatus()) {
+    		return null;
+    	}
+    	PatientDTO patient =authService.getPatientById(updated.getPatientId());
+    	docService.markSlotBooked(slotId);
+    	updated.setDate(slot.getDate());
+    	updated.setDoctorId(slot.getDoctorId());
+    	updated.setDoctorName(slot.getDoctor().getName());
+    	updated.setStartTime(slot.getStartTime());
+    	updated.setEndTime(slot.getEndTime());
+    	updated.setStatus("Booked");
+    	updated.setDoctor(slot.getDoctor());
+    	updated.setPatient(patient);
     	
-		return repo.save(existingAppointment);
-
+    	
+    	return repo.save(updated);
     }
 
 	@Override

@@ -2,6 +2,7 @@ package com.cts.DoctorAvailablityManagement.controller;
 
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -54,6 +55,11 @@ public class DoctorAvailablityController {
 	@PostMapping("/{id}/availablity")
 	public AvailablitySlot addAvailablity(@PathVariable int id,@RequestBody AvailablitySlot slot) {
 		return service.addAvailablity(id, slot);
+	}
+	
+	@GetMapping("/availablity/{slotId}")
+	public AvailablitySlot viewAvailableSlot(@PathVariable int slotId) {
+		return service.viewSlot(slotId);
 	}
 	
 	@PostMapping("/availablity/{slotId}/book")
