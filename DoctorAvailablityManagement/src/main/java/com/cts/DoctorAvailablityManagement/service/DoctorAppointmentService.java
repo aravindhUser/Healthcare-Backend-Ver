@@ -1,5 +1,6 @@
 package com.cts.DoctorAvailablityManagement.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,7 @@ public interface DoctorAppointmentService {
 	
 	List<AppointmentDTO> getAppointment(int doctorId);
 	AppointmentDTO deleteByDoctor(int aptId);
+	public List<AvailablitySlot> getSlotsbyDate(int doctorId,LocalDate date);
 	
 	List<AvailablitySlot> viewAllAvailablity();
 	boolean bookAvailablity(int slotId);
