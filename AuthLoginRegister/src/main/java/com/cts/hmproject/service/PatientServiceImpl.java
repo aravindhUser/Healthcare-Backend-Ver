@@ -45,7 +45,7 @@ public class PatientServiceImpl implements PatientService {
 	public Map<String, Object> verify(Patient p) {
 		Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(p.getPatientEmail(),p.getPatientPassword()));
         if (authentication.isAuthenticated()) {
-        	List<String> roles = List.of("ROLE_DOCTOR"); 
+        	List<String> roles = List.of("ROLE_PATIENT");   
            String token =  jwtService.generateToken(p.getPatientEmail(),roles);
            Patient foundPatient = repo.findByPatientEmail(p.getPatientEmail());
            Map<String, Object> response = new HashMap<>();
