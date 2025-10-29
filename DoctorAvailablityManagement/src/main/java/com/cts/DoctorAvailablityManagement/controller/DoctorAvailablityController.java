@@ -1,6 +1,7 @@
 package com.cts.DoctorAvailablityManagement.controller;
 
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import com.cts.DoctorAvailablityManagement.model.DoctorDTO;
 import com.cts.DoctorAvailablityManagement.service.DoctorAppointmentService;
 import com.cts.DoctorAvailablityManagement.service.DoctorAuthService;
 
-@CrossOrigin
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 @RestController
 @RequestMapping("/api/doctors")
 public class DoctorAvailablityController {
@@ -44,6 +45,12 @@ public class DoctorAvailablityController {
 	@GetMapping("/{id}")
 	public DoctorDTO getDoctor(@PathVariable int id) {
 		return service.getDoctor(id);
+	}
+	
+	@GetMapping("/{id}/{date}/availablity")
+	public List<AvailablitySlot> getAvailablityPerDate(@PathVariable int id,@PathVariable LocalDate date){
+		System.out.println("Called The Date Clas");
+		return service.getSlotsbyDate(id, date);
 	}
 	
 	@GetMapping("/{id}/availablity")

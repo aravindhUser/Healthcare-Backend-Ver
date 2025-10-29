@@ -28,6 +28,7 @@ public class AvailablitySlot {
 	private LocalTime startTime;
 	private LocalTime endTime;
 	private boolean status;
+
 	
 	@Transient
 	private DoctorDTO doctor;
