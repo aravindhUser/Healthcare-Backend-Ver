@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DoctorDTO {
-	private int DoctorId;
-	private String DoctorName;
+	private int doctorId;
+	private String doctorName;
 	private String specialization;
 	private String qualification;
 	private int experience;
