@@ -1,71 +1,61 @@
 package com.healthcare.Consultations.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.*;  
+import lombok.*;  
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.time.LocalDate;  
+import java.time.LocalDateTime;  
+import java.util.ArrayList;  
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.healthcare.Consultations.dto.DoctorDTO;
+import com.healthcare.Consultations.dto.PatientDTO;  
 
-@Entity
-@Table(name = "consultations")
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@Data
-public class Consultation {
+@Entity  
+@Table(name = "consultations")  
+@Data 
+@NoArgsConstructor  
+@AllArgsConstructor  
+@Builder  
+public class Consultation {  
 
-   @Id
-   @GeneratedValue(strategy = GenerationType.IDENTITY)
-   private Long consultationId;
+  @Id  
+  @GeneratedValue(strategy = GenerationType.IDENTITY)  
+  private int consultationId;  
+  
+  private int appointmentId;  
 
-//   @Column(nullable = false)
-//   private String appointmentId;
+  private int patientId;  
+  
+  private String patientName;
 
-   @Column(nullable = false)
-   private String patientId;
+  private int doctorId;  
+  
+  
+  private String doctorName;
 
-   private String patientName;
+  private LocalDate date;  
 
-   @Column(nullable = false)
-   private Long doctorId;
+  @Column(columnDefinition = "TEXT")  
+  private String notes;  
 
-   private String doctorName;
+  @OneToMany(mappedBy = "consultation", cascade = CascadeType.ALL, orphanRemoval = true)  
+  @JsonManagedReference
+  private List<Prescription> prescriptions = new ArrayList<>();  
+  
+  
+  private LocalDateTime createdAt;  
 
-   private LocalDate date;
+  @PrePersist  
+  public void prePersist() {  
+      this.createdAt = LocalDateTime.now();  
+      
+  }  
+  
+  @Transient  
+  private PatientDTO patient;  
 
-   @Column(columnDefinition = "TEXT")
-   private String notes;
-   
-   
-   @OneToMany(mappedBy = "consultation", cascade = CascadeType.ALL, orphanRemoval = true)
-   @JsonManagedReference
-   private List<Prescription> prescriptions = new ArrayList<>();
-   
-   
-   
-   public List<Prescription> getPrescriptions(){
-	   return prescriptions;
-   }
-   
-   public void setPrescriptions(List<Prescription> prescriptions) {
-	   this.prescriptions = prescriptions;
-   }
-
-   private LocalDateTime createdAt;
-//   private LocalDateTime updatedAt;
-
-   @PrePersist
-   public void prePersist() {
-       createdAt = LocalDateTime.now();
-//       updatedAt = createdAt;
-   }
-
-//   @PreUpdate
-//   public void preUpdate() {
-//       updatedAt = LocalDateTime.now();
-//   }
-}
+  @Transient  
+  private DoctorDTO doctor;
+} 
