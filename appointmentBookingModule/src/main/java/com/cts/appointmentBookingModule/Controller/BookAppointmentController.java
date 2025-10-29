@@ -22,7 +22,7 @@ import lombok.AllArgsConstructor;
 
 
 @RestController
-@CrossOrigin
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 @RequestMapping("/appointments")
 @AllArgsConstructor
 public class BookAppointmentController {
@@ -39,6 +39,13 @@ public class BookAppointmentController {
 	   public List<BookAppointment>getAllAppointments(){
 		   return service.getAllAppointments();
 	   }
+	   
+	   @GetMapping("{patientId}")
+	   public List<BookAppointment> getAppointmentByPatient(@PathVariable int patientId)
+	   {
+		   return service.getAppByPatientId(patientId);
+	   }
+	   
 	   
 	   @GetMapping("Doctor/{id}")
 		public List<DoctorDTO> getAllDoctors(){
@@ -64,8 +71,11 @@ public class BookAppointmentController {
 	   
 	   @PatchMapping("/cancel/patient/{appointmentId}") 
 	   public BookAppointment cancelByPatient(@PathVariable long appointmentId) { 
+		   System.out.println("Inside Cancel by patient controller");
 		   return service.cancelAppointmentByPatient(appointmentId); 
 	   }
+	   
+	   
 }
 
 

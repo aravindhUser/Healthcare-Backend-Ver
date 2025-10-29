@@ -31,11 +31,14 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	
 	@Override
 	public BookAppointment bookAppointmentBySlot(int slotId, BookAppointment appointment) {
-	    boolean bookslot=docService.markSlotBooked(slotId);
+	    System.out.println("Called the Booking");
+		boolean bookslot=docService.markSlotBooked(slotId);
 	    if(!bookslot)
 	    	throw new RuntimeException("Slot Already Booked");
 	    appointment.setStatus("Booked");
+	    System.out.println(appointment);
 	    DoctorDTO doctor = authService.getDoctorById(appointment.getDoctorId());
+	  
 	    PatientDTO patient = authService.getPatientById(appointment.getPatientId());
 	    appointment.setDoctor(doctor);
 	    appointment.setPatient(patient);
@@ -110,14 +113,15 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 
 	@Override
 	public BookAppointment cancelAppointmentByPatient(long appointmentId) {
+		System.out.println("Inside Cancel by patient service");
 		BookAppointment app=repo.findById(appointmentId).orElse(null);
 		app.setStatus("Cancel by Patient");
 		repo.save(app);
 	    
-		boolean release=docService.cancelSlot(appointmentId);
-		if(!release) {
-			throw new RuntimeException("Failed to cancel the appointment");
-		}
+//		boolean release=docService.cancelSlot(appointmentId);
+//		if(!release) {
+//			throw new RuntimeException("Failed to cancel the appointment");
+//		}
 		return app;
 		
 	}
@@ -126,6 +130,13 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	@Override
 	public List<DoctorDTO> getAllDoctors() {
 		return authService.getAllDoctors();
+	}
+
+
+	@Override
+	public List<BookAppointment> getAppByPatientId(int patientId) {
+		// TODO Auto-generated method stub
+		return repo.findByPatientId(patientId);
 	}
 
 

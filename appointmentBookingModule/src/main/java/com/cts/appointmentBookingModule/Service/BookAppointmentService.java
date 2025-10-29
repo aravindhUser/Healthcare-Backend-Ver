@@ -16,5 +16,6 @@ public interface BookAppointmentService {
     BookAppointment cancelAppointmentByDoctor(long appointmentId);
     BookAppointment cancelAppointmentByPatient(long appointmentId);
 	List<DoctorDTO> getAllDoctors();
+	List<BookAppointment> getAppByPatientId(int patientId);
 
 }
