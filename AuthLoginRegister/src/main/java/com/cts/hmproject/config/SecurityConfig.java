@@ -42,9 +42,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(request -> request
                 .requestMatchers("/doctor/login", "/doctor/register", "/patient/login", "/patient/register").permitAll()
 //                .requestMatchers("/doctor/**").hasAnyAuthority("*")
-                  .requestMatchers(HttpMethod.GET, "/patient/get/**").hasRole("PATIENT")
-                
-                .anyRequest().authenticated())
+//                  .requestMatchers(HttpMethod.GET, "/patient/get/**").hasRole("PATIENT")
+                  .requestMatchers(HttpMethod.GET, "/doctor/get/**").hasRole("DOCTOR")
+                  .anyRequest().authenticated())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .build();

@@ -75,6 +75,7 @@ public class DoctorController {
 	@GetMapping("get/{doctorEmail}")
 	public ResponseEntity<?> getProfile(@PathVariable String doctorEmail)
 	{
+		System.out.println(doctorEmail);
 		Doctor d = service.getProfile(doctorEmail);
 		if(d != null)
 		{
@@ -85,7 +86,4 @@ public class DoctorController {
 			return ResponseEntity.badRequest().body("Doctor not found");
 		}
 	}
-	
-
-
 }

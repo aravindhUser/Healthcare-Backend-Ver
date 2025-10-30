@@ -69,7 +69,7 @@ public class PatientController {
 		}
 		else
 		{
-			return ResponseEntity.badRequest().body("Doctor not found");
+			return ResponseEntity.badRequest().body("Patient not found");
 		}
 	}
 
