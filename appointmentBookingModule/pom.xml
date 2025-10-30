@@ -5,13 +5,13 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.6</version>
+		<version>3.5.7</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.healthcare</groupId>
-	<artifactId>Consultations</artifactId>
+	<groupId>com.cts</groupId>
+	<artifactId>appointmentBookingModule</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Consultations</name>
+	<name>appointmentBookingModule</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>
 	<licenses>
@@ -40,20 +40,14 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+    		<groupId>org.springframework.cloud</groupId>
+    		<artifactId>spring-cloud-starter-openfeign</artifactId>
+    		<version>4.3.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-openfeign</artifactId>
-		</dependency>
-<<<<<<<< HEAD:appointmentBookingModule/pom.xml
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
-========
->>>>>>>> 106ed1addf6de4a6d462199ca58c2fae6d620841:Consultations/Consultations/pom.xml
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -70,15 +64,6 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
-		</dependency>
-				<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency> 
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -126,4 +111,5 @@
 			</plugin>
 		</plugins>
 	</build>
+
 </project>
