@@ -1,9 +1,7 @@
-package com.cts.DoctorAvailablityManagement.model;
+package com.cts.appointmentBookingModule.model;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -18,19 +16,26 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name="availablity_slot")
-public class AvailablitySlot {
+@Table(name="bookappointments")
+public class BookAppointment {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private int id;
+	
+	private int patientId;
 	private int doctorId;
+	private String patientName;
+	private String doctorName;
 	private LocalDate date;
-	private LocalTime startTime;
+    private LocalTime startTime;
 	private LocalTime endTime;
-	private boolean status;
-
+	private String problem;
+	private String status;
 	
 	@Transient
-	private DoctorDTO doctor;
+	DoctorDTO doctor;
+	
+	@Transient
+	PatientDTO patient;
 
 }

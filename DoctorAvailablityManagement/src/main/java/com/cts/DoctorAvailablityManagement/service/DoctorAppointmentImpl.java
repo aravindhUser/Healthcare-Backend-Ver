@@ -1,10 +1,10 @@
 package com.cts.DoctorAvailablityManagement.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.context.annotation.Primary;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 
@@ -37,6 +37,17 @@ public class DoctorAppointmentImpl implements DoctorAppointmentService{
 //		return null;
 	}
 	
+	public List<AvailablitySlot> getSlotsbyDate(int doctorId,LocalDate date){
+		List<AvailablitySlot> as = availablityRepo.findByDocIdAndDate(doctorId, date);
+		for(AvailablitySlot slot : as) {
+			DoctorDTO doctor = doctorService.getDoctorById(slot.getDoctorId()); 
+			slot.setDoctor(doctor);
+			
+		}
+		return as;
+		
+	}
+	
 	public List<AvailablitySlot> getAvailablity(int doctorId){
 		List<AvailablitySlot> as = availablityRepo.findByDoctorId(doctorId);
 		for(AvailablitySlot slot : as) {
@@ -50,6 +61,7 @@ public class DoctorAppointmentImpl implements DoctorAppointmentService{
 	public AvailablitySlot addAvailablity(int doctorId,AvailablitySlot slot) {
 		DoctorDTO doctor = getDoctor(doctorId);
 		slot.setDoctor(doctor);
+		slot.setDoctorId(doctorId);
 		return availablityRepo.save(slot);
 	}
 	
@@ -78,6 +90,8 @@ public class DoctorAppointmentImpl implements DoctorAppointmentService{
 		return availablityRepo.findAll();
 
 	}
+	
+	
 
 	@Override
 	public boolean bookAvailablity(int slotId) {
@@ -87,6 +101,7 @@ public class DoctorAppointmentImpl implements DoctorAppointmentService{
 		availablityRepo.save(found);
 		return true;
 	}
+	
 
 	@Override
 	public boolean cancelBookedSlot(int slotId) {
@@ -96,6 +111,15 @@ public class DoctorAppointmentImpl implements DoctorAppointmentService{
 		availablityRepo.save(found);
 		
 		return false;
+	}
+
+	@Override
+	public AvailablitySlot viewSlot(int slotId) {
+		Optional<AvailablitySlot> al = availablityRepo.findById(slotId);
+		AvailablitySlot found = al.get();
+		DoctorDTO doctor = doctorService.getDoctorById(found.getDoctorId());
+		found.setDoctor(doctor);
+		return found;
 	}
 
 }
