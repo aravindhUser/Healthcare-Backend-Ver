@@ -47,13 +47,10 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-openfeign</artifactId>
 		</dependency>
-<<<<<<<< HEAD:appointmentBookingModule/pom.xml
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
-========
->>>>>>>> 106ed1addf6de4a6d462199ca58c2fae6d620841:Consultations/Consultations/pom.xml
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

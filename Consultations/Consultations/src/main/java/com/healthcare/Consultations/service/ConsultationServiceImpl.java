@@ -8,10 +8,10 @@ import com.healthcare.Consultations.model.Consultation;
 import com.healthcare.Consultations.model.Prescription;  
 import com.healthcare.Consultations.repository.ConsultationRepo;
 
-import jakarta.ws.rs.BadRequestException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.healthcare.Consultations.exception.BadRequestException;
 import org.springframework.stereotype.Service;   
   
 import java.util.ArrayList;  
@@ -32,10 +32,10 @@ public class ConsultationServiceImpl implements ConsultationService {
     	
     	//Validating required fields
     	
-    	if(dto == null) {
-    		throw new BadRequestException("Consultation Data cannot be null.");
-    	}
-    	
+//    	if(dto == null) {
+//    		throw new BadRequestException("Consultation Data cannot be null.");
+//    	}
+   	
     	if(dto.getDoctorId() <= 0) {
     		throw new BadRequestException("Doctor ID must be valid and greater than zero");
     	}
@@ -121,11 +121,19 @@ public class ConsultationServiceImpl implements ConsultationService {
     public Consultation getConsultationById(int id) { 
     	log.info("Fetching consultations by ID:{},id");
 
-        return consultationRepo.findById(id)
-                .orElseThrow(() -> {
-                	log.error("Consultation with ID {} not found",id);
-                	return new ResourceNotFoundException("Consultation with ID" + id + "not found"); 
-                });
+//        return consultationRepo.findById(id)
+//                .orElseThrow(() -> {
+//                	log.error("Consultation with ID {} not found",id);
+//                	return new ResourceNotFoundException("Consultation with ID" + id + "not found"); 
+//                });
+    	
+    	Consultation consultation = consultationRepo.findById(id)
+    		    .orElseGet(() -> {
+    		        log.error("Consultation with ID {} not found", id);
+    		        return null;
+    		    });
+		return consultation;
+
     }  
   
     @Override  

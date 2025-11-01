@@ -1,13 +1,14 @@
 package com.healthcare.Consultations.exception;
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import jakarta.ws.rs.BadRequestException;
 
-@ControllerAdvice
+
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 	
 	// Handle Resource Not Found (404)
