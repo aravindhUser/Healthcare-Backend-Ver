@@ -1,4 +1,4 @@
-package com.cts.DoctorAvailablityManagement.model;
+package com.cts.DoctorAvailablityManagement.dto;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import lombok.AllArgsConstructor;
@@ -14,6 +14,7 @@ public class AppointmentDTO {
 	private int patId;
 	private int docId;
 	private int slotId;
+	private String patientName;
 	
 	private LocalDate date;
 	private LocalTime startTime;

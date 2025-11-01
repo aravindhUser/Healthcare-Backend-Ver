@@ -15,12 +15,12 @@ public class Booking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private int id;
 
     private Integer userId;
     private LocalDateTime bookingDate;
-    private Boolean confirmed;
-    private Boolean reminderSent;
+    private boolean confirmed;
+    private boolean reminderSent;
 
     // Getters and Setters
 }
