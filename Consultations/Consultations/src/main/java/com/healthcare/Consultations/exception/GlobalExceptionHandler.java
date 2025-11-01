@@ -1,5 +1,5 @@
 package com.healthcare.Consultations.exception;
-import org.apache.coyote.BadRequestException;
+
 import org.springframework.http.HttpStatus;
 
 import org.springframework.http.ResponseEntity;
