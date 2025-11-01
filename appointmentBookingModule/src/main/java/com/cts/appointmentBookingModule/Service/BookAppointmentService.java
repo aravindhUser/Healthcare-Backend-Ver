@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.cts.appointmentBookingModule.model.BookAppointment;
 import com.cts.appointmentBookingModule.model.DoctorDTO;
+import com.cts.appointmentBookingModule.model.NotificationDTO;
 
 
 public interface BookAppointmentService {
@@ -17,5 +18,6 @@ public interface BookAppointmentService {
     BookAppointment cancelAppointmentByPatient(long appointmentId);
 	List<DoctorDTO> getAllDoctors();
 	List<BookAppointment> getAppByPatientId(int patientId);
+	NotificationDTO setNotification(BookAppointment app);
 
 }

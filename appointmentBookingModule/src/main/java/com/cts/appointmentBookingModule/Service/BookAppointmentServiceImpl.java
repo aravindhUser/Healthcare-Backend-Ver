@@ -11,6 +11,7 @@ import com.cts.appointmentBookingModule.Repository.BookAppointmentRepository;
 import com.cts.appointmentBookingModule.model.AvailabilitySlotDTO;
 import com.cts.appointmentBookingModule.model.BookAppointment;
 import com.cts.appointmentBookingModule.model.DoctorDTO;
+import com.cts.appointmentBookingModule.model.NotificationDTO;
 import com.cts.appointmentBookingModule.model.PatientDTO;
 
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	
 	AuthenticationService authService;
 	DoctorAvailabilityClient docService;
+	NotificationClient notiClient;
 //	@Autowired
 //	AuthenticationService authService;
 //	
@@ -42,8 +44,27 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	    PatientDTO patient = authService.getPatientById(appointment.getPatientId());
 	    appointment.setDoctor(doctor);
 	    appointment.setPatient(patient);
-	    return repo.save(appointment); 
+	    BookAppointment app = repo.save(appointment);
+	    NotificationDTO noti = setNotification(app);
+	    notiClient.appointmentBooked(noti);
+	    return app;
 	      
+	}
+	
+	@Override
+	public NotificationDTO setNotification(BookAppointment app) {
+		
+	    NotificationDTO notification = new NotificationDTO();
+	    notification.setAppointmentId(app.getId());
+	    notification.setDate(app.getDate());
+	    notification.setDoctorId(app.getDoctorId());
+	    notification.setDoctorName(app.getDoctorName());
+	    notification.setPatientId(app.getPatientId());
+	    notification.setPatientName(app.getPatientName());
+	    notification.setStartTime(app.getStartTime());
+	    
+	    return notification;
+		
 	}
 
 
@@ -107,6 +128,8 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 		if(!release) {
 			throw new RuntimeException("Failed to cancel the appointment");
 		}
+		NotificationDTO noti = setNotification(app);
+	    notiClient.appointmentCancelledByDoctor(noti);
 		return app;
 	}
 
@@ -122,6 +145,8 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 //		if(!release) {
 //			throw new RuntimeException("Failed to cancel the appointment");
 //		}
+		NotificationDTO noti = setNotification(app);
+	    notiClient.appointmentCancelledByPatient(noti);
 		return app;
 		
 	}
