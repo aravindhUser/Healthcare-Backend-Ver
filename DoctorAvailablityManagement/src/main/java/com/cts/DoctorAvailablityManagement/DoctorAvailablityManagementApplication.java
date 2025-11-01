@@ -18,9 +18,6 @@ public class DoctorAvailablityManagementApplication {
 		SpringApplication.run(DoctorAvailablityManagementApplication.class, args);
 	}
 	
-	@Bean
-	RestTemplate restTemplate() {
-		return new RestTemplate();
-	}
+
 
 }

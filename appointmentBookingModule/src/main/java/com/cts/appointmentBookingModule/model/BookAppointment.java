@@ -24,6 +24,7 @@ public class BookAppointment {
 	
 	private int patientId;
 	private int doctorId;
+	private int slotId;
 	private String patientName;
 	private String doctorName;
 	private LocalDate date;
