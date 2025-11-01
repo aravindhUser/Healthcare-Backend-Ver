@@ -1,4 +1,4 @@
-package com.cts.DoctorAvailablityManagement.model;
+package com.cts.DoctorAvailablityManagement.dto;
 
 import java.time.LocalDate;
 

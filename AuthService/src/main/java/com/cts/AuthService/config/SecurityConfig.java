@@ -75,7 +75,7 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // or restrict to http://localhost:4200
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:4200")); // restrict to Angular dev server
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -84,6 +84,7 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
     
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {

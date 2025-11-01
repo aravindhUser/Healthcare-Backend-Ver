@@ -2,6 +2,7 @@ package com.cts.DoctorAvailablityManagement.model;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 import com.cts.DoctorAvailablityManagement.dto.DoctorDTO;
 
@@ -14,23 +15,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "availablity_slot")
-public class AvailablitySlot {
+public class DoctorSlots {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private int slotid;
 
     private int doctorId;
     private LocalDate date;
     private LocalTime startTime;
     private LocalTime endTime;
-    private boolean status;
 
-    @ManyToOne
-    @JoinColumn(name = "doctor_slot_id")
-    private DoctorSlots doctorSlot;
+    @OneToMany(mappedBy = "doctorSlot", cascade = CascadeType.ALL)
+    private List<AvailablitySlot> availablitySlots;
 
-    @Transient
-    private DoctorDTO doctor;
 }
