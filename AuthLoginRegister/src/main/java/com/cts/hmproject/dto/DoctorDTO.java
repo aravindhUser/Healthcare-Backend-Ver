@@ -1,4 +1,6 @@
-package com.cts.hmproject.model;
+package com.cts.hmproject.dto;
+
+import com.cts.hmproject.model.Doctor;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

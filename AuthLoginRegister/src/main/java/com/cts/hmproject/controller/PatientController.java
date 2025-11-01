@@ -9,9 +9,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-
+import com.cts.hmproject.dto.PatientDTO;
+import com.cts.hmproject.dto.UserInfo;
+import com.cts.hmproject.dto.UserResponse;
 import com.cts.hmproject.model.Patient;
-import com.cts.hmproject.model.PatientDTO;
 import com.cts.hmproject.service.PatientService;
 
 import lombok.AllArgsConstructor;
@@ -30,24 +31,33 @@ public class PatientController {
 		return ResponseEntity.ok(service.getPatientProfile(id));
 	}
 	
-	@PostMapping("register")
-	private ResponseEntity<?> addUser(@RequestBody Patient rp)
+	@PostMapping("/register")
+	public ResponseEntity<UserInfo> savePatient(@RequestBody UserInfo info)
 	{
-		Patient savedPatient = service.addUser(rp);
-		return ResponseEntity.ok(savedPatient);
+		service.savePatient(info);
+		return ResponseEntity.ok().build();
 	}
 	
-	@PostMapping("login")
-	private ResponseEntity<?> verify(@RequestBody Patient p)
-	{
-		return ResponseEntity.ok(service.verify(p));
-	}
+//	@PostMapping("register")
+//	private ResponseEntity<?> addUser(@RequestBody Patient rp)
+//	{
+//		Patient savedPatient = service.addUser(rp);
+//		return ResponseEntity.ok(savedPatient);
+//	}
 	
-	@PostMapping("profile/{patientEmail}")
-	public  ResponseEntity<?> addProfile(@PathVariable String patientEmail,@RequestBody Patient p)
+	
+	
+//	@PostMapping("login")
+//	private ResponseEntity<?> verify(@RequestBody Patient p)
+//	{
+//		return ResponseEntity.ok(service.verify(p));
+//	}
+	
+	@PostMapping("profile/{patientId}")
+	public  ResponseEntity<?> addProfile(@PathVariable int patientId,@RequestBody Patient p)
 	{
 //		System.out.println("Controller Class");
-		Patient updated = service.addProfile(patientEmail,p);
+		Patient updated = service.addProfile(patientId,p);
 		if(updated!=null)
 		{
 			return ResponseEntity.ok(updated);
@@ -59,10 +69,10 @@ public class PatientController {
 		
 	}
 	
-	@GetMapping("get/{patientEmail}")
-	private ResponseEntity<?> getProfile(@PathVariable String patientEmail)
+	@GetMapping("get/{patientId}")
+	private ResponseEntity<?> getProfile(@PathVariable int patientId)
 	{
-		Patient p = service.getProfile(patientEmail);
+		Patient p = service.getProfile(patientId);
 		if(p != null)
 		{
 			return ResponseEntity.ok(p);
@@ -73,5 +83,10 @@ public class PatientController {
 		}
 	}
 
+	@GetMapping("/getPatient/{userId}")
+	public UserResponse getDoctor(@PathVariable int userId)
+	{
+		return service.getPatientbyUserId(userId);
+	}
 	
 }

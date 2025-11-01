@@ -1,4 +1,4 @@
-package com.cts.hmproject.service;
+package com.cts.AuthService.service;
 
  
 import io.jsonwebtoken.Claims;
@@ -40,13 +40,12 @@ public class JWTService {
 //    }
  
 
-    public String generateToken(String username,List<String> roles) {
+    public String generateToken(String email) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", roles);
         return Jwts.builder()
                 .claims()
                 .add(claims)
-                .subject(username)
+                .subject(email)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + 2 * 60 * 60 * 1000))
                 .and()

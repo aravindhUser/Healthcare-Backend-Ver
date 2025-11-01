@@ -1,5 +1,5 @@
-package com.cts.hmproject.config;
- 
+package com.cts.AuthService.config;
+
 import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
- 
+
+
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -39,11 +41,11 @@ public class SecurityConfig {
         return http
             .cors(Customizer.withDefaults()) // Enables CORS using your CorsConfigurationSource bean
             .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(request -> request
-                .requestMatchers("/doctor/login", "/doctor/register", "/patient/login", "/patient/register").permitAll()
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/authentication/signup/**", "/authentication/**").permitAll()
 //                .requestMatchers("/doctor/**").hasAnyAuthority("*")
 //                  .requestMatchers(HttpMethod.GET, "/patient/get/**").hasRole("PATIENT")
-                  .requestMatchers(HttpMethod.GET, "/doctor/get/**").hasRole("DOCTOR")
+//                  .requestMatchers(HttpMethod.GET, "/doctor/get/**").hasRole("DOCTOR")
                   .anyRequest().authenticated())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -93,3 +95,4 @@ public class SecurityConfig {
  
 }
  
+

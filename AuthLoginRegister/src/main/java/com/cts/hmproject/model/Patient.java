@@ -20,10 +20,10 @@ public class Patient {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)    
 	private int patientId;
+	private int userId;
 	private String patientName;
 	private String patientEmail;
 	private String patientPhonenumber;
-	private String patientPassword;
 	
 //	@JsonFormat(shape = JsonFormat.Shape.STRING,pattern = "dd-MM-yyyy")
 	private LocalDate dob;

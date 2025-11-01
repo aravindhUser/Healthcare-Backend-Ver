@@ -1,6 +1,8 @@
-package com.cts.hmproject.model;
+package com.cts.hmproject.dto;
 
 import java.time.LocalDate;
+
+import com.cts.hmproject.model.Patient;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

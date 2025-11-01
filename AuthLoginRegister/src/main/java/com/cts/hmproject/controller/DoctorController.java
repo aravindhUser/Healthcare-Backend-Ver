@@ -12,8 +12,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+
+import com.cts.hmproject.dto.DoctorDTO;
+import com.cts.hmproject.dto.UserInfo;
+import com.cts.hmproject.dto.UserResponse;
 import com.cts.hmproject.model.Doctor;
-import com.cts.hmproject.model.DoctorDTO;
 import com.cts.hmproject.service.DoctorService;
 
 import lombok.AllArgsConstructor;
@@ -28,12 +31,21 @@ public class DoctorController {
 	
 	
 	
-	@PostMapping("register")
-	public ResponseEntity<?> addUser(@RequestBody Doctor doctor)
+//	@PostMapping("register")
+//	public ResponseEntity<?> addUser(@RequestBody Doctor doctor)
+//	{
+//		Doctor savedDoctor = service.addUser(doctor);
+//		return ResponseEntity.ok(savedDoctor);
+//	}
+	
+	
+	@PostMapping("/register")
+	public ResponseEntity<UserInfo> saveDoctor(@RequestBody UserInfo info)
 	{
-		Doctor savedDoctor = service.addUser(doctor);
-		return ResponseEntity.ok(savedDoctor);
+		service.saveDoctor(info);
+		return ResponseEntity.ok().build();
 	}
+	
 	
 	@GetMapping("/{id}")
 	public DoctorDTO getDoctorById(@PathVariable int id) {
@@ -47,20 +59,20 @@ public class DoctorController {
 		return service.getAllDoctors();
 	}
 	
-	@PostMapping("login")
-	public ResponseEntity<?> login(@RequestBody Doctor doctor)
-	{
-		return ResponseEntity.ok(service.verify(doctor));
-		
-	}
+//	@PostMapping("login")
+//	public ResponseEntity<?> login(@RequestBody Doctor doctor)
+//	{
+//		return ResponseEntity.ok(service.verify(doctor));
+//		
+//	}
 	
 
 //	@CrossOrigin(origins = "http://localhost:4200")
-	@PostMapping("profile/{doctorEmail}")
-	public  ResponseEntity<?> addProfile(@PathVariable String doctorEmail,@RequestBody Doctor up)
+	@PostMapping("profile/{doctorId}")
+	public  ResponseEntity<?> addProfile(@PathVariable int doctorId,@RequestBody Doctor up)
 	{
 		System.out.println("Controller Class");
-		Doctor updated = service.addProfile(doctorEmail,up);
+		Doctor updated = service.addProfile(doctorId,up);
 		if(updated!=null)
 		{
 			return ResponseEntity.ok(updated);
@@ -72,11 +84,11 @@ public class DoctorController {
 		
 	}
 	
-	@GetMapping("get/{doctorEmail}")
-	public ResponseEntity<?> getProfile(@PathVariable String doctorEmail)
+	@GetMapping("get/{doctorId}")
+	public ResponseEntity<?> getProfile(@PathVariable int doctorId)
 	{
-		System.out.println(doctorEmail);
-		Doctor d = service.getProfile(doctorEmail);
+		System.out.println(doctorId);
+		Doctor d = service.getProfile(doctorId);
 		if(d != null)
 		{
 			return ResponseEntity.ok(d);
@@ -85,5 +97,11 @@ public class DoctorController {
 		{
 			return ResponseEntity.badRequest().body("Doctor not found");
 		}
+	}
+	
+	@GetMapping("/getDoctor/{userId}")
+	public UserResponse getDoctor(@PathVariable int userId)
+	{
+		return service.getDoctorbyUserId(userId);
 	}
 }
