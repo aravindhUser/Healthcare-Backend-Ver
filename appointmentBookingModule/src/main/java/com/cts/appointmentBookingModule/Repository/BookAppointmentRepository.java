@@ -11,4 +11,5 @@ import com.cts.appointmentBookingModule.model.BookAppointment;
 @Repository
 public interface BookAppointmentRepository extends JpaRepository<BookAppointment,Long> {
 	List<BookAppointment> findByPatientId(int patientId);
+	List<BookAppointment> findByDoctorId (int doctorId);
 }

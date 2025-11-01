@@ -16,10 +16,10 @@ public interface DoctorAvailabilityClient {
 	@GetMapping("/api/doctors/{id}")
     DoctorDTO getDoctorById(@PathVariable long  id);
 
-    @GetMapping("/api/doctors/{id}/availablity")
+    @GetMapping("/api/doctors/{id}/availability")
     List<AvailabilitySlotDTO> getSlotsByDoctor(@PathVariable long id);
 
-    @PostMapping("/api/doctors/availablity/{slotId}/book")
+    @PostMapping("/api/doctors/availability/{slotId}/book")
     boolean markSlotBooked(@PathVariable long slotId);
 
     @PostMapping("/api/doctors/availablity/{slotId}/cancel")

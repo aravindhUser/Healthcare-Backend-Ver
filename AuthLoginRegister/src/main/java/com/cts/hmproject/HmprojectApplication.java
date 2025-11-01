@@ -12,6 +12,4 @@ public class HmprojectApplication {
 		SpringApplication.run(HmprojectApplication.class, args);
 	}
 	
-	
-
 }

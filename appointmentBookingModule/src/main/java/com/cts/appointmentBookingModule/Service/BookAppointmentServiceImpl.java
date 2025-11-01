@@ -1,5 +1,6 @@
 package com.cts.appointmentBookingModule.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -7,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.cts.appointmentBookingModule.Repository.BookAppointmentRepository;
-
+import com.cts.appointmentBookingModule.model.AppointmentDTO;
 import com.cts.appointmentBookingModule.model.AvailabilitySlotDTO;
 import com.cts.appointmentBookingModule.model.BookAppointment;
 import com.cts.appointmentBookingModule.model.DoctorDTO;
@@ -37,17 +38,22 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 		boolean bookslot=docService.markSlotBooked(slotId);
 	    if(!bookslot)
 	    	throw new RuntimeException("Slot Already Booked");
-	    appointment.setStatus("Booked");
+	    appointment.setStatus("booked");
 	    System.out.println(appointment);
 	    DoctorDTO doctor = authService.getDoctorById(appointment.getDoctorId());
 	  
 	    PatientDTO patient = authService.getPatientById(appointment.getPatientId());
 	    appointment.setDoctor(doctor);
 	    appointment.setPatient(patient);
+<<<<<<< HEAD
 	    BookAppointment app = repo.save(appointment);
 	    NotificationDTO noti = setNotification(app);
 	    notiClient.appointmentBooked(noti);
 	    return app;
+=======
+	    appointment.setSlotId(slotId);
+	    return repo.save(appointment); 
+>>>>>>> 52cb8a455fb3f1493910f618900975f9f7affc4f
 	      
 	}
 	
@@ -119,10 +125,11 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 
 
 	@Override
-	public BookAppointment cancelAppointmentByDoctor(long appointmentId) {
+	public AppointmentDTO cancelAppointmentByDoctor(long appointmentId) {
 		BookAppointment app=repo.findById(appointmentId).orElse(null);
 		app.setStatus("Cancel by Doctor");
 		repo.save(app);
+<<<<<<< HEAD
 	    
 		boolean release=docService.cancelSlot(appointmentId);
 		if(!release) {
@@ -131,6 +138,10 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 		NotificationDTO noti = setNotification(app);
 	    notiClient.appointmentCancelledByDoctor(noti);
 		return app;
+=======
+		AppointmentDTO found = new AppointmentDTO(app);
+		return found;
+>>>>>>> 52cb8a455fb3f1493910f618900975f9f7affc4f
 	}
 
 
@@ -165,12 +176,33 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	}
 
 
-//	@Override
-//	public List<BookAppointment> getByPatientId(int id) {
-//		// TODO Auto-generated method stub
-//		return null;
-//	}
+	@Override
+	public List<AppointmentDTO> getAppointmentsDoctor(int doctorId) {
+		List<BookAppointment> found = repo.findByDoctorId(doctorId);
+		System.out.println(found);
+		List<AppointmentDTO> docSlots = new ArrayList<>();
+		
+		for(BookAppointment ap : found) {
+			AppointmentDTO slot = new AppointmentDTO(ap);
+			
+			docSlots.add(slot);
+		}
+		System.out.println(docSlots);
+		return docSlots;	
+	}
 
+
+	@Override
+	public AppointmentDTO fetchByDoctor(int apptId) {
+		Optional<BookAppointment> found = repo.findById((long)apptId);
+		if(found==null) {
+			throw new RuntimeException("No Appointment Found");
+		}
+		BookAppointment getFound=found.get();
+		AppointmentDTO ap = new AppointmentDTO(getFound);
+		return ap;
+		
+	}
 
 
 }
