@@ -29,17 +29,17 @@ public class NotificationAppController {
 	public List<Notification> getNotificationsByDoctor(@PathVariable int doctorId) {
 		return notificationService.getNotificationsForDoctor(doctorId);
 	}
-	@PostMapping("/appointment-booked/{appointmentId}")
-	public Notification appointmentBooked(@RequestBody Notification n,@PathVariable int appointmentId) {
+	@PostMapping("/appointment-booked/")
+	public Notification appointmentBooked(@RequestBody Notification n) {
 		Notification data = notificationService.notifyBooked(n);
 		return data;
 	}	
-	@PostMapping("/patient/appointment-cancelled/{appointmentId}")
+	@PostMapping("/patient/appointment-cancelled")
 	public Notification appointmentCancelledByPatient(@RequestBody Notification n){
 		Notification data = notificationService.notifyCancelledByPatient(n);
 		return data;
 	}
-	@PostMapping("/doctor/appointment-cancelled/{appointmentId}")
+	@PostMapping("/doctor/appointment-cancelled")
 	public Notification appointmentCancelledByDoctor(@RequestBody Notification n){
 		Notification data = notificationService.notifyCancelledByDoctor(n);
 		return data;

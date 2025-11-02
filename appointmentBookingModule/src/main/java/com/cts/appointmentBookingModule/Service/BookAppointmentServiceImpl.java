@@ -12,6 +12,7 @@ import com.cts.appointmentBookingModule.model.AppointmentDTO;
 import com.cts.appointmentBookingModule.model.AvailabilitySlotDTO;
 import com.cts.appointmentBookingModule.model.BookAppointment;
 import com.cts.appointmentBookingModule.model.DoctorDTO;
+import com.cts.appointmentBookingModule.model.NotificationDTO;
 import com.cts.appointmentBookingModule.model.PatientDTO;
 
 import lombok.AllArgsConstructor;
@@ -24,6 +25,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	
 	AuthenticationService authService;
 	DoctorAvailabilityClient docService;
+	NotificationClient notiClient;
 //	@Autowired
 //	AuthenticationService authService;
 //	
@@ -43,9 +45,32 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	    PatientDTO patient = authService.getPatientById(appointment.getPatientId());
 	    appointment.setDoctor(doctor);
 	    appointment.setPatient(patient);
+<<<<<<< HEAD
+	    BookAppointment app = repo.save(appointment);
+	    NotificationDTO noti = setNotification(app);
+	    notiClient.appointmentBooked(noti);
+	    return app;
+=======
 	    appointment.setSlotId(slotId);
 	    return repo.save(appointment); 
+>>>>>>> 52cb8a455fb3f1493910f618900975f9f7affc4f
 	      
+	}
+	
+	@Override
+	public NotificationDTO setNotification(BookAppointment app) {
+		
+	    NotificationDTO notification = new NotificationDTO();
+	    notification.setAppointmentId(app.getId());
+	    notification.setDate(app.getDate());
+	    notification.setDoctorId(app.getDoctorId());
+	    notification.setDoctorName(app.getDoctorName());
+	    notification.setPatientId(app.getPatientId());
+	    notification.setPatientName(app.getPatientName());
+	    notification.setStartTime(app.getStartTime());
+	    
+	    return notification;
+		
 	}
 
 
@@ -104,8 +129,19 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 		BookAppointment app=repo.findById(appointmentId).orElse(null);
 		app.setStatus("Cancel by Doctor");
 		repo.save(app);
+<<<<<<< HEAD
+	    
+		boolean release=docService.cancelSlot(appointmentId);
+		if(!release) {
+			throw new RuntimeException("Failed to cancel the appointment");
+		}
+		NotificationDTO noti = setNotification(app);
+	    notiClient.appointmentCancelledByDoctor(noti);
+		return app;
+=======
 		AppointmentDTO found = new AppointmentDTO(app);
 		return found;
+>>>>>>> 52cb8a455fb3f1493910f618900975f9f7affc4f
 	}
 
 
@@ -120,6 +156,8 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 //		if(!release) {
 //			throw new RuntimeException("Failed to cancel the appointment");
 //		}
+		NotificationDTO noti = setNotification(app);
+	    notiClient.appointmentCancelledByPatient(noti);
 		return app;
 		
 	}
