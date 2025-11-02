@@ -19,7 +19,7 @@ import com.cts.DoctorAvailablityManagement.service.DoctorAvailablityService;
 import lombok.AllArgsConstructor;
 
 
-@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
+//@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 @RestController
 @RequestMapping("/api/doctors")
 @AllArgsConstructor

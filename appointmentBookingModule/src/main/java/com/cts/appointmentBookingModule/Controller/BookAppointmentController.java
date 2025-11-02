@@ -23,7 +23,7 @@ import lombok.AllArgsConstructor;
 
 
 @RestController
-@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
+//@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 @RequestMapping("/appointments")
 @AllArgsConstructor
 public class BookAppointmentController {

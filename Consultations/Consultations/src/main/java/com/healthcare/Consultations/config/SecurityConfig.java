@@ -28,28 +28,28 @@ public class SecurityConfig {
 
        return http.build();
    }
-
-   @Bean
-   public CorsConfigurationSource corsConfigurationSource() {
-       CorsConfiguration config = new CorsConfiguration();
-
-       // Allow frontend origin (adjust if hosted elsewhere)
-       config.setAllowedOriginPatterns(List.of("http://localhost:4200"));
-
-       // Allowed HTTP methods
-       config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-       // Allowed headers
-       config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-
-       // Allow credentials if using cookies/JWT tokens
-       config.setAllowCredentials(true);
-
-       // Register configuration for all endpoints
-       UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-       source.registerCorsConfiguration("/**", config);
-
-       return source;
-   }
+//
+//   @Bean
+//   public CorsConfigurationSource corsConfigurationSource() {
+//       CorsConfiguration config = new CorsConfiguration();
+//
+//       // Allow frontend origin (adjust if hosted elsewhere)
+//       config.setAllowedOriginPatterns(List.of("http://localhost:4200"));
+//
+//       // Allowed HTTP methods
+//       config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+//
+//       // Allowed headers
+//       config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+//
+//       // Allow credentials if using cookies/JWT tokens
+//       config.setAllowCredentials(true);
+//
+//       // Register configuration for all endpoints
+//       UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//       source.registerCorsConfiguration("/**", config);
+//
+//       return source;
+//   }
 }
 
