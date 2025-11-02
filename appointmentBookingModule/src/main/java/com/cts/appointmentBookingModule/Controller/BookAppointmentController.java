@@ -70,7 +70,7 @@ public class BookAppointmentController {
 		   return service.cancelAppointmentByDoctor(appointmentId); 
 		   }  
 	   
-	   @PatchMapping("/cancel/patient/{appointmentId}") 
+	   @PutMapping("/cancel/patient/{appointmentId}") 
 	   public BookAppointment cancelByPatient(@PathVariable long appointmentId) { 
 		   System.out.println("Inside Cancel by patient controller");
 		   return service.cancelAppointmentByPatient(appointmentId); 
@@ -84,6 +84,12 @@ public class BookAppointmentController {
 	   @GetMapping("doctor/get/{aptId}")
 	   public AppointmentDTO fetchAppointmentForDoctor(@PathVariable("aptId") int aptId) {
 		   return service.fetchByDoctor(aptId);
+	   }
+	   
+	   @PostMapping("doctor/completed/{apptId}")
+	   public BookAppointment completedStatusUpdate(@PathVariable("apptId") int apptId)
+	   {
+		   return service.completedStatus(apptId);
 	   }
 	   
 	   

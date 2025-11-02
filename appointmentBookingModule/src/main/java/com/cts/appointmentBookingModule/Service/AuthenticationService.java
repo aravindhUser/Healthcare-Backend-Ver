@@ -11,19 +11,19 @@ import com.cts.appointmentBookingModule.model.DoctorDTO;
 import com.cts.appointmentBookingModule.model.PatientDTO;
 
 
-@FeignClient(name="APIGATEWAY",configuration = FeignClientConfig.class)
+@FeignClient(name="USERSERVICE",configuration = FeignClientConfig.class)
 public interface AuthenticationService {
 	
-	@GetMapping("user/doctor/{id}")
+	@GetMapping("doctor/{id}")
 	public DoctorDTO getDoctorById(@PathVariable int id);
 	
-	@GetMapping("user/doctor/getAllDoctors")
+	@GetMapping("doctor/getAllDoctors")
 	public List<DoctorDTO> getAllDoctors();
 	
-	@GetMapping("user/patient/{id}")
+	@GetMapping("patient/{id}")
 	public PatientDTO getPatientById(@PathVariable int id);
 
-	@GetMapping("user/doctor")
+	@GetMapping("doctor")
 	public DoctorDTO getDoctorByName(String doctorName);
 	
 

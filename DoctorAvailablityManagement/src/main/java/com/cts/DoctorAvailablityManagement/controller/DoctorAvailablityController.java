@@ -70,6 +70,8 @@ public class DoctorAvailablityController {
 
     @PostMapping("/availability/{slotId}/cancel")
     public ResponseEntity<Boolean> cancelSlot(@PathVariable int slotId) {
+    	System.out.println("Called to cancel");
+    	System.out.println("Slot id"+slotId);
         return ResponseEntity.ok(service.cancelBookedSlot(slotId));
     }
 

@@ -5,11 +5,13 @@ import java.time.LocalTime;
 import java.util.List;
 
 import com.cts.DoctorAvailablityManagement.dto.DoctorDTO;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @AllArgsConstructor
@@ -27,6 +29,7 @@ public class DoctorSlots {
     private LocalTime endTime;
 
     @OneToMany(mappedBy = "doctorSlot", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    @ToString.Exclude
     private List<AvailablitySlot> availablitySlots;
-
 }
