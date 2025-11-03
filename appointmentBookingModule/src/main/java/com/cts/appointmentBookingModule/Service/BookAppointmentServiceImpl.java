@@ -35,6 +35,16 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	@Override
 	public BookAppointment bookAppointmentBySlot(int slotId, BookAppointment appointment) {
 	    System.out.println("Called the Booking");
+	    BookAppointment existingAppointment = repo.findByDoctorDateTime(
+	            appointment.getDoctorId(),
+	            appointment.getDate(),
+	            appointment.getStartTime()
+	        );
+
+	        if (existingAppointment != null) {
+	            throw new RuntimeException("Slot already booked for this doctor and time.");
+	        }
+	    
 		boolean bookslot=docService.markSlotBooked(slotId);
 	    if(!bookslot)
 	    	throw new RuntimeException("Slot Already Booked");
