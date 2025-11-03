@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.internal.build.AllowSysOut;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -140,11 +141,19 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 	//Cancel Booked Slots for Patient Client.
 	@Override
 	public boolean cancelBookedSlot(int slotId) {
+		System.out.println("This works fine?");
+		System.out.println("Slot Id"+slotId);
 		Optional<AvailablitySlot> al = availablityRepo.findById(slotId);
-		AvailablitySlot found = al.get();
-		found.setStatus(false);
-		availablityRepo.save(found);
-		
+		System.out.println("al.get()  "+al.get());
+		if(al.isPresent()) {
+			System.out.println("You are present");
+			AvailablitySlot found = al.get();
+			System.out.println("Slot Details: "+ found.getStatus());
+			found.setStatus(false);
+			System.out.println("Slot Details: "+ found.getStatus());
+			availablityRepo.save(found);
+			return true;
+		}
 		return false;
 	}
 	
@@ -171,11 +180,12 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 		availablityRepo.deleteById(appointment.getSlotId());
 		AppointmentDTO deletedAppoinment = appointmentService.deleteByDoctor(aptId);
 		System.out.println(deletedAppoinment);
-		if(!(deletedAppoinment.getStatus().equals("Cancel by Doctor"))) {
+		System.out.println((deletedAppoinment.getStatus().equals("Cancel By Doctor")));
+		if(!(deletedAppoinment.getStatus().equals("Cancel By Doctor"))) {
 			throw new DoctorSlotsException("Unable to Cancel the Appointment.");
 			
 		}
-		return appointmentService.deleteByDoctor(aptId);
+		return deletedAppoinment;
 		
 	}
 	

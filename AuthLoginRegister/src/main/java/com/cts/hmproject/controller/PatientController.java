@@ -20,7 +20,7 @@ import lombok.AllArgsConstructor;
 @RestController
 @RequestMapping("patient")
 @AllArgsConstructor
-@CrossOrigin
+//@CrossOrigin
 public class PatientController {
 	
 	

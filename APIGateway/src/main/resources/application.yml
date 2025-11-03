@@ -1,0 +1,40 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      default-filters:
+        # 👇 Corrected version: deduplicate both Origin & Credentials headers
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+
+      routes:
+        - id: authservice
+          uri: http://localhost:8086
+          predicates:
+            - Path=/authentication/**
+        - id: userservice
+          uri: http://localhost:8082
+          predicates:
+            - Path=/user/**
+          filters:
+            - StripPrefix=1
+        - id: doctoravailablitymanagement
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/doctors/**
+        - id: appointmentbookingmodule
+          uri: http://localhost:8083
+          predicates:
+            - Path=/appointments/**
+        - id: consultations
+          uri: http://localhost:8088
+          predicates:
+            - Path=/api/consultations/**
+        - id: notification
+          uri: http://localhost:8085
+          predicates:
+            - Path=/notification/**

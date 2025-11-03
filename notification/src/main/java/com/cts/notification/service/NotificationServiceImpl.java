@@ -15,7 +15,7 @@ import lombok.AllArgsConstructor;
 public class NotificationServiceImpl implements NotificationService {
 	
 	
-	private final NotificationRepo notificationRepo;
+	NotificationRepo notificationRepo;
 
 	@Override
 	public Notification notifyBooked(Notification n) {
@@ -31,7 +31,10 @@ public class NotificationServiceImpl implements NotificationService {
 	@Override
 	public Notification notifyCancelledByPatient(Notification n) {
 		String msg = "Mr/Mrs."+n.getPatientName()+"'s appointment with " + n.getDoctorName() +" on " + n.getDate() +" at " + n.getStartTime() + " is cancelled by Patient.";
-		Notification data = new Notification(n.getId(),n.getPatientId(),n.getDoctorId(),n.getAppointmentId(),msg,n.getDate(),n.getStartTime(),LocalDateTime.now(),n.getDoctorName(),n.getPatientName());
+		Notification data = n;
+		data.setTimestamp(LocalDateTime.now());
+		data.setMessage(msg);
+//		Notification data = new Notification(n.getId(),n.getPatientId(),n.getDoctorId(),n.getAppointmentId(),msg,n.getDate(),n.getStartTime(),LocalDateTime.now(),n.getDoctorName(),n.getPatientName());
 		notificationRepo.save(data);
 		return data;
 	}

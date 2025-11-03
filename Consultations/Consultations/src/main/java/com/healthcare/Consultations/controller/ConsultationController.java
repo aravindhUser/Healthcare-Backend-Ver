@@ -12,7 +12,7 @@ import java.util.List;
  
 @RestController  
 @RequestMapping("/api/consultations")  
-@CrossOrigin 
+//@CrossOrigin 
 @AllArgsConstructor  
 @Slf4j
 public class ConsultationController {  

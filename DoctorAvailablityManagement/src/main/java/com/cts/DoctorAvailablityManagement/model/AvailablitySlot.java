@@ -4,11 +4,13 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 import com.cts.DoctorAvailablityManagement.dto.DoctorDTO;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @AllArgsConstructor
@@ -26,9 +28,23 @@ public class AvailablitySlot {
     private LocalTime startTime;
     private LocalTime endTime;
     private boolean status;
+    
+    public boolean setStatus(boolean status) {
+    	return this.status=status;
+    }
+    
+    public boolean getStatus() {
+    	return this.status;
+    }
+    
+    public boolean isStatus() {
+    	return this.status;
+    }
 
     @ManyToOne
     @JoinColumn(name = "doctor_slot_id")
+    @JsonBackReference
+    @ToString.Exclude
     private DoctorSlots doctorSlot;
 
     @Transient
