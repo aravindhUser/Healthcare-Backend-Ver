@@ -1,4 +1,4 @@
-package com.healthcare.Consultations.service;
+package com.healthcare.Consultations.config;
 
 import feign.RequestInterceptor;  
 import org.springframework.context.annotation.Bean;  

@@ -1,5 +1,6 @@
 package com.healthcare.Consultations.service;
 
+import com.healthcare.Consultations.config.FeignClientConfig;
 import com.healthcare.Consultations.dto.DoctorDTO;
 import com.healthcare.Consultations.dto.PatientDTO;
 
@@ -8,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;  
   
 @FeignClient(name="USERSERVICE", configuration = FeignClientConfig.class)  
-public interface AuthClient { 
+public interface UserClient { 
 	
     @GetMapping("doctor/{id}")  
     DoctorDTO getDoctorById(@PathVariable("id") int id);
