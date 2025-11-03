@@ -17,8 +17,12 @@ import feign.Param;
 public interface AvailablityRepo extends JpaRepository<AvailablitySlot, Integer>{
 	List<AvailablitySlot> findByDoctorId(int doctorId);
 	
-	@Query("SELECT a FROM AvailablitySlot a WHERE a.doctorId = :doctorId AND a.date = :date AND a.status = false")
-	List<AvailablitySlot> findByDocIdAndDate(@Param("doctorId") int doctorId, @Param("date") LocalDate date);
+	@Query("SELECT a FROM AvailablitySlot a WHERE a.doctorId = :doctorId AND a.date = :date AND a.status = false AND a.startTime >= :currentTime")
+	List<AvailablitySlot> findByDocIdAndDate(
+	    @Param("doctorId") int doctorId,
+	    @Param("date") LocalDate date,
+	    @Param("currentTime") LocalTime currentTime
+	);
 
 	
     // To find all availability slots by doctorSlot ID

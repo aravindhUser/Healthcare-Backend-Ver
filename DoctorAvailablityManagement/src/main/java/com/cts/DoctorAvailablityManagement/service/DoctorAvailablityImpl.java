@@ -40,7 +40,9 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 
 	//View The Slots by Date for the Patient.
 	public List<AvailabilitySlotsDTO> getSlotsbyDate(int doctorId,LocalDate date){
-		List<AvailablitySlot> available = availablityRepo.findByDocIdAndDate(doctorId, date);
+//		LocalDate today = LocalDate.now();
+		LocalTime now = LocalTime.now();
+		List<AvailablitySlot> available = availablityRepo.findByDocIdAndDate(doctorId, date,now);
 	    List<AvailabilitySlotsDTO> copySlots = new ArrayList<>();
 	    for (AvailablitySlot as : available) {
 	        System.out.println("  " + as.getDoctorId() + " Doctor ID trying to be Fetched");
@@ -56,7 +58,9 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 	
 	//Get Availability For Doctor
 	public List<DoctorSlotsDTO> getAvailablity(int doctorId){
-		List<DoctorSlots> slot = doctorSlotsRepo.findByDoctorId(doctorId);
+		LocalDate today = LocalDate.now();
+		LocalTime now = LocalTime.now();
+		List<DoctorSlots> slot = doctorSlotsRepo.findUpcomingSlotsByDoctorId(doctorId,today,now);
 		List<DoctorSlotsDTO> docSlots = new ArrayList<>();
 		for(DoctorSlots as : slot) {
 			DoctorSlotsDTO dto = new DoctorSlotsDTO(as);
