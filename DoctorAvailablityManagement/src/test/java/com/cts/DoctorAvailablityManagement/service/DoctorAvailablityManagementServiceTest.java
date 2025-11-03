@@ -19,7 +19,10 @@ import com.cts.DoctorAvailablityManagement.exceptions.DoctorSlotsException;
 import com.cts.DoctorAvailablityManagement.model.*;
 import com.cts.DoctorAvailablityManagement.repo.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 @SpringBootTest
+@Slf4j
 class DoctorAvailablityManagementServiceTest {
 
     @Mock
@@ -61,9 +64,11 @@ class DoctorAvailablityManagementServiceTest {
         when(doctorService.getDoctorById(1)).thenReturn(doctor);
         when(doctorSlotsRepo.existsByDoctorIdAndDateAndStartTimeAndEndTime(anyInt(), any(), any(), any())).thenReturn(false);
         when(doctorSlotsRepo.save(any(DoctorSlots.class))).thenReturn(freeSlot);
+        log.info("Doctor Service Returned Doctor: "+doctor);
+        log.info("Free Slot Saved: "+freeSlot);
 
         DoctorSlots savedSlot = doctorAvailablityService.addAvailablity(freeSlot);
-
+        log.info("Added Slot to the Service: "+freeSlot);
         assertNotNull(savedSlot);
         verify(doctorSlotsRepo, times(1)).save(any(DoctorSlots.class));
         verify(availablityRepo, times(1)).saveAll(anyList());
