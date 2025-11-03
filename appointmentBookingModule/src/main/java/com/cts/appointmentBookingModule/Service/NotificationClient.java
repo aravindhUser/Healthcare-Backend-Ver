@@ -8,16 +8,16 @@ import com.cts.appointmentBookingModule.config.FeignClientConfig;
 import com.cts.appointmentBookingModule.model.NotificationDTO;
 
 
-@FeignClient(name = "NOTIFICATION",configuration = FeignClientConfig.class)
+@FeignClient(name = "NOTIFICATION",configuration=FeignClientConfig.class)
 public interface NotificationClient {
 	
-	@PostMapping("notification/appointment-booked")
+	@PostMapping("/notification/appointment-booked")
 	public NotificationDTO appointmentBooked(@RequestBody NotificationDTO n);
 	
-	@PostMapping("notification/patient/appointment-cancelled")
+	@PostMapping("/notification/patient/appointment-cancelled")
 	public NotificationDTO appointmentCancelledByPatient(@RequestBody NotificationDTO n);
 	
-	@PostMapping("notification/doctor/appointment-cancelled")
+	@PostMapping("/notification/doctor/appointment-cancelled")
 	public NotificationDTO appointmentCancelledByDoctor(@RequestBody NotificationDTO n);
 
 }

@@ -23,7 +23,7 @@ import java.util.List;
 public class ConsultationServiceImpl implements ConsultationService {  
   
     private final ConsultationRepo consultationRepo;  
-    private final AuthClient client;
+    private final UserClient client;
     
     @Override
     public Consultation saveConsultation(ConsultationDTO dto) {
