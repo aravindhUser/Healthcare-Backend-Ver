@@ -24,7 +24,7 @@ import lombok.AllArgsConstructor;
 @RestController
 @RequestMapping("doctor")
 @AllArgsConstructor
-@CrossOrigin
+//@CrossOrigin
 public class DoctorController {
 	
 	DoctorService service;

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.internal.build.AllowSysOut;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +40,9 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 
 	//View The Slots by Date for the Patient.
 	public List<AvailabilitySlotsDTO> getSlotsbyDate(int doctorId,LocalDate date){
-		List<AvailablitySlot> available = availablityRepo.findByDocIdAndDate(doctorId, date);
+//		LocalDate today = LocalDate.now();
+		LocalTime now = LocalTime.now();
+		List<AvailablitySlot> available = availablityRepo.findByDocIdAndDate(doctorId, date,now);
 	    List<AvailabilitySlotsDTO> copySlots = new ArrayList<>();
 	    for (AvailablitySlot as : available) {
 	        System.out.println("  " + as.getDoctorId() + " Doctor ID trying to be Fetched");
@@ -55,7 +58,9 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 	
 	//Get Availability For Doctor
 	public List<DoctorSlotsDTO> getAvailablity(int doctorId){
-		List<DoctorSlots> slot = doctorSlotsRepo.findByDoctorId(doctorId);
+		LocalDate today = LocalDate.now();
+		LocalTime now = LocalTime.now();
+		List<DoctorSlots> slot = doctorSlotsRepo.findUpcomingSlotsByDoctorId(doctorId,today,now);
 		List<DoctorSlotsDTO> docSlots = new ArrayList<>();
 		for(DoctorSlots as : slot) {
 			DoctorSlotsDTO dto = new DoctorSlotsDTO(as);
@@ -141,11 +146,19 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 	//Cancel Booked Slots for Patient Client.
 	@Override
 	public boolean cancelBookedSlot(int slotId) {
+		System.out.println("This works fine?");
+		System.out.println("Slot Id"+slotId);
 		Optional<AvailablitySlot> al = availablityRepo.findById(slotId);
-		AvailablitySlot found = al.get();
-		found.setStatus(false);
-		availablityRepo.save(found);
-		
+		System.out.println("al.get()  "+al.get());
+		if(al.isPresent()) {
+			System.out.println("You are present");
+			AvailablitySlot found = al.get();
+			System.out.println("Slot Details: "+ found.getStatus());
+			found.setStatus(false);
+			System.out.println("Slot Details: "+ found.getStatus());
+			availablityRepo.save(found);
+			return true;
+		}
 		return false;
 	}
 	
@@ -172,11 +185,12 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 		availablityRepo.deleteById(appointment.getSlotId());
 		AppointmentDTO deletedAppoinment = appointmentService.deleteByDoctor(aptId);
 		System.out.println(deletedAppoinment);
-		if(!(deletedAppoinment.getStatus().equals("Cancel by Doctor"))) {
+		System.out.println((deletedAppoinment.getStatus().equals("Cancel By Doctor")));
+		if(!(deletedAppoinment.getStatus().equals("Cancel By Doctor"))) {
 			throw new DoctorSlotsException("Unable to Cancel the Appointment.");
 			
 		}
-		return appointmentService.deleteByDoctor(aptId);
+		return deletedAppoinment;
 		
 	}
 	

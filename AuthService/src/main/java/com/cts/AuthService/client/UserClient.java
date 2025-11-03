@@ -13,20 +13,20 @@ import com.cts.AuthService.dto.UserResponse;
 import com.cts.AuthService.model.User;
 import com.netflix.discovery.EurekaClientConfig;
 
-@FeignClient(name="AUTH")
+@FeignClient(name="APIGATEWAY")
 //,configuration=FeignClientConfig.class)
 public interface UserClient {
 
-	@PostMapping("/doctor/register")
+	@PostMapping("user/doctor/register")
 	UserInfo saveDoctor(@RequestBody UserInfo info);
 
-    @PostMapping("/patient/register")
+    @PostMapping("user/patient/register")
     UserInfo savePatient(@RequestBody UserInfo info);
     
-    @GetMapping("/doctor/getDoctor/{userId}")
+    @GetMapping("user/doctor/getDoctor/{userId}")
     UserResponse getDoctor(@PathVariable int userId);
     
-    @GetMapping("/patient/getPatient/{userId}")
+    @GetMapping("user/patient/getPatient/{userId}")
     UserResponse getPatient(@PathVariable int userId);
 }
 

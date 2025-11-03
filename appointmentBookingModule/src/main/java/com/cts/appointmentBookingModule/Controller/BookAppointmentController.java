@@ -23,7 +23,7 @@ import lombok.AllArgsConstructor;
 
 
 @RestController
-@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
+//@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 @RequestMapping("/appointments")
 @AllArgsConstructor
 public class BookAppointmentController {
@@ -60,9 +60,9 @@ public class BookAppointmentController {
 //	   
 	   
 	   
-	   @PutMapping("/update/{slotId}")
-	   public BookAppointment updateAppointment(@PathVariable int slotId,@RequestBody BookAppointment appointment) {
-		   return service.updateAppointmentWithSlot(slotId,appointment);
+	   @PutMapping("/update/{aptId}")
+	   public BookAppointment updateAppointment(@PathVariable int aptId) {
+		   return service.updateAppointmentWithSlot(aptId);
 	   }
 	   
 	   @PutMapping("/cancel/doctor/{appointmentId}") 
@@ -70,7 +70,7 @@ public class BookAppointmentController {
 		   return service.cancelAppointmentByDoctor(appointmentId); 
 		   }  
 	   
-	   @PatchMapping("/cancel/patient/{appointmentId}") 
+	   @PutMapping("/cancel/patient/{appointmentId}") 
 	   public BookAppointment cancelByPatient(@PathVariable long appointmentId) { 
 		   System.out.println("Inside Cancel by patient controller");
 		   return service.cancelAppointmentByPatient(appointmentId); 
@@ -84,6 +84,12 @@ public class BookAppointmentController {
 	   @GetMapping("doctor/get/{aptId}")
 	   public AppointmentDTO fetchAppointmentForDoctor(@PathVariable("aptId") int aptId) {
 		   return service.fetchByDoctor(aptId);
+	   }
+	   
+	   @PostMapping("doctor/completed/{apptId}")
+	   public BookAppointment completedStatusUpdate(@PathVariable("apptId") int apptId)
+	   {
+		   return service.completedStatus(apptId);
 	   }
 	   
 	   

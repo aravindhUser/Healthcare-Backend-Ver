@@ -23,6 +23,7 @@ public class AppointmentDTO {
 	private LocalTime startTime;
 	private LocalTime endTime;
 	private String status;
+	private String reason;
 	
 	public AppointmentDTO(BookAppointment ap){
 		this.id=ap.getId();
@@ -33,7 +34,8 @@ public class AppointmentDTO {
 		this.date=ap.getDate();
 		this.startTime = ap.getStartTime();
 		this.endTime=ap.getEndTime();
-		this.status=ap.getStatus();	
+		this.status=ap.getStatus();
+		this.reason = ap.getProblem();
 	}
 	
 	

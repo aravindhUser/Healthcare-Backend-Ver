@@ -15,7 +15,7 @@ import lombok.AllArgsConstructor;
 public class NotificationServiceImpl implements NotificationService {
 	
 	
-	private final NotificationRepo notificationRepo;
+	NotificationRepo notificationRepo;
 
 	@Override
 	public Notification notifyBooked(Notification n) {

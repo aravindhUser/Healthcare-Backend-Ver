@@ -10,7 +10,7 @@ import com.cts.appointmentBookingModule.model.NotificationDTO;
 
 public interface BookAppointmentService {
 	List<BookAppointment> getAllAppointments();
-	BookAppointment updateAppointmentWithSlot(int slotId,BookAppointment updateAppointment);
+	BookAppointment updateAppointmentWithSlot(int aptId);
 	BookAppointment bookAppointmentBySlot(int slotId, BookAppointment appointment);
 //	List<BookAppointment> getByDoctorId(Long id);
 //	List<BookAppointment> getByPatientId(int id);
@@ -18,11 +18,10 @@ public interface BookAppointmentService {
     BookAppointment cancelAppointmentByPatient(long appointmentId);
 	List<DoctorDTO> getAllDoctors();
 	List<BookAppointment> getAppByPatientId(int patientId);
-
 	NotificationDTO setNotification(BookAppointment app);
-
 	List<AppointmentDTO> getAppointmentsDoctor(int doctorId);
 	AppointmentDTO fetchByDoctor(int apptId);
-
+	BookAppointment completedStatus(int apptId);
+	
 
 }
