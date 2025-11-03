@@ -23,6 +23,12 @@ public interface AvailablityRepo extends JpaRepository<AvailablitySlot, Integer>
 	    @Param("date") LocalDate date,
 	    @Param("currentTime") LocalTime currentTime
 	);
+	
+	@Query("SELECT a FROM AvailablitySlot a WHERE a.doctorId = :doctorId AND a.date = :date AND a.status = false")
+	List<AvailablitySlot> findByDocIdAndDate(
+	    @Param("doctorId") int doctorId,
+	    @Param("date") LocalDate date
+	);
 
 	
     // To find all availability slots by doctorSlot ID
