@@ -38,10 +38,12 @@ public class Consultation {
   private LocalDate date;  
 
   @Column(columnDefinition = "TEXT")  
-  private String notes;  
-
+  private String notes;
+  
+  
   @OneToMany(mappedBy = "consultation", cascade = CascadeType.ALL, orphanRemoval = true)  
   @JsonManagedReference
+  @Builder.Default
   private List<Prescription> prescriptions = new ArrayList<>();  
   
   
