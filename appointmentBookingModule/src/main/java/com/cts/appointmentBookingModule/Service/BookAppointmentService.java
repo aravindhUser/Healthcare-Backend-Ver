@@ -18,11 +18,11 @@ public interface BookAppointmentService {
     BookAppointment cancelAppointmentByPatient(long appointmentId);
 	List<DoctorDTO> getAllDoctors();
 	List<BookAppointment> getAppByPatientId(int patientId);
-<<<<<<< HEAD
+
 	NotificationDTO setNotification(BookAppointment app);
-=======
+
 	List<AppointmentDTO> getAppointmentsDoctor(int doctorId);
 	AppointmentDTO fetchByDoctor(int apptId);
->>>>>>> 52cb8a455fb3f1493910f618900975f9f7affc4f
+
 
 }

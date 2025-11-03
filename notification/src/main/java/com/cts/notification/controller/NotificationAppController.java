@@ -2,6 +2,7 @@ package com.cts.notification.controller;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +18,7 @@ import lombok.AllArgsConstructor;
 @RestController
 @RequestMapping("/notification")
 @AllArgsConstructor
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class NotificationAppController {
 	
 	NotificationService notificationService;
@@ -29,7 +31,7 @@ public class NotificationAppController {
 	public List<Notification> getNotificationsByDoctor(@PathVariable int doctorId) {
 		return notificationService.getNotificationsForDoctor(doctorId);
 	}
-	@PostMapping("/appointment-booked/")
+	@PostMapping("/appointment-booked")
 	public Notification appointmentBooked(@RequestBody Notification n) {
 		Notification data = notificationService.notifyBooked(n);
 		return data;

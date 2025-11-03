@@ -45,15 +45,10 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	    PatientDTO patient = authService.getPatientById(appointment.getPatientId());
 	    appointment.setDoctor(doctor);
 	    appointment.setPatient(patient);
-<<<<<<< HEAD
-	    BookAppointment app = repo.save(appointment);
-	    NotificationDTO noti = setNotification(app);
-	    notiClient.appointmentBooked(noti);
-	    return app;
-=======
+	    NotificationDTO notification = setNotification(appointment);
+	    notiClient.appointmentBooked(notification);
 	    appointment.setSlotId(slotId);
 	    return repo.save(appointment); 
->>>>>>> 52cb8a455fb3f1493910f618900975f9f7affc4f
 	      
 	}
 	
@@ -127,9 +122,14 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	@Override
 	public AppointmentDTO cancelAppointmentByDoctor(long appointmentId) {
 		BookAppointment app=repo.findById(appointmentId).orElse(null);
+		
+		if(app==null) {
+			System.out.println("Null");
+			return null;
+		}
 		app.setStatus("Cancel by Doctor");
 		repo.save(app);
-<<<<<<< HEAD
+
 	    
 		boolean release=docService.cancelSlot(appointmentId);
 		if(!release) {
@@ -137,11 +137,11 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 		}
 		NotificationDTO noti = setNotification(app);
 	    notiClient.appointmentCancelledByDoctor(noti);
-		return app;
-=======
+
+
 		AppointmentDTO found = new AppointmentDTO(app);
 		return found;
->>>>>>> 52cb8a455fb3f1493910f618900975f9f7affc4f
+
 	}
 
 
@@ -149,6 +149,10 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	public BookAppointment cancelAppointmentByPatient(long appointmentId) {
 		System.out.println("Inside Cancel by patient service");
 		BookAppointment app=repo.findById(appointmentId).orElse(null);
+		if(app==null) {
+			System.out.println("Null");
+			return null;
+		}
 		app.setStatus("Cancel by Patient");
 		repo.save(app);
 	    
