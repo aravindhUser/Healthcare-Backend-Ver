@@ -102,25 +102,17 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 
 
     @Override
-	public BookAppointment updateAppointmentWithSlot(int slotId, BookAppointment updated) {
-//    	AvailabilitySlotDTO slot = docService.viewAvailableSlot(slotId);
-    	AvailabilitySlotDTO slot = docService.viewAvailableSlot(slotId);
-    	if(slot.isStatus()) {
-    		return null;
+	public BookAppointment updateAppointmentWithSlot(int aptId) {
+    	Optional<BookAppointment> updatedAppointment = repo.findById((long)aptId);
+    	if(updatedAppointment.isPresent()) {
+    		BookAppointment found = updatedAppointment.get();
+    		found.setStatus("Rescheduled");
+    		docService.cancelSlot(found.getSlotId());
+    		return repo.save(found);
+	
     	}
-    	PatientDTO patient =authService.getPatientById(updated.getPatientId());
-    	docService.markSlotBooked(slotId);
-    	updated.setDate(slot.getDate());
-    	updated.setDoctorId(slot.getDoctorId());
-    	updated.setDoctorName(slot.getDoctor().getName());
-    	updated.setStartTime(slot.getStartTime());
-    	updated.setEndTime(slot.getEndTime());
-    	updated.setStatus("Booked");
-    	updated.setDoctor(slot.getDoctor());
-    	updated.setPatient(patient);
-    	
-    	
-    	return repo.save(updated);
+    	return null;
+    	 
     }
 
 	@Override

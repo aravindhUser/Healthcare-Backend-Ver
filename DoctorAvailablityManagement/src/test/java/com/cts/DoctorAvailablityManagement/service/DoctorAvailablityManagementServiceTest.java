@@ -1,58 +1,120 @@
 package com.cts.DoctorAvailablityManagement.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.*;
 
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.*;
+import org.springframework.boot.test.context.SpringBootTest;
 
+import com.cts.DoctorAvailablityManagement.client.AppointmentClient;
+import com.cts.DoctorAvailablityManagement.client.DoctorAuthService;
 import com.cts.DoctorAvailablityManagement.dto.DoctorDTO;
-import com.cts.DoctorAvailablityManagement.model.DoctorSlots;
-import com.cts.DoctorAvailablityManagement.repo.AvailablityRepo;
-import com.cts.DoctorAvailablityManagement.repo.DoctorSlotsRepo;
+import com.cts.DoctorAvailablityManagement.exceptions.DoctorSlotsException;
+import com.cts.DoctorAvailablityManagement.model.*;
+import com.cts.DoctorAvailablityManagement.repo.*;
 
-@ExtendWith(MockitoExtension.class)
-public class DoctorAvailablityManagementServiceTest {
-	@Mock
-	private AvailablityRepo availablityRepo;
-	@Mock
-	private DoctorSlotsRepo doctorSlotsRepo;
-	@InjectMocks
-	DoctorAvailablityImpl service;
-	
-	@Test
-	void addAvailablitySuccessfully_createsDoctorSlotAndAvailabilitySlots() {
-	    // Arrange
-	    DoctorSlots slot = new DoctorSlots();
-	    slot.setSlotid(1);
-	    slot.setDoctorId(101);
-	    slot.setDate(LocalDate.parse("2025-11-03"));
-	    slot.setStartTime(LocalTime.parse("13:00"));
-	    slot.setEndTime(LocalTime.parse("14:00"));
+@SpringBootTest
+class DoctorAvailablityManagementServiceTest {
 
-	    DoctorDTO doctor = new DoctorDTO();
-	    doctor.setId(101);
-	    doctor.setName("Dr. Test");
+    @Mock
+    private AvailablityRepo availablityRepo;
 
-	    Mockito.when(service.getDoctor(101)).thenReturn(doctor);
-	    Mockito.when(doctorSlotsRepo.existsByDoctorIdAndDateAndStartTimeAndEndTime(
-	        slot.getDoctorId(), slot.getDate(), slot.getStartTime(), slot.getEndTime()
-	    )).thenReturn(false);
-	    Mockito.when(doctorSlotsRepo.save(slot)).thenReturn(slot);
+    @Mock
+    private DoctorSlotsRepo doctorSlotsRepo;
 
-	    // Act
-	    DoctorSlots result = service.addAvailablity(slot);
+    @Mock
+    private DoctorAuthService doctorService;
 
-	    // Assert
-	    Assertions.assertNotNull(result);
-	    Assertions.assertEquals(1, result.getSlotid());
-	    Mockito.verify(availablityRepo, Mockito.times(1)).saveAll(Mockito.anyList());
-	}
+    @Mock
+    private AppointmentClient appointmentService;
 
+    @InjectMocks
+    private DoctorAvailablityImpl doctorAvailablityService;
 
+    private DoctorSlots freeSlot;
+    private DoctorDTO doctor;
+
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
+
+        freeSlot = new DoctorSlots();
+        freeSlot.setDoctorId(1);
+        freeSlot.setDate(LocalDate.of(2025, 11, 3));
+        freeSlot.setStartTime(LocalTime.of(9, 0));
+        freeSlot.setEndTime(LocalTime.of(10, 0));
+
+        doctor = new DoctorDTO();
+        doctor.setId(1);
+        doctor.setName("Dr. John Doe");
+    }
+
+    // ✅ TEST 1: Add availability successfully
+    @Test
+    void testAddAvailablity_Success() {
+        when(doctorService.getDoctorById(1)).thenReturn(doctor);
+        when(doctorSlotsRepo.existsByDoctorIdAndDateAndStartTimeAndEndTime(anyInt(), any(), any(), any())).thenReturn(false);
+        when(doctorSlotsRepo.save(any(DoctorSlots.class))).thenReturn(freeSlot);
+
+        DoctorSlots savedSlot = doctorAvailablityService.addAvailablity(freeSlot);
+
+        assertNotNull(savedSlot);
+        verify(doctorSlotsRepo, times(1)).save(any(DoctorSlots.class));
+        verify(availablityRepo, times(1)).saveAll(anyList());
+    }
+
+    // ✅ TEST 2: Add availability throws exception when slot already exists
+    @Test
+    void testAddAvailablity_AlreadyExists() {
+        when(doctorService.getDoctorById(1)).thenReturn(doctor);
+        when(doctorSlotsRepo.existsByDoctorIdAndDateAndStartTimeAndEndTime(anyInt(), any(), any(), any()))
+                .thenReturn(true);
+
+        assertThrows(DoctorSlotsException.class, () -> {
+            doctorAvailablityService.addAvailablity(freeSlot);
+        });
+
+        verify(doctorSlotsRepo, never()).save(any());
+    }
+
+    // ✅ TEST 3: Delete availability successfully
+    @Test
+    void testDeleteAvailablity_Success() {
+        int slotId = 101;
+
+        AvailablitySlot slot1 = new AvailablitySlot();
+        slot1.setId(1);
+        slot1.setDoctorId(1);
+
+        List<AvailablitySlot> slotList = List.of(slot1);
+
+        when(doctorSlotsRepo.existsById(slotId)).thenReturn(true);
+        when(availablityRepo.findByDoctorSlot_Slotid(slotId)).thenReturn(slotList);
+
+        String result = doctorAvailablityService.deleteAvailablity(slotId);
+
+        assertEquals("SuccessFully Deleted the Slots", result);
+        verify(appointmentService, times(1)).deleteByDoctor(slot1.getId());
+        verify(availablityRepo, times(1)).deleteAll(slotList);
+        verify(doctorSlotsRepo, times(1)).deleteById(slotId);
+    }
+
+    // ✅ TEST 4: Delete availability when slot not found
+    @Test
+    void testDeleteAvailablity_NotFound() {
+        int slotId = 999;
+        when(doctorSlotsRepo.existsById(slotId)).thenReturn(false);
+
+        assertThrows(DoctorSlotsException.class, () -> {
+            doctorAvailablityService.deleteAvailablity(slotId);
+        });
+
+        verify(availablityRepo, never()).deleteAll(any());
+    }
 }

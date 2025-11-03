@@ -60,9 +60,9 @@ public class BookAppointmentController {
 //	   
 	   
 	   
-	   @PutMapping("/update/{slotId}")
-	   public BookAppointment updateAppointment(@PathVariable int slotId,@RequestBody BookAppointment appointment) {
-		   return service.updateAppointmentWithSlot(slotId,appointment);
+	   @PutMapping("/update/{aptId}")
+	   public BookAppointment updateAppointment(@PathVariable int aptId) {
+		   return service.updateAppointmentWithSlot(aptId);
 	   }
 	   
 	   @PutMapping("/cancel/doctor/{appointmentId}") 
