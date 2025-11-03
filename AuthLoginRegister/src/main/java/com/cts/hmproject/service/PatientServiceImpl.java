@@ -5,15 +5,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
+//import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+//import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
+//import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.stereotype.Service;
 
+import com.cts.hmproject.dto.PatientDTO;
+import com.cts.hmproject.dto.UserInfo;
+import com.cts.hmproject.dto.UserResponse;
+import com.cts.hmproject.model.Doctor;
 import com.cts.hmproject.model.Patient;
-import com.cts.hmproject.model.PatientDTO;
 import com.cts.hmproject.repository.PatientRepo;
 
 //import lombok.AllArgsConstructor;
@@ -25,45 +28,47 @@ public class PatientServiceImpl implements PatientService {
 	@Autowired
 	PatientRepo repo;
 	
-	@Autowired
-    private JWTService jwtService;
- 
-    @Autowired
-    AuthenticationManager authManager;
+//	@Autowired
+//    private JWTService jwtService;
+// 
+//    @Autowired
+//    AuthenticationManager authManager;
 	
 	
 	private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 	
-	@Override
-	public Patient addUser(Patient rpage) {
-		rpage.setPatientPassword(encoder.encode(rpage.getPatientPassword()));
-		Patient rp = repo.save(rpage);
-		return rp;
-	}
+//	@Override
+//	public Patient addUser(Patient rpage) {
+//		rpage.setPatientPassword(encoder.encode(rpage.getPatientPassword()));
+//		Patient rp = repo.save(rpage);
+//		return rp;
+//	}
+//
+//	@Override
+//	public Map<String, Object> verify(Patient p) {
+//		Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(p.getPatientEmail(),p.getPatientPassword()));
+//        if (authentication.isAuthenticated()) {
+//        	List<String> roles = List.of("ROLE_PATIENT"); 
+//        	  
+//
+//           String token =  jwtService.generateToken(p.getPatientEmail(),roles);
+//           Patient foundPatient = repo.findByPatientEmail(p.getPatientEmail());
+//           Map<String, Object> response = new HashMap<>();
+//           response.put("token", token);
+//           response.put("patientId", foundPatient.getPatientId());
+//           response.put("patientName", foundPatient.getPatientName());
+//           response.put("patientEmail", p.getPatientEmail());
+//           System.out.println(response);
+//           return response;
+//           
+//        } else {
+//            throw new RuntimeException("Invalid credentials");
+//        }
+//	}
 
 	@Override
-	public Map<String, Object> verify(Patient p) {
-		Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(p.getPatientEmail(),p.getPatientPassword()));
-        if (authentication.isAuthenticated()) {
-        	List<String> roles = List.of("ROLE_PATIENT");   
-           String token =  jwtService.generateToken(p.getPatientEmail(),roles);
-           Patient foundPatient = repo.findByPatientEmail(p.getPatientEmail());
-           Map<String, Object> response = new HashMap<>();
-           response.put("token", token);
-           response.put("patientId", foundPatient.getPatientId());
-           response.put("patientName", foundPatient.getPatientName());
-           response.put("patientEmail", p.getPatientEmail());
-           System.out.println(response);
-           return response;
-           
-        } else {
-            throw new RuntimeException("Invalid credentials");
-        }
-	}
-
-	@Override
-	public Patient addProfile(String patientEmail, Patient p) {
-		Optional<Patient> optPatient = repo.findOptionalByPatientEmail(patientEmail);
+	public Patient addProfile(int patientId, Patient p) {
+		Optional<Patient> optPatient = repo.findById(patientId);
 //  	Optional<Doctor> optDoctor = repo.findById(doctorEmail);
 
 	if(optPatient!=null)
@@ -87,8 +92,8 @@ public class PatientServiceImpl implements PatientService {
 	}
 
 	@Override
-	public Patient getProfile(String patientEmail) {
-		Patient p=repo.findByPatientEmail(patientEmail);
+	public Patient getProfile(int patientId) {
+		Patient p=repo.findById(patientId).orElse(null);
 		return p;
 	}
 
@@ -102,6 +107,31 @@ public class PatientServiceImpl implements PatientService {
 		
 		
 //		return repo.findById(id);
+	}
+
+	@Override
+	public void savePatient(UserInfo info) {
+			// TODO Auto-generated method stub
+			Patient p = new Patient();
+			
+			p.setUserId(info.getUserId());
+			p.setPatientName(info.getName());
+			p.setPatientEmail(info.getEmail());
+			p.setPatientPhonenumber(info.getMobileNumber());
+			
+			repo.save(p);
+			
+		}
+
+	
+
+	@Override
+	public UserResponse getPatientbyUserId(int userId) {
+		Patient p = repo.findByUserId(userId);
+		System.out.println(p);
+				
+		UserResponse user = new UserResponse(p);
+		return user;
 	}
 
 }

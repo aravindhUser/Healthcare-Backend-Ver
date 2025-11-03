@@ -19,6 +19,5 @@ public interface BookAppointmentRepository extends JpaRepository<BookAppointment
 	@Query("SELECT b FROM BookAppointment b WHERE b.doctorId = :doctorId AND b.date = :date AND b.startTime = :startTime")
 	BookAppointment findByDoctorDateTime(@Param("doctorId") int doctorId, @Param("date") LocalDate date, @Param("startTime") LocalTime startTime);
 
-
-
+	List<BookAppointment> findByDoctorId (int doctorId);
 }

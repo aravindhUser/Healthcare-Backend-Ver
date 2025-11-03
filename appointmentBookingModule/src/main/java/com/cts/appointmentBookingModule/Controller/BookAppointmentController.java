@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cts.appointmentBookingModule.Service.BookAppointmentService;
+import com.cts.appointmentBookingModule.model.AppointmentDTO;
 import com.cts.appointmentBookingModule.model.BookAppointment;
 import com.cts.appointmentBookingModule.model.DoctorDTO;
 
@@ -22,7 +23,7 @@ import lombok.AllArgsConstructor;
 
 
 @RestController
-@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
+//@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 @RequestMapping("/appointments")
 @AllArgsConstructor
 public class BookAppointmentController {
@@ -64,15 +65,31 @@ public class BookAppointmentController {
 		   return service.updateAppointmentWithSlot(slotId,appointment);
 	   }
 	   
-	   @PatchMapping("/cancel/doctor/{appointmentId}") 
-	   public BookAppointment cancelByDoctor(@PathVariable long appointmentId) { 
+	   @PutMapping("/cancel/doctor/{appointmentId}") 
+	   public AppointmentDTO cancelByDoctor(@PathVariable long appointmentId) { 
 		   return service.cancelAppointmentByDoctor(appointmentId); 
 		   }  
 	   
-	   @PatchMapping("/cancel/patient/{appointmentId}") 
+	   @PutMapping("/cancel/patient/{appointmentId}") 
 	   public BookAppointment cancelByPatient(@PathVariable long appointmentId) { 
 		   System.out.println("Inside Cancel by patient controller");
 		   return service.cancelAppointmentByPatient(appointmentId); 
+	   }
+	   
+	   @GetMapping("/doctor/fetch/{docId}")
+	   public List<AppointmentDTO> getAppointmentsDoctor(@PathVariable("docId") int docId){
+		   return service.getAppointmentsDoctor(docId);
+	   }
+	   
+	   @GetMapping("doctor/get/{aptId}")
+	   public AppointmentDTO fetchAppointmentForDoctor(@PathVariable("aptId") int aptId) {
+		   return service.fetchByDoctor(aptId);
+	   }
+	   
+	   @PostMapping("doctor/completed/{apptId}")
+	   public BookAppointment completedStatusUpdate(@PathVariable("apptId") int apptId)
+	   {
+		   return service.completedStatus(apptId);
 	   }
 	   
 	   

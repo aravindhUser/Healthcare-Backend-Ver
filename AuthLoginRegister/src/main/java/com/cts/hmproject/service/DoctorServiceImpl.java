@@ -7,19 +7,22 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
+//import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.cts.hmproject.dto.DoctorDTO;
+import com.cts.hmproject.dto.UserInfo;
+import com.cts.hmproject.dto.UserResponse;
 import com.cts.hmproject.model.Doctor;
-import com.cts.hmproject.model.DoctorDTO;
 import com.cts.hmproject.repository.DoctorRepo;
 
 //import com.cts.hmproject.model.Doctor;
 //import com.cts.hmproject.repository.UserRepo;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
+//import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+//import org.springframework.security.core.Authentication;
 //import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 //import org.springframework.stereotype.Service;
 
@@ -31,41 +34,41 @@ public class DoctorServiceImpl implements DoctorService {
 	@Autowired
 	DoctorRepo repo;
 	
-	@Autowired
-    private JWTService jwtService;
- 
-    @Autowired
-    AuthenticationManager authManager;
+//	@Autowired
+//    private JWTService jwtService;
+// 
+//    @Autowired
+//    AuthenticationManager authManager;
 	
 	
 	private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 	
-	@Override
-	public Doctor addUser(Doctor d) {
-		d.setDoctorPassword(encoder.encode(d.getDoctorPassword()));
-		Doctor rp = repo.save(d);
-		return rp;
-	}
+//	@Override
+//	public Doctor addUser(Doctor d) {
+//		d.setDoctorPassword(encoder.encode(d.getDoctorPassword()));
+//		Doctor rp = repo.save(d);
+//		return rp;
+//	}
 	
-	@Override
-	public Map<String, Object> verify(Doctor doctor) {
-		Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(doctor.getDoctorEmail(),doctor.getDoctorPassword()));
-        if (authentication.isAuthenticated()) {
-        	List<String> roles = List.of("ROLE_DOCTOR");
-           String token =  jwtService.generateToken(doctor.getDoctorEmail(),roles);
-           Doctor foundDoctor = repo.findByDoctorEmail(doctor.getDoctorEmail());
-           Map<String, Object> response = new HashMap<>();
-           response.put("token", token);
-           response.put("doctorId", foundDoctor.getDoctorId());
-           response.put("doctorName", foundDoctor.getDoctorName());
-           response.put("doctorEmail", doctor.getDoctorEmail());
-           System.out.println(response);
-           return response;
-           
-        } else {
-            throw new RuntimeException("Invalid credentials");
-        }
-	}
+//	@Override
+//	public Map<String, Object> verify(Doctor doctor) {
+//		Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(doctor.getDoctorEmail(),doctor.getDoctorPassword()));
+//        if (authentication.isAuthenticated()) {
+//        	List<String> roles = List.of("ROLE_DOCTOR");
+//           String token =  jwtService.generateToken(doctor.getDoctorEmail(),roles);
+//           Doctor foundDoctor = repo.findByDoctorEmail(doctor.getDoctorEmail());
+//           Map<String, Object> response = new HashMap<>();
+//           response.put("token", token);
+//           response.put("doctorId", foundDoctor.getDoctorId());
+//           response.put("doctorName", foundDoctor.getDoctorName());
+//           response.put("doctorEmail", doctor.getDoctorEmail());
+//           System.out.println(response);
+//           return response;
+//           
+//        } else {
+//            throw new RuntimeException("Invalid credentials");
+//        }
+//	}
 	
 //	public String verify(Doctor ) {
 //        Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getDoctorEmail(), user.getDoctorPassword()));
@@ -77,9 +80,9 @@ public class DoctorServiceImpl implements DoctorService {
 //    }
 
 	@Override
-	public Doctor addProfile(String doctorEmail,Doctor up) {
+	public Doctor addProfile(int doctorId,Doctor up) {
 		// TODO Auto-generated method stub
-		Optional<Doctor> optDoctor = repo.findOptionalByDoctorEmail(doctorEmail);
+		Optional<Doctor> optDoctor = repo.findById(doctorId);
 //      	Optional<Doctor> optDoctor = repo.findById(doctorEmail);
 	
 		if(optDoctor!=null)
@@ -104,9 +107,9 @@ public class DoctorServiceImpl implements DoctorService {
 	}
 
 	@Override
-	public Doctor getProfile(String doctorEmail) {
+	public Doctor getProfile(int doctorId) {
 		// TODO Auto-generated method stu
-		Doctor d=repo.findByDoctorEmail(doctorEmail);
+		Doctor d=repo.findById(doctorId).orElse(null);
 		return d;
 		
 	}
@@ -129,6 +132,29 @@ public class DoctorServiceImpl implements DoctorService {
 	                                   .collect(Collectors.toList());
 
 	    return found;
+	}
+
+	@Override
+	public void saveDoctor(UserInfo info) {
+		// TODO Auto-generated method stub
+		Doctor d = new Doctor();
+		
+		d.setUserId(info.getUserId());
+		d.setDoctorName(info.getName());
+		d.setDoctorEmail(info.getEmail());
+		d.setDoctorMobileNumber(info.getMobileNumber());
+		
+		repo.save(d);
+		
+	}
+
+	@Override
+	public UserResponse getDoctorbyUserId(int userId) {
+		Doctor dt = repo.findByUserId(userId);
+		System.out.println(dt);
+				
+		UserResponse user = new UserResponse(dt);
+		return user;
 	}
 
 	

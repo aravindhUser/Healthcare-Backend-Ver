@@ -4,18 +4,24 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 
+import com.cts.hmproject.dto.PatientDTO;
+import com.cts.hmproject.dto.UserInfo;
+import com.cts.hmproject.dto.UserResponse;
 import com.cts.hmproject.model.Patient;
-import com.cts.hmproject.model.PatientDTO;
 
 public interface PatientService {
 	
-	Patient addUser(Patient rpage);
+	void savePatient(UserInfo info);
 	
-	Map<String, Object> verify(Patient p);
+//	Patient addUser(Patient rpage);
 	
-	Patient addProfile(String patientEmail,Patient p);
+//	Map<String, Object> verify(Patient p);
+	
+	Patient addProfile(int patientId,Patient p);
 
-	Patient getProfile(String patientEmail);
+	Patient getProfile(int patientId);
 
 	PatientDTO getPatientProfile(int id);
+
+	UserResponse getPatientbyUserId(int userId);
 }

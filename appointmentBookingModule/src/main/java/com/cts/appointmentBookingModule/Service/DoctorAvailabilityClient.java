@@ -11,21 +11,21 @@ import com.cts.appointmentBookingModule.config.FeignClientConfig;
 import com.cts.appointmentBookingModule.model.AvailabilitySlotDTO;
 import com.cts.appointmentBookingModule.model.DoctorDTO;
 
-@FeignClient(name = "DoctorAvailabilityManagement", configuration = FeignClientConfig.class)
+@FeignClient(name = "DOCTORAVAILABILITYMANAGEMENT", configuration = FeignClientConfig.class)
 public interface DoctorAvailabilityClient {
 	@GetMapping("/api/doctors/{id}")
     DoctorDTO getDoctorById(@PathVariable long  id);
 
-    @GetMapping("/api/doctors/{id}/availablity")
+    @GetMapping("/api/doctors/{id}/availability")
     List<AvailabilitySlotDTO> getSlotsByDoctor(@PathVariable long id);
 
-    @PostMapping("/api/doctors/availablity/{slotId}/book")
+    @PostMapping("/api/doctors/availability/{slotId}/book")
     boolean markSlotBooked(@PathVariable long slotId);
 
-    @PostMapping("/api/doctors/availablity/{slotId}/cancel")
+    @PostMapping("/api/doctors/availability/{slotId}/cancel")
     boolean cancelSlot(@PathVariable long slotId);
     
-    @GetMapping("api/doctors/availablity/{slotId}")
+    @GetMapping("api/doctors/availability/{slotId}")
 	public AvailabilitySlotDTO viewAvailableSlot(@PathVariable int slotId);
 
 }
