@@ -19,7 +19,7 @@ import lombok.AllArgsConstructor;
 @RestController
 @RequestMapping("/authentication")
 @AllArgsConstructor
-@CrossOrigin
+//@CrossOrigin
 public class AuthController {
 	
 	private final AuthService authService;

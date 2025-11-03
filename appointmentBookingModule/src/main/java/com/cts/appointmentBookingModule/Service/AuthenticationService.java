@@ -11,7 +11,7 @@ import com.cts.appointmentBookingModule.model.DoctorDTO;
 import com.cts.appointmentBookingModule.model.PatientDTO;
 
 
-@FeignClient(name="AUTH",configuration = FeignClientConfig.class)
+@FeignClient(name="USERSERVICE",configuration = FeignClientConfig.class)
 public interface AuthenticationService {
 	
 	@GetMapping("doctor/{id}")
