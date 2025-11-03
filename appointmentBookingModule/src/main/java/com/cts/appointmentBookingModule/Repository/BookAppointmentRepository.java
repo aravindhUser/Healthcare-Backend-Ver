@@ -16,7 +16,7 @@ import feign.Param;
 public interface BookAppointmentRepository extends JpaRepository<BookAppointment,Long> {
 	List<BookAppointment> findByPatientId(int patientId);
 	
-	@Query("SELECT b FROM BookAppointment b WHERE b.doctorId = :doctorId AND b.date = :date AND b.startTime = :startTime")
+	@Query("SELECT b FROM BookAppointment b WHERE b.doctorId = :doctorId AND b.date = :date AND b.startTime = :startTime AND b.status = 'booked'")
 	BookAppointment findByDoctorDateTime(@Param("doctorId") int doctorId, @Param("date") LocalDate date, @Param("startTime") LocalTime startTime);
 
 	List<BookAppointment> findByDoctorId (int doctorId);
