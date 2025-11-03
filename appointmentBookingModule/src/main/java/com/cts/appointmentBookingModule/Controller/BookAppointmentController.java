@@ -19,6 +19,7 @@ import com.cts.appointmentBookingModule.model.BookAppointment;
 import com.cts.appointmentBookingModule.model.DoctorDTO;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 
 
@@ -26,30 +27,35 @@ import lombok.AllArgsConstructor;
 //@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 @RequestMapping("/appointments")
 @AllArgsConstructor
+@Slf4j
 public class BookAppointmentController {
 //	 @Autowired
      BookAppointmentService service;
 	   
 	   @PostMapping("/book/{slotId}")
 	    public BookAppointment bookAppointmentBySlot(@PathVariable int slotId, @RequestBody BookAppointment appointment) {
+		   log.info("API Call:  Booking Appointment by SlotId");
 	        return service.bookAppointmentBySlot(slotId, appointment);
 	    }
 	  
 	   
 	   @GetMapping("/all")
 	   public List<BookAppointment>getAllAppointments(){
+		   log.info("API Call: Getting all Appointments");
 		   return service.getAllAppointments();
 	   }
 	   
 	   @GetMapping("{patientId}")
 	   public List<BookAppointment> getAppointmentByPatient(@PathVariable int patientId)
 	   {
+		   log.info("API Call: Getting Appointment by Patientid");
 		   return service.getAppByPatientId(patientId);
 	   }
 	   
 	   
 	   @GetMapping("Doctor/{id}")
 		public List<DoctorDTO> getAllDoctors(){
+		   log.info("API Call: Getting all available doctors");
 			return service.getAllDoctors();	
 		}
 		
@@ -60,35 +66,40 @@ public class BookAppointmentController {
 //	   
 	   
 	   
-	   @PutMapping("/update/{slotId}")
-	   public BookAppointment updateAppointment(@PathVariable int slotId,@RequestBody BookAppointment appointment) {
-		   return service.updateAppointmentWithSlot(slotId,appointment);
+	   @PutMapping("/update/{aptId}")
+	   public BookAppointment updateAppointment(@PathVariable int aptId) {
+		   log.info("API Call: Rescheduling appointment");
+		   return service.updateAppointmentWithSlot(aptId);
 	   }
 	   
 	   @PutMapping("/cancel/doctor/{appointmentId}") 
 	   public AppointmentDTO cancelByDoctor(@PathVariable long appointmentId) { 
+		   log.info("API Call: Appointment cancel by doctor");
 		   return service.cancelAppointmentByDoctor(appointmentId); 
 		   }  
 	   
 	   @PutMapping("/cancel/patient/{appointmentId}") 
 	   public BookAppointment cancelByPatient(@PathVariable long appointmentId) { 
-		   System.out.println("Inside Cancel by patient controller");
+		   log.info("Inside Cancel by patient controller");
 		   return service.cancelAppointmentByPatient(appointmentId); 
 	   }
 	   
 	   @GetMapping("/doctor/fetch/{docId}")
 	   public List<AppointmentDTO> getAppointmentsDoctor(@PathVariable("docId") int docId){
+		   log.info("API Call: Fetch all appointments for doctor");
 		   return service.getAppointmentsDoctor(docId);
 	   }
 	   
 	   @GetMapping("doctor/get/{aptId}")
 	   public AppointmentDTO fetchAppointmentForDoctor(@PathVariable("aptId") int aptId) {
+		   log.info("API Call: Fetch appointment by appointmentId");
 		   return service.fetchByDoctor(aptId);
 	   }
 	   
 	   @PostMapping("doctor/completed/{apptId}")
 	   public BookAppointment completedStatusUpdate(@PathVariable("apptId") int apptId)
 	   {
+		   log.info("API Call: Completed status updating");
 		   return service.completedStatus(apptId);
 	   }
 	   

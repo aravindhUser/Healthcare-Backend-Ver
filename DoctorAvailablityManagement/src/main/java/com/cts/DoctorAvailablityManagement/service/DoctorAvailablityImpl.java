@@ -38,25 +38,34 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 	private AppointmentClient appointmentService;
 
 
-	//View The Slots by Date for the Patient.
-	public List<AvailabilitySlotsDTO> getSlotsbyDate(int doctorId,LocalDate date){
-		List<AvailablitySlot> available = availablityRepo.findByDocIdAndDate(doctorId, date);
+	public List<AvailabilitySlotsDTO> getSlotsbyDate(int doctorId, LocalDate date) {
+	    List<AvailablitySlot> available;
+
+	    LocalDate today = LocalDate.now();
+	    if (date.isEqual(today)) {
+	        LocalTime now = LocalTime.now();
+	        available = availablityRepo.findByDocIdAndDate(doctorId, date, now); // filter by time
+	    } else {
+	        available = availablityRepo.findByDocIdAndDate(doctorId, date); // no time filter
+	    }
+
 	    List<AvailabilitySlotsDTO> copySlots = new ArrayList<>();
 	    for (AvailablitySlot as : available) {
-	        System.out.println("  " + as.getDoctorId() + " Doctor ID trying to be Fetched");
-	        DoctorDTO doctor = doctorService.getDoctorById(as.getDoctorId()); // Moved inside loop
+	        DoctorDTO doctor = doctorService.getDoctorById(as.getDoctorId());
 	        AvailabilitySlotsDTO newSlot = new AvailabilitySlotsDTO(as);
 	        newSlot.setDoctor(doctor);
 	        copySlots.add(newSlot);
 	    }
 
 	    return copySlots;
-		
 	}
+
 	
 	//Get Availability For Doctor
 	public List<DoctorSlotsDTO> getAvailablity(int doctorId){
-		List<DoctorSlots> slot = doctorSlotsRepo.findByDoctorId(doctorId);
+		LocalDate today = LocalDate.now();
+		LocalTime now = LocalTime.now();
+		List<DoctorSlots> slot = doctorSlotsRepo.findUpcomingSlotsByDoctorId(doctorId,today,now);
 		List<DoctorSlotsDTO> docSlots = new ArrayList<>();
 		for(DoctorSlots as : slot) {
 			DoctorSlotsDTO dto = new DoctorSlotsDTO(as);

@@ -16,9 +16,11 @@ import com.cts.appointmentBookingModule.model.NotificationDTO;
 import com.cts.appointmentBookingModule.model.PatientDTO;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class BookAppointmentServiceImpl implements BookAppointmentService {
 	@Autowired
 	BookAppointmentRepository repo;
@@ -34,7 +36,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	
 	@Override
 	public BookAppointment bookAppointmentBySlot(int slotId, BookAppointment appointment) {
-	    System.out.println("Called the Booking");
+	    log.info("Called the Booking");
 	    BookAppointment existingAppointment = repo.findByDoctorDateTime(
 	            appointment.getDoctorId(),
 	            appointment.getDate(),
@@ -49,7 +51,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	    if(!bookslot)
 	    	throw new RuntimeException("Slot Already Booked");
 	    appointment.setStatus("booked");
-	    System.out.println(appointment);
+	    log.debug("Appointment details: {}",appointment);
 	    DoctorDTO doctor = authService.getDoctorById(appointment.getDoctorId());
 	  
 	    PatientDTO patient = authService.getPatientById(appointment.getPatientId());
@@ -61,7 +63,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	    try {
 	    	notiClient.appointmentBooked(noti);	
 	    }finally{
-	    	System.out.println("Failed to send Notification");
+	    	log.warn("Failed to send Notification");
 	    }
 	    
 	   
@@ -81,8 +83,8 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	    notification.setPatientId(app.getPatientId());
 	    notification.setPatientName(app.getPatientName());
 	    notification.setStartTime(app.getStartTime());
-	    System.out.println("Notification created ");
-	    System.out.println(notification);
+	    log.info("Notification created ");
+	    log.debug("Notification details: {}",notification);
 	    
 	    return notification;
 		
@@ -102,25 +104,17 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 
 
     @Override
-	public BookAppointment updateAppointmentWithSlot(int slotId, BookAppointment updated) {
-//    	AvailabilitySlotDTO slot = docService.viewAvailableSlot(slotId);
-    	AvailabilitySlotDTO slot = docService.viewAvailableSlot(slotId);
-    	if(slot.isStatus()) {
-    		return null;
+	public BookAppointment updateAppointmentWithSlot(int aptId) {
+    	Optional<BookAppointment> updatedAppointment = repo.findById((long)aptId);
+    	if(updatedAppointment.isPresent()) {
+    		BookAppointment found = updatedAppointment.get();
+    		found.setStatus("Rescheduled");
+    		docService.cancelSlot(found.getSlotId());
+    		return repo.save(found);
+	
     	}
-    	PatientDTO patient =authService.getPatientById(updated.getPatientId());
-    	docService.markSlotBooked(slotId);
-    	updated.setDate(slot.getDate());
-    	updated.setDoctorId(slot.getDoctorId());
-    	updated.setDoctorName(slot.getDoctor().getName());
-    	updated.setStartTime(slot.getStartTime());
-    	updated.setEndTime(slot.getEndTime());
-    	updated.setStatus("Booked");
-    	updated.setDoctor(slot.getDoctor());
-    	updated.setPatient(patient);
-    	
-    	
-    	return repo.save(updated);
+    	return null;
+    	 
     }
 
 	@Override
@@ -151,7 +145,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	        try {
 	            notiClient.appointmentCancelledByDoctor(noti);
 	        } catch (Exception e) {
-	            System.out.println("Failed to send Cancel Notification: " + e.getMessage());
+	        	log.error("Failed to send Cancel Notification", e);
 	        }
 
 	        return new AppointmentDTO(appointment);
@@ -164,7 +158,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 
 	@Override
 	public BookAppointment cancelAppointmentByPatient(long appointmentId) {
-	    System.out.println("Inside Cancel by patient service");
+		log.info("Inside Cancel by patient service");
 	    Optional<BookAppointment> optionalAppointment = repo.findById(appointmentId);
 	    if (optionalAppointment.isPresent()) {
 	        BookAppointment appointment = optionalAppointment.get();
@@ -180,7 +174,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	        try {
 	            notiClient.appointmentCancelledByPatient(noti);
 	        } catch (Exception e) {
-	            System.out.println("Failed to send Cancel Notification: " + e.getMessage());
+	        	log.error("Failed to send Cancel Notification", e);
 	        }
 
 	        return appointment;
@@ -215,7 +209,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 			
 			docSlots.add(slot);
 		}
-		System.out.println(docSlots);
+		log.debug("AppointmentDTO list: {}", docSlots);
 		return docSlots;	
 	}
 
