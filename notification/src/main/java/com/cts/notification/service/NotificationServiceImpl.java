@@ -9,9 +9,11 @@ import com.cts.notification.model.Notification;
 import com.cts.notification.repo.NotificationRepo;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class NotificationServiceImpl implements NotificationService {
 	
 	
@@ -19,13 +21,12 @@ public class NotificationServiceImpl implements NotificationService {
 
 	@Override
 	public Notification notifyBooked(Notification n) {
-		String msg = "Mr/Mrs."+n.getPatientName()+"'s appointment successfully booked with with Dr." + n.getDoctorName() +" on " + n.getDate() +" at " + n.getStartTime() + " is booked.";
+		String msg = "Mr/Mrs."+n.getPatientName()+"'s appointment successfully booked with Dr." + n.getDoctorName() +" on " + n.getDate() +" at " + n.getStartTime() + " is booked.";
 		Notification data = n;
-		
 		data.setTimestamp(LocalDateTime.now());
 		data.setMessage(msg);
-//		Notification data = new Notification(n.getId(),n.getPatientId(),n.getDoctorId(),n.getAppointmentId(),msg,n.getDate(),n.getStartTime(),LocalDateTime.now(),n.getDoctorName(),n.getPatientName());
 		notificationRepo.save(data);
+		log.info("Creating Notification for Doctor :{} and Patient :{} for booking", n.getDoctorName(),n.getPatientName());
 		return data;
 	}
 	@Override
@@ -34,8 +35,8 @@ public class NotificationServiceImpl implements NotificationService {
 		Notification data = n;
 		data.setTimestamp(LocalDateTime.now());
 		data.setMessage(msg);
-//		Notification data = new Notification(n.getId(),n.getPatientId(),n.getDoctorId(),n.getAppointmentId(),msg,n.getDate(),n.getStartTime(),LocalDateTime.now(),n.getDoctorName(),n.getPatientName());
 		notificationRepo.save(data);
+		log.info("Creating Notification for Doctor :{} and Patient :{} for Cancelled by Patient", n.getDoctorName(),n.getPatientName());
 		return data;
 	}
 	@Override
@@ -45,16 +46,18 @@ public class NotificationServiceImpl implements NotificationService {
 		Notification data = n;
 		data.setTimestamp(LocalDateTime.now());
 		data.setMessage(msg);
-//		Notification data = new Notification(n.getId(),n.getPatientId(),n.getDoctorId(),n.getAppointmentId(),msg,n.getDate(),n.getStartTime(),LocalDateTime.now(),n.getDoctorName(),n.getPatientName());
 		notificationRepo.save(data);
+		log.info("Creating Notification for Doctor :{} and Patient :{} for Cancelled by Doctor", n.getDoctorName(),n.getPatientName());
 		return data;
 	}
 	@Override
 	public List<Notification> getNotificationsForPatient(int patientId) {
+		log.info("Listing all Patient's Notification for Patient:{}",patientId);
 		return notificationRepo.findByPatientIdOrderByTimestampDesc(patientId);
 	}
 	@Override
 	public List<Notification> getNotificationsForDoctor(int doctorId) {
+		log.info("Listing all Doctor's Notification for Doctor:{}",doctorId);
 		return notificationRepo.findByDoctorIdOrderByTimestampDesc(doctorId);
 	}
 
