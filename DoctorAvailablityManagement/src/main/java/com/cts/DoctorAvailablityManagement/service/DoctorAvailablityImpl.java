@@ -158,9 +158,9 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 		if(al.isPresent()) {
 			System.out.println("You are present");
 			AvailablitySlot found = al.get();
-			System.out.println("Slot Details: "+ found.getStatus());
+			System.out.println("Slot Details: "+ found.isStatus());
 			found.setStatus(false);
-			System.out.println("Slot Details: "+ found.getStatus());
+			System.out.println("Slot Details: "+ found.isStatus());
 			availablityRepo.save(found);
 			return true;
 		}
