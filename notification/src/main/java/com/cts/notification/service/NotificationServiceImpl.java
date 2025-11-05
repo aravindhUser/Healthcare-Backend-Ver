@@ -74,6 +74,8 @@ public class NotificationServiceImpl implements NotificationService {
 	            throw new NotificationNotFoundException("No notifications found for patient ID: " + patientId);
 	        }
 	        return notifications;
+	    } catch (NotificationNotFoundException e) {
+	        throw e;
 	    } catch (Exception e) {
 	        log.error("Error retrieving notifications for patient {}", patientId, e);
 	        throw new NotificationProcessingException("Failed to retrieve notifications for patient", e);
