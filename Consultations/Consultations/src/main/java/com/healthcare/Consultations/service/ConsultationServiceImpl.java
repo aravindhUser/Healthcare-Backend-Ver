@@ -9,7 +9,7 @@ import com.healthcare.Consultations.model.Prescription;
 import com.healthcare.Consultations.repository.ConsultationRepo;
 
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.Slf4j;  
 
 import com.healthcare.Consultations.exception.BadRequestException;
 import org.springframework.stereotype.Service;   
@@ -30,11 +30,6 @@ public class ConsultationServiceImpl implements ConsultationService {
     	
     	log.info("Saving Consultation for Doctor ID:{} and Patient ID:{}", dto.getDoctorId(),dto.getPatientId());
     	
-    	//Validating required fields
-    	
-//    	if(dto == null) {
-//    		throw new BadRequestException("Consultation Data cannot be null.");
-//    	}
    	
     	if(dto.getDoctorId() <= 0) {
     		throw new BadRequestException("Doctor ID must be valid and greater than zero");
@@ -107,7 +102,7 @@ public class ConsultationServiceImpl implements ConsultationService {
   
     @Override  
     public List<Consultation> getAllConsultations() { 
-    	log.info("Fetching all consultations");
+    	log.info("Fetching all consultations from the database");
     	List<Consultation> list = consultationRepo.findAll();
     	if(list.isEmpty()) {
     		log.warn("No consultations found in the System.");
@@ -119,29 +114,20 @@ public class ConsultationServiceImpl implements ConsultationService {
   
     @Override  
     public Consultation getConsultationById(int id) { 
-    	log.info("Fetching consultations by ID:{},id");
+    	log.info("Fetching consultations by ID:{}",id);
 
-//        return consultationRepo.findById(id)
-//                .orElseThrow(() -> {
-//                	log.error("Consultation with ID {} not found",id);
-//                	return new ResourceNotFoundException("Consultation with ID" + id + "not found"); 
-//                });
+        return consultationRepo.findById(id)
+        		.orElseThrow(() -> new   
+        				ResourceNotFoundException("Consultation with ID" + id + "not found")); 
+                }
     	
-    	Consultation consultation = consultationRepo.findById(id)
-    		    .orElseGet(() -> {
-    		        log.error("Consultation with ID {} not found", id);
-    		        return null;
-    		    });
-		return consultation;
-
-    }  
   
     @Override  
     public List<Consultation> getConsultationsByDoctor(int doctorId) { 
     	log.info("Fetching consultations for Doctor ID:{}",doctorId);
     	List<Consultation> list = consultationRepo.findByDoctorId(doctorId);
     	if(list.isEmpty()) {
-    		log.warn("No consultations for Doctor ID:",doctorId);
+    		log.warn("No consultations for Doctor ID:{}",doctorId);
     		throw new ResourceNotFoundException("No consultation found for DoctorId"+doctorId);
     	}
     	log.info("{} consultations for Doctor ID:{}",list.size(),doctorId);
@@ -154,7 +140,7 @@ public class ConsultationServiceImpl implements ConsultationService {
     	log.info("Fetching consultations for Patient ID:{}",patientId);
     	List<Consultation> list = consultationRepo.findByPatientId(patientId);
     	if(list.isEmpty()) {
-    		log.warn("No consultations for Patient ID:",patientId);
+    		log.warn("No consultations for Patient ID:{}",patientId);
     		throw new ResourceNotFoundException("No consultation found for PatientId"+patientId);
     	}
     	log.info("{} consultations for Patient ID:{}",list.size(),patientId);
