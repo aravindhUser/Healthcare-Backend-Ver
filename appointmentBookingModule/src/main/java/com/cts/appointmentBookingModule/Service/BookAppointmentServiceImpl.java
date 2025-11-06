@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.cts.appointmentBookingModule.Repository.BookAppointmentRepository;
+import com.cts.appointmentBookingModule.exceptions.SlotBookedException;
 import com.cts.appointmentBookingModule.model.AppointmentDTO;
 import com.cts.appointmentBookingModule.model.AvailabilitySlotDTO;
 import com.cts.appointmentBookingModule.model.BookAppointment;
@@ -44,10 +45,10 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	        );
 
 	        if (existingAppointment != null) {
-	            throw new RuntimeException("Slot already booked for this doctor and time.");
+	            throw new SlotBookedException("Slot already booked for this doctor and time.");
 	        }
 	    
-		boolean bookslot=docService.markSlotBooked(slotId);
+		boolean bookslot=docService.markSlotBooked(slotId);  //it call another service to check if the slot is still available and if available it returns true
 	    if(!bookslot)
 	    	throw new RuntimeException("Slot Already Booked");
 	    appointment.setStatus("booked");
@@ -120,15 +121,15 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	@Override
 	public List<BookAppointment> getAllAppointments() {
 		List<BookAppointment> appointments = repo.findAll();
-		for (BookAppointment appointment : appointments) {
-		    DoctorDTO doctor = authService.getDoctorById(appointment.getDoctorId());
-		    appointment.setDoctor(doctor);
-		    appointment.setDoctorName(doctor.getName());
-
-		    PatientDTO patient = authService.getPatientById(appointment.getPatientId());
-		    appointment.setPatient(patient);
-		    appointment.setPatientName(patient.getPatientName());
-		}
+//		for (BookAppointment appointment : appointments) {
+//		    DoctorDTO doctor = authService.getDoctorById(appointment.getDoctorId());
+//		    appointment.setDoctor(doctor);
+//		    appointment.setDoctorName(doctor.getName());
+//
+//		    PatientDTO patient = authService.getPatientById(appointment.getPatientId());
+//		    appointment.setPatient(patient);
+//		    appointment.setPatientName(patient.getPatientName());
+//		}
 		return appointments;
 	}
 

@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class AvailabilitySlotDTO {
 	private int id;
 	private int doctorId;
-	private String doctorName;  //need to add in project
+	private String doctorName; 
 	private LocalDate date;
 	private LocalTime startTime;
 	private LocalTime endTime;

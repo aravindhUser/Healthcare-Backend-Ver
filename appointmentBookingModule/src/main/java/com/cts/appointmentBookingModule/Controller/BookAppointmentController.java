@@ -86,13 +86,13 @@ public class BookAppointmentController {
 	   
 	   @GetMapping("/doctor/fetch/{docId}")
 	   public List<AppointmentDTO> getAppointmentsDoctor(@PathVariable("docId") int docId){
-		   log.info("API Call: Fetch all appointments for doctor");
+		   log.info("API Call: Fetch all appointments for specific doctor");
 		   return service.getAppointmentsDoctor(docId);
 	   }
 	   
 	   @GetMapping("doctor/get/{aptId}")
 	   public AppointmentDTO fetchAppointmentForDoctor(@PathVariable("aptId") int aptId) {
-		   log.info("API Call: Fetch appointment by appointmentId");
+		   log.info("API Call: Fetches a specific appointment by appointmentId");
 		   return service.fetchByDoctor(aptId);
 	   }
 	   
