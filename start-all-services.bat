@@ -23,6 +23,8 @@ echo Starting AuthService...
 start "AuthService" cmd /k "cd /d %~dp0AuthService && %MAVEN_PATH% spring-boot:run"
 timeout /t %DELAY% /nobreak >nul
 
+
+
 echo Starting DoctorAvailabilityManagement...
 start "DoctorAvailablityManagement" cmd /k "cd /d %~dp0DoctorAvailablityManagement && %MAVEN_PATH% spring-boot:run"
 timeout /t %DELAY% /nobreak >nul
