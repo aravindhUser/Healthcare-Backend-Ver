@@ -35,12 +35,12 @@ class NotificationServiceTests {
         sampleNotification.setAppointmentId(100);
         sampleNotification.setDate(LocalDate.of(2025, 11, 5));
         sampleNotification.setStartTime(LocalTime.of(10, 30));
-        sampleNotification.setDoctorName("Strange");
-        sampleNotification.setPatientName("John Doe");
+        sampleNotification.setDoctorName("Salamanca");
+        sampleNotification.setPatientName("Hank");
     }
 
-    // ✅ Success scenarios
-
+    // Method cases
+    
     @Test
     void testNotifyBookedSuccess() {
         when(notificationRepo.save(any())).thenReturn(sampleNotification);
@@ -94,7 +94,7 @@ class NotificationServiceTests {
         verify(notificationRepo).findByDoctorIdOrderByTimestampDesc(2);
     }
 
-    // ❌ Exception scenarios
+    //Exception cases
 
     @Test
     void testNotifyBookedThrowsProcessingException() {
