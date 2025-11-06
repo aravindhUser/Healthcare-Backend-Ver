@@ -77,6 +77,7 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 	
 	//Add Doctor Available Slots in the both the Tables 
 	public DoctorSlots addAvailablity(DoctorSlots freeSlot) {
+		System.out.println(freeSlot);
 		DoctorDTO doctor = getDoctor(freeSlot.getDoctorId());
 		
 	
