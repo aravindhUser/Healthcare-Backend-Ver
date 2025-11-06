@@ -15,11 +15,13 @@ import com.cts.AuthService.dto.SignupReq;
 import com.cts.AuthService.service.AuthService;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/authentication")
 @AllArgsConstructor
 //@CrossOrigin
+@Slf4j
 public class AuthController {
 	
 	private final AuthService authService;
@@ -30,7 +32,7 @@ public class AuthController {
 	{
 		
 		req.setRole(com.cts.AuthService.model.Role.DOCTOR);
-		System.out.println("Controller For Doctor Sign Up");
+		log.info("API Call : Controller For Doctor Sign Up");
 		authService.signup(req);
 		return ResponseEntity.ok("Doctor Profile Saved Successfully");
 	}
@@ -39,6 +41,7 @@ public class AuthController {
 	public ResponseEntity<String> registerPatient(@RequestBody SignupReq req)
 	{
 		req.setRole(com.cts.AuthService.model.Role.PATIENT);
+		log.info("API Call : Controller For Patient Sign Up");
 		authService.signup(req);
 		return ResponseEntity.ok("Patient Profile Saved Successfully");
 	}
@@ -46,7 +49,7 @@ public class AuthController {
 	@PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
-        System.out.println(response);
+        log.info("API Call : Controller for User Login");
         return ResponseEntity.ok(response);
     }
 	

@@ -63,7 +63,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	    NotificationDTO noti = setNotification(app);
 	    try {
 	    	notiClient.appointmentBooked(noti);	
-	    }finally{
+	    }catch(Exception e){
 	    	log.warn("Failed to send Notification");
 	    }
 	    

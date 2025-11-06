@@ -12,7 +12,6 @@ import java.util.List;
  
 @RestController  
 @RequestMapping("/api/consultations")  
-//@CrossOrigin 
 @AllArgsConstructor  
 @Slf4j
 public class ConsultationController {  
