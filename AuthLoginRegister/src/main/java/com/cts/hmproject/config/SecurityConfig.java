@@ -1,5 +1,6 @@
+package com.cts.hmproject.config;
 
-package com.healthcare.Consultations.config;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.healthcare.Consultations.security.JwtFilter;
+import com.cts.hmproject.security.JwtFilter;
 
 //import com.cts.DoctorAvailablityManagement.security.JwtFilter;
 
@@ -29,7 +30,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/public/**", "/actuator/**").permitAll()
+                        .requestMatchers( "/actuator/**", "/doctor/getDoctor/**", "/patient/getPatient/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

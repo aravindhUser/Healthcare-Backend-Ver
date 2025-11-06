@@ -13,24 +13,31 @@ import com.cts.AuthService.repository.UserRepository;
 
 @Service 
 public class UserService implements UserDetailsService{
-
+	@Autowired
 	UserRepository repo;
 	
 	Role role;
 	
 	
+//	@Override
+//	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+//		User user = repo.findUserByEmail(email).orElse(null);
+//		
+//		if(user!=null && user.getRole().equals("DOCTOR")) {
+//			return new User(user.getEmail(), user.getPassword(), user.getRole());	
+//		}
+//		else if(user!=null && user.getRole().equals("PATIENT")) {
+//			return new User(user.getEmail(), user.getPassword(), user.getRole());	
+//		}
+//		
+//		throw new UsernameNotFoundException("User Not Found");
+//	}
+	
 	@Override
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-		User user = repo.findUserByEmail(email).orElse(null);
-		
-		if(user!=null && user.getRole().equals("DOCTOR")) {
-			return (UserDetails) new User(user.getEmail(), user.getPassword(), user.getRole());	
-		}
-		else if(user!=null && user.getRole().equals("PATIENT")) {
-			return (UserDetails) new User(user.getEmail(), user.getPassword(), user.getRole());	
-		}
-		
-		throw new UsernameNotFoundException("User Not Found");
+	    return repo.findUserByEmail(email)
+	        .orElseThrow(() -> new UsernameNotFoundException("User Not Found"));
 	}
+
 	    
 }

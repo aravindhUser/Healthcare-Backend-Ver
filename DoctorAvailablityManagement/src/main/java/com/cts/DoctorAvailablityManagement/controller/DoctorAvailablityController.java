@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.cts.DoctorAvailablityManagement.client.DoctorAuthService;
@@ -89,6 +90,7 @@ public class DoctorAvailablityController {
     	service.deleteAvailablity(slotId);
         return ResponseEntity.noContent().build();
     }
+    
     
     @DeleteMapping("/delete/appointment/{aptId}")
     public ResponseEntity<AppointmentDTO> deleteAppointmentByDoc(@PathVariable("aptId") int aptId) {
