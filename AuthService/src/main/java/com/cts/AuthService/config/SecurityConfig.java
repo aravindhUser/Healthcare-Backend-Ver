@@ -1,6 +1,7 @@
 package com.cts.AuthService.config;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -30,8 +31,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfig {
  
-    @Autowired
-    private JwtFilter jwtFilter;
+//    @Autowired
+//    private JwtFilter jwtFilter;
  
     @Autowired
     private UserDetailsService userDetailsService;
@@ -43,12 +44,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/authentication/signup/**", "/authentication/**").permitAll()
-//                .requestMatchers("/doctor/**").hasAnyAuthority("*")
-//                  .requestMatchers(HttpMethod.GET, "/patient/get/**").hasRole("PATIENT")
-//                  .requestMatchers(HttpMethod.GET, "/doctor/get/**").hasRole("DOCTOR")
                   .anyRequest().authenticated())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .authenticationProvider(authenticationProvider())
             .build();
     }
 
@@ -71,25 +69,24 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
  
     }
-//    
+    
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+    }
+
 //    @Bean
-//    CorsConfigurationSource corsConfigurationSource() {
+//    public CorsConfigurationSource corsConfigurationSource() {
 //        CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:4200")); // restrict to Angular dev server
-//        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//        configuration.setAllowedHeaders(Arrays.asList("*"));
+//        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+//        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+//        configuration.setAllowedHeaders(List.of("Content-Type", "Authorization"));
 //        configuration.setAllowCredentials(true);
 //
 //        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 //        source.registerCorsConfiguration("/**", configuration);
 //        return source;
 //    }
-
-    
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
 
 
  

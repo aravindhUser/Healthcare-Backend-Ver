@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.cts.AuthService.config.FeignClientConfig;
 //import com.cts.AuthService.config.FeignClientConfig;
 import com.cts.AuthService.dto.UserInfo;
 import com.cts.AuthService.dto.UserResponse;
 import com.cts.AuthService.model.User;
 import com.netflix.discovery.EurekaClientConfig;
 
-@FeignClient(name="APIGATEWAY")
-//,configuration=FeignClientConfig.class)
+@FeignClient(name="APIGATEWAY" ,configuration=FeignClientConfig.class)
 public interface UserClient {
 
 	@PostMapping("user/doctor/register")
