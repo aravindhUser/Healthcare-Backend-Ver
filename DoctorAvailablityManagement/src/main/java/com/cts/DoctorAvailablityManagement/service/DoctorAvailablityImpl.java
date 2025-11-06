@@ -200,7 +200,9 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 	}
 	
 	//Get Doctors By Feign Client.
+	
 	@Override
+
 	public DoctorDTO getDoctor(int id) {
 		if(doctorService.getDoctorById(id)==null) {
 			throw new DoctorSlotsException("Doctor Not Found From the Client");	
