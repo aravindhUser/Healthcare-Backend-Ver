@@ -118,6 +118,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
     	 
     }
 
+//    marked
 	@Override
 	public List<BookAppointment> getAllAppointments() {
 		List<BookAppointment> appointments = repo.findAll();
@@ -134,6 +135,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	}
 
 
+	// how the cancel is reflecting
 	@Override
 	public AppointmentDTO cancelAppointmentByDoctor(long appointmentId) {
 	    Optional<BookAppointment> optionalAppointment = repo.findById(appointmentId);
@@ -166,6 +168,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 	        appointment.setStatus("Cancel By Patient");
 	        repo.save(appointment);
 
+	        // send the cancelled slot id to the doctor service to mark the slot as available again
 	        boolean release = docService.cancelSlot(appointment.getSlotId());
 	        if (!release) {
 	            throw new RuntimeException("Failed to cancel the appointment");
@@ -206,7 +209,7 @@ public class BookAppointmentServiceImpl implements BookAppointmentService {
 		List<AppointmentDTO> docSlots = new ArrayList<>();
 		
 		for(BookAppointment ap : found) {
-			AppointmentDTO slot = new AppointmentDTO(ap);
+			AppointmentDTO slot = new AppointmentDTO(ap);  
 			
 			docSlots.add(slot);
 		}

@@ -29,17 +29,6 @@ public class AvailablitySlot {
     private LocalTime endTime;
     private boolean status;
     
-    public boolean setStatus(boolean status) {
-    	return this.status=status;
-    }
-    
-    public boolean getStatus() {
-    	return this.status;
-    }
-    
-    public boolean isStatus() {
-    	return this.status;
-    }
 
     @ManyToOne
     @JoinColumn(name = "doctor_slot_id")

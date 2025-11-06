@@ -4,6 +4,7 @@ package com.cts.hmproject.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,21 +25,11 @@ import lombok.AllArgsConstructor;
 @RestController
 @RequestMapping("doctor")
 @AllArgsConstructor
-//@CrossOrigin
 public class DoctorController {
 	
 	DoctorService service;
 	
-	
-	
-//	@PostMapping("register")
-//	public ResponseEntity<?> addUser(@RequestBody Doctor doctor)
-//	{
-//		Doctor savedDoctor = service.addUser(doctor);
-//		return ResponseEntity.ok(savedDoctor);
-//	}
-	
-	
+	//store the doctor details which they give during the registration
 	@PostMapping("/register")
 	public ResponseEntity<UserInfo> saveDoctor(@RequestBody UserInfo info)
 	{
@@ -46,28 +37,21 @@ public class DoctorController {
 		return ResponseEntity.ok().build();
 	}
 	
-	
+	//get the doctor details for the feign clients
 	@GetMapping("/{id}")
 	public DoctorDTO getDoctorById(@PathVariable int id) {
 		System.out.println("Called");
 		return service.getDoctorById(id);
 	}
 	
+	//get the list of doctor details for the feign clients
 	@GetMapping("/getAllDoctors")
 	public List<DoctorDTO> getAllDoctors(){
 		
 		return service.getAllDoctors();
 	}
 	
-//	@PostMapping("login")
-//	public ResponseEntity<?> login(@RequestBody Doctor doctor)
-//	{
-//		return ResponseEntity.ok(service.verify(doctor));
-//		
-//	}
-	
-
-//	@CrossOrigin(origins = "http://localhost:4200")
+	//store the doctor profiles
 	@PostMapping("profile/{doctorId}")
 	public  ResponseEntity<?> addProfile(@PathVariable int doctorId,@RequestBody Doctor up)
 	{
@@ -84,6 +68,8 @@ public class DoctorController {
 		
 	}
 	
+	//get the doctor profiles
+	@PreAuthorize("hasRole('DOCTOR')")
 	@GetMapping("get/{doctorId}")
 	public ResponseEntity<?> getProfile(@PathVariable int doctorId)
 	{
@@ -99,6 +85,7 @@ public class DoctorController {
 		}
 	}
 	
+	//get the Doctor Id and Doctor Name and send it to the feign client
 	@GetMapping("/getDoctor/{userId}")
 	public UserResponse getDoctor(@PathVariable int userId)
 	{

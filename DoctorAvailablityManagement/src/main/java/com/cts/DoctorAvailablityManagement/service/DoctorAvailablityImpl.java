@@ -158,9 +158,9 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 		if(al.isPresent()) {
 			System.out.println("You are present");
 			AvailablitySlot found = al.get();
-			System.out.println("Slot Details: "+ found.getStatus());
+			System.out.println("Slot Details: "+ found.isStatus());
 			found.setStatus(false);
-			System.out.println("Slot Details: "+ found.getStatus());
+			System.out.println("Slot Details: "+ found.isStatus());
 			availablityRepo.save(found);
 			return true;
 		}
@@ -200,7 +200,9 @@ public class DoctorAvailablityImpl implements DoctorAvailablityService{
 	}
 	
 	//Get Doctors By Feign Client.
+	
 	@Override
+
 	public DoctorDTO getDoctor(int id) {
 		if(doctorService.getDoctorById(id)==null) {
 			throw new DoctorSlotsException("Doctor Not Found From the Client");	

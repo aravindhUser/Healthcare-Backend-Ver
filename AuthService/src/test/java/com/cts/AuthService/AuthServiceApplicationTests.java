@@ -109,7 +109,7 @@ class AuthServiceApplicationTests {
         response.setName("Dr. Test");
 
         when(repo.findUserByEmail(request.getEmail())).thenReturn(Optional.of(user));
-        when(jwtService.generateToken(user.getEmail())).thenReturn("mocked-token");
+        when(jwtService.generateToken(user)).thenReturn("mocked-token");
         when(userClient.getDoctor(user.getUserId())).thenReturn(response);
 
         LoginResponse loginResponse = authService.login(request);

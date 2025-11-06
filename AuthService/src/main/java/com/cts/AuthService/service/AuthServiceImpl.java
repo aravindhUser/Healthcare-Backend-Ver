@@ -1,6 +1,10 @@
 package com.cts.AuthService.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+//import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +34,9 @@ public class AuthServiceImpl implements AuthService {
 	
 	@Autowired
 	JWTService jwtService;
+	
+	@Autowired
+	private AuthenticationManager authenticationManager;
 	
 	private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 	
@@ -98,18 +105,23 @@ public class AuthServiceImpl implements AuthService {
 		
 		log.info("Attempting login for email: {}", request.getEmail());
 		
-		User user = repo.findUserByEmail(request.getEmail())
-                .orElseThrow(() -> new CredentialsInvalidException("Invalid email"));
-//		System.out.println(encoder.getPassword()+user.getPassword());
-        if (!encoder.matches(request.getPassword(), user.getPassword())) {
-            throw new CredentialsInvalidException("Invalid Password");
-        }
-
+//		User user = repo.findUserByEmail(request.getEmail())
+//                .orElseThrow(() -> new CredentialsInvalidException("Invalid email"));
+//
+//        if (!encoder.matches(request.getPassword(), user.getPassword())) {
+//            throw new CredentialsInvalidException("Invalid Password");
+//        }
+		
+		Authentication authentication = authenticationManager.authenticate(
+		        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+		    );
+		    User user = (User) authentication.getPrincipal();
         // Generating token
-        String token = jwtService.generateToken(user.getEmail());
+        String token = jwtService.generateToken(user);
         log.debug("Generated token for {}: {}", user.getEmail(), token);
-
         
+
+        System.out.println(user+"uuuuuuuuuuuuuuu");
         UserResponse u = new UserResponse();
         //Doctor Login
         if ("DOCTOR".equalsIgnoreCase(user.getRole().name())) {
@@ -122,7 +134,7 @@ public class AuthServiceImpl implements AuthService {
         	u = userClient.getPatient(user.getUserId());
        }
         log.info("Login successful for userId: {}", user.getUserId());
-        return new LoginResponse(token, user.getUserId(), user.getRole(), "Login Successfull", u.getId(), u.getName());
+        return new LoginResponse(token, "Login Successfull", u.getId(), u.getName());
     }
 	
 		

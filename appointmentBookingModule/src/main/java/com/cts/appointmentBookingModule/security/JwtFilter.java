@@ -1,5 +1,4 @@
-package com.healthcare.Consultations.security;
-
+package com.cts.appointmentBookingModule.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -15,13 +15,15 @@ echo Starting APIGateway...
 start "APIGateway" cmd /k "cd /d %~dp0APIGateway && %MAVEN_PATH% spring-boot:run"
 timeout /t %DELAY% /nobreak >nul
 
+echo Starting UserService...
+start "UserService" cmd /k "cd /d %~dp0AuthLoginRegister && %MAVEN_PATH% spring-boot:run"
+timeout /t %DELAY% /nobreak >nul
+
 echo Starting AuthService...
 start "AuthService" cmd /k "cd /d %~dp0AuthService && %MAVEN_PATH% spring-boot:run"
 timeout /t %DELAY% /nobreak >nul
 
-echo Starting UserService...
-start "UserService" cmd /k "cd /d %~dp0AuthLoginRegister && %MAVEN_PATH% spring-boot:run"
-timeout /t %DELAY% /nobreak >nul
+
 
 echo Starting DoctorAvailabilityManagement...
 start "DoctorAvailablityManagement" cmd /k "cd /d %~dp0DoctorAvailablityManagement && %MAVEN_PATH% spring-boot:run"
