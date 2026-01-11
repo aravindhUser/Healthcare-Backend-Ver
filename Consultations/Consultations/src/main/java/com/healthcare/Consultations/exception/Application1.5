@@ -1,3 +1,26 @@
+InboxApiDetails
+-----------------------------------
+package com.infy.api.cloud.model;
+
+import java.sql.Timestamp;
+
+import lombok.Data;
+
+@Data
+public class InboxApiDetails {
+	private long apiId;
+	private String apiName;
+	private String productName;
+	private Long productId;
+	private String requestedBy;
+	private Timestamp requestedTimestamp;
+	private String apiVersion;
+	private String basePath;
+	private int apiGatewayId;
+
+}
+
+--------------------------------------------------------------------
 AdminDashboardController
 -------------------------------
 package com.infy.api.cloud.controller;
