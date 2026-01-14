@@ -1,0 +1,2389 @@
+ApiResourceLink
+------------------------------------------------------
+package com.infy.api.cloud.entity;
+
+import java.sql.Timestamp;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import lombok.Data;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+@Entity
+@Table(name = "api_resource_links", schema = "apicloud")
+@Data
+public class ApiResourceLink {
+
+    @Id
+    @SequenceGenerator(name = "APICLOUD.API_RESOURCE_LINKS_ID_SEQ", sequenceName = "APICLOUD.API_RESOURCE_LINKS_ID_SEQ", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "APICLOUD.API_RESOURCE_LINKS_ID_SEQ")
+    @Column(name = "link_id")
+    private Long linkId;
+
+    @Column(name = "api_family_id")
+    @JsonIgnore
+    private Long apiFamilyId;
+
+    @Column(name = "category_id")
+    private Long categoryId;
+
+    @Column(name = "subcategory_id")
+    private Long subcategoryId;
+
+    @Column(name = "title")
+    private String title;
+
+    @Column(name = "url")
+    private String url;
+
+    @Column(name = "created_ts")
+    @JsonIgnore
+    @CreationTimestamp
+    private Timestamp createdTs;
+
+    @Column(name = "updated_ts")
+    @JsonIgnore
+    @UpdateTimestamp
+    private Timestamp updatedTs;
+}
+---------------------------------------------
+ApiResponse
+-------------------
+
+package com.infy.api.cloud.entity;
+
+import java.sql.Timestamp;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonView;
+import com.infy.api.cloud.model.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+
+@Setter
+@Getter
+@ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ApiResponse {
+
+    private long apiId;
+
+
+    private String apiName;
+
+
+    private String apiDescription;
+
+
+    private String apiAdditionalInfo;
+
+
+    private String apiVersion;
+
+
+    private String specPath;
+
+
+    private Boolean status;
+
+
+    private String requestedBy;
+
+
+    private String nbSecurity;
+
+
+    private String nbSecurityType;
+
+
+    private Boolean nbCORS;
+
+
+    private Boolean nbCSRF;
+
+
+    private Boolean nbXSS;
+
+
+    private String sbSecurity;
+
+
+    private String sbSecurityType;
+
+
+    private boolean sbTarget;
+
+
+    private String sbTargetType;
+
+
+    private Boolean sbSSL;
+
+
+    private Long sequenceNumber;
+
+
+    private Boolean trending;
+
+
+    private long productId;
+
+    private Timestamp requestedTimestamp;
+
+
+    Extension extension;
+
+
+    private String productName;
+
+    private TagAssignments[] tagAssignments;
+
+    private String targetBasePath;
+
+    private List<Overrides> overrides;
+
+    private long apiGatewayId;
+
+    private List<TargetMappingGet> targetMapping;
+
+    private List<CpAttachedPlugins> cpAttachedPlugins;
+
+    private List<SpAttachedPlugins> spAttachedPlugins;
+
+    private String apiQuotaInterval;
+
+
+    private String appQuotaInterval;
+
+
+    private Long appQuotaLimit;
+
+
+    private Long apiQuotaLimit;
+
+    private SdkResponse[] sdks;
+
+    private String defaultPlanName;
+
+    private int defaultPlanId;
+
+    private String consumerType;
+
+
+    private String specType;
+
+
+    private String sbSpecType;
+
+
+    private String sbSpecPath;
+
+
+    private String nbAuthUrl;
+
+
+    private String nbTokenUrl;
+
+
+    private String nbRefreshUrl;
+
+
+    private String nbAuthScopes;
+
+
+    private String sbAuthUrl;
+
+
+    private String sbTokenUrl;
+
+
+    private String sbRefreshUrl;
+
+
+    private String sbAuthScopes;
+
+
+    private String sbRoutingLocation;
+
+
+    private String sbRoutingField;
+
+
+    private String sbRoutingPath;
+
+
+    private Integer payloadSizeLimit;
+
+
+    private String payloadSizeUnit;
+
+    private String basePath;
+
+
+    private String nbAuthLocation;
+
+
+    private String nbAuthField;
+
+
+    private String nbAuthPath;
+
+
+    private String sbAuthLocation;
+
+
+    private String sbAuthField;
+
+
+    private String sbAuthPath;
+
+
+    private Boolean responseCache;
+
+    private String alternateName;
+
+    private String additionalPluginRequirements;
+    private long requestId;
+
+    private Long teamId;
+
+
+    private String modality;
+
+    private Short capacity;
+
+    private List<Contacts> contacts;
+
+    private List<String> deployedEnvironments;
+    private String lifeCycleStage;
+
+    private String lifeCycleComment;
+    private List<String> intakeJIRAs;//Code for implementing PINXTSS-2546 and PINXTSS-2547
+    private Integer apiFamilyId;//Code for implementing PINXTSS-2695
+
+    private Boolean isLatest;//Code for implementing PINXTSS-2695
+
+    //	private CmdbAppMapping cmdbAppMapping; //Code for implementing PINXTSS-3021
+    private CmdbAppMappingResponse cmdbAppMapping; //Code for implementing PINXTSS-3021
+
+    private List<MonitoringInfoDTO> monitoringInfo;
+
+    private List<ApiResourceLink> apiResourceLinks; //Code for implementing APIMC-4344
+}
+
+----------------------------------------------------------------------------------------------
+
+ApiResourceLinkRepository
+------------------------------------
+
+package com.infy.api.cloud.repository;
+
+import com.infy.api.cloud.entity.ApiResourceLink;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+@Repository
+public interface ApiResourceLinkRepository extends JpaRepository<ApiResourceLink,Long> {
+    List<ApiResourceLink> findByApiFamilyIdOrderByCategoryIdAscSubcategoryIdAscLinkIdAsc(Integer apiFamilyId);  //Code for implementing APIMC-4344
+    //List<ApiResourceLink> findByApiFamilyId(Integer apiFamilyId);
+}
+
+--------------------------------------------------------------------------------------------------------------
+
+
+ApiController
+----------------------------------
+
+package com.infy.api.cloud.controller;
+
+
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.*;
+import java.util.regex.Pattern;
+
+import com.infy.api.cloud.exception.CustomErrorResponse;
+import com.infy.api.cloud.model.*;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.infy.api.cloud.entity.ApiFeedback;
+import com.infy.api.cloud.entity.ApiResponse;
+import com.infy.api.cloud.entity.SdkResponse;
+import com.infy.api.cloud.entity.TagAssignments;
+import com.infy.api.cloud.exception.RecordNotFoundException;
+import com.infy.api.cloud.model.ApiFeedbackRequest;
+import com.infy.api.cloud.model.ApiRatingRequest;
+import com.infy.api.cloud.model.ApiRequest;
+import com.infy.api.cloud.model.BulkSyncOnDemandRequest;
+import com.infy.api.cloud.model.ClientResponseDTO;
+import com.infy.api.cloud.model.DocumentSearchResponse;
+import com.infy.api.cloud.model.GatewayHostnameResponse;
+import com.infy.api.cloud.model.LightweightApiResp;
+import com.infy.api.cloud.repository.ApiRepository;
+import com.infy.api.cloud.service.ApiService;
+import com.infy.api.cloud.service.AppConfig;
+
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import static org.springframework.http.HttpStatus.*;
+
+@RequiredArgsConstructor
+@RestController
+@RequestMapping(value = "${app.context.path}")
+public class ApiController {
+
+
+    @Autowired
+    ApiService apiService;
+
+    @Autowired
+    ApiRepository apiRepository;
+
+    @Autowired(required = false)
+    AppConfig appConfig;
+
+    @Value(value = "${issuerString}")
+    private String issString;
+
+    @Value(value = "${isEditingDisabled:false}")
+    private Boolean isEditingDisabled;
+
+    private static final Logger logger = LoggerFactory.getLogger(ApiController.class);
+    private static final String LIGHTWEIGHT = "lightweight";
+    private static final String INVALID_APIID = "API ID cannot be null";
+    //	Code for implementing PINXTSS-2730 start
+    private static final String NOT_FOUND_ERROR = "Not Found";
+    private static final String BAD_REQUEST_ERROR = "Bad Request";
+//	Code for implementing PINXTSS-2730 end
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+
+    @PostMapping(value = "/apis")
+    public ResponseEntity<List<String>> createApi(
+            @RequestBody ApiRequest apiReq,
+            @RequestHeader(value = "X-JWT", required = false) String jwtToken,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) {
+        logger.info("Inside createApi method  with ApiRequest: {}", apiReq.toString());
+        if (jwtToken == null || jwtToken.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        ResponseEntity<List<String>> response = null;
+        try {
+            //loggedInAdminPost(jwtToken, apiReq.getProductId(), apiReq.getTagAssignments());
+            ResponseEntity<String> loggedInUserPostResponse = loggedInUserPost(jwtToken, apiReq.getProductId(), apiReq.getTagAssignments());
+
+            if (loggedInUserPostResponse.getStatusCode() == HttpStatus.FORBIDDEN) {
+                return new ResponseEntity<>(null, loggedInUserPostResponse.getStatusCode());
+            }
+
+            response = apiService.createNewApi(apiReq);
+        } catch (Exception ex) {
+            logger.info("Exception occurred in createApi :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occurred in createApi", ex);
+        }
+        return response;
+
+    }
+
+
+    @GetMapping("/apis/{apiId}")
+    public ResponseEntity getApiId(
+            @PathVariable("apiId") long id,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException, JsonMappingException, JsonProcessingException {
+        logger.info("Inside getApiId method :");
+        try {
+            return apiService.getApisWithTeamName(id);
+        } catch (Exception ex) {
+            logger.info("Exception occured in getApiId :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in getApiId", ex);
+        }
+    }
+
+    //	Code for implementing PINXTSS-2730 start
+    @GetMapping(value = "/apis/families/{apiFamilyId}/versions",produces = "application/json")
+    public ResponseEntity getVersions(
+            @PathVariable("apiFamilyId") Integer apiFamilyId,
+            @RequestParam(value = "status", required = false, defaultValue = "*") String status,//Code for implementing PINXTSS-2891
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException, IOException {
+        logger.info("Inside getVersions method :");
+        try {
+            return apiService.getVersions(apiFamilyId,status);//Code for implementing PINXTSS-2891. Added new paramenter status to getVersions().
+        }
+        catch(NullPointerException | NumberFormatException ex){
+            logger.error("Exception occurred in getVersions :", ex);
+            String message = "API Family Id information is missing or invalid";
+            return ResponseEntity.status(BAD_REQUEST).body(getVersionsErrorResponse(BAD_REQUEST.value(), BAD_REQUEST_ERROR, message, xTraceId));
+        }
+        catch (RecordNotFoundException ex){
+            logger.error("Exception occurred in getVersions :", ex);
+            String message = "No API versions found for the given apiFamilyId";
+            return ResponseEntity.status(NOT_FOUND).body(getVersionsErrorResponse(NOT_FOUND.value(), NOT_FOUND_ERROR, message, xTraceId));
+        }
+        catch (Exception ex) {
+            logger.error("Exception occurred in getVersions :", ex);
+            String error = "Internal Server Error";
+            String message = "An unexpected error occurred while trying to get versions of this API";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(getVersionsErrorResponse(INTERNAL_SERVER_ERROR.value(),error, message, xTraceId));
+        }
+    }
+
+    private CustomErrorResponse getVersionsErrorResponse(int status, String error,String message, String xTraceId) throws IOException{
+        return new CustomErrorResponse(status,error,message,xTraceId);
+    }
+//	Code for implementing PINXTSS-2730 end
+
+
+    @GetMapping("/apis/{apiId}/clients")
+    public ClientResponseDTO getClientsByApiId(
+            @PathVariable("apiId") Long apiId,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside getClientsByApiId method :");
+        if (apiId == null) {
+            throw new IllegalArgumentException(INVALID_APIID);
+        }
+        try {
+            return apiService.getClientsByApiId(apiId);
+        } catch(RecordNotFoundException e) {
+            throw new RecordNotFoundException(e.getMessage());
+        } catch (Exception ex) {
+            logger.info("Exception occured in getClientsByApiId :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "An unexpected error occured while trying to get clients for this API");
+        }
+    }
+
+    @GetMapping("/apis/availabilityCheck")
+    public ResponseEntity getApiAvailability(
+            @RequestParam(required = false) Long apiId,
+            @RequestParam(required = false) String apiName,
+            @RequestParam(required = false) String basePath,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String apiVersion,
+            @RequestParam(required = false) Long gatewayId,
+            @RequestParam(required = false) Integer apiFamilyId,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) {
+        logger.info("Inside getApiAvailability method:");
+        try {
+            return apiService.getApiWithAvailability(apiId, apiName, basePath, status, apiVersion, gatewayId, apiFamilyId);
+        } catch (Exception ex) {
+            logger.info("Exception occured in getApiAvailability :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in getApiAvailability", ex);
+        }
+    }
+
+
+    @PatchMapping("/apis/{apiId}")
+    public ResponseEntity createOrUpdateApi(
+            @PathVariable("apiId") long id,
+            @RequestParam(required = false) Boolean isSimpleEdit,
+            @RequestBody ApiRequest apiReq,
+            @RequestHeader(value = "X-JWT", required = false) String jwtToken,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId)
+            throws RecordNotFoundException {
+        logger.info("Inside createOrUpdateApi method with ApiRequest: {} ", apiReq.toString());
+        if (jwtToken == null || jwtToken.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        ResponseEntity responseEntity = null;
+        try {
+            //loggedInAdminPatch(jwtToken, id);
+            ResponseEntity<String> loggedInUserPatchResponse = loggedInUserPatch(jwtToken, id);
+
+            if (loggedInUserPatchResponse.getStatusCode() == HttpStatus.FORBIDDEN) {
+                return loggedInUserPatchResponse;
+            }
+
+            responseEntity = apiService.updateApi(id, apiReq, isSimpleEdit, xTraceId);
+        } catch (Exception ex) {
+            logger.info("Exception occured in createOrUpdateApi :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in createOrUpdateApi", ex);
+        }
+        return responseEntity;
+
+    }
+
+
+    @DeleteMapping("/internal-api/apis/{apiId}")
+    public ResponseEntity deleteApiId(
+            @PathVariable("apiId") long id,
+            @RequestHeader(value = "X-JWT", required = false) String jwtToken,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside deleteApiId method :");
+        if (jwtToken == null || jwtToken.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        try {
+            //loggedInAdmin(jwtToken);
+            return apiService.deleteApiWithId(id);
+        } catch (Exception ex) {
+            logger.info("Exception occured in deleteApiId :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in deleteApiId", ex);
+        }
+
+    }
+
+
+    @RequestMapping(value = "/apis", method = RequestMethod.GET)
+    public ResponseEntity<List<ApiResponse>> getApiAllTest(@RequestParam(required = false, name = "productId") Long productId,
+                                                           @RequestParam(required = false, name = "status") Boolean status,
+                                                           @RequestParam(required = false, name = "trending") Boolean trending,
+                                                           @RequestParam(required = false, name = "category")String category,
+                                                           @RequestParam(required = false, name = "limit")Long limit,
+                                                           @RequestParam(required = false, name = "apiName")String apiName,
+                                                           @RequestParam(required = false, name = "poUserId")String poUserId,
+                                                           @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+                                                           @RequestHeader(value = "x-trace-id", required = true) String xTraceId) throws Exception {
+        logger.info("Inside getApiAllTest method : ");
+        try {
+            return apiService.getApiMethod(productId, status, trending, apiName, poUserId,category,limit);
+        }  catch (Exception ex) {
+            logger.error("Exception occured in getApiAllTest :",ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Exception occured in getApiAllTest", ex);
+        }
+    }
+
+    @RequestMapping(value = "/apis", method = RequestMethod.GET, params="responseType")
+    public ResponseEntity<List<LightweightApiResp>> getLightWeightApiResponse(
+            @RequestParam(required = false, name = "status") Boolean status,
+            @RequestParam(required = false, name = "responseType")String responseType,
+            @RequestParam(required = false, name = "apiGatewayId") Long apiGatewayId,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id", required = true) String xTraceId) throws Exception {
+        logger.info("Inside getLightWeightApis method with responseType :{}", responseType);
+        ResponseEntity<List<LightweightApiResp>> response = null;
+        try {
+            if (responseType != null && responseType.equals(LIGHTWEIGHT)) {
+                response =  apiService.getLightWeightResp(status, apiGatewayId);
+            }
+        }  catch (Exception ex) {
+            logger.error("Exception occured in getLightWeightApis :",ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Exception occured in getApiAllTest", ex);
+        }
+        return response;
+    }
+
+
+    @GetMapping(value = "/apis/{apiId}/rating")
+    public ResponseEntity<List<String>> getApiRating(
+            @PathVariable("apiId") long id,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside getApiRating method :");
+        try {
+            return apiService.getApiRating(id);
+        } catch (Exception ex) {
+            logger.info("Exception occured in getApiRating :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in getApiRating", ex);
+        }
+    }
+
+
+    @PutMapping(value = "/apis/{apiId}/rating")
+    public ResponseEntity<List<String>> createOrUpdateApiRating(
+            @PathVariable("apiId") long id,
+            @RequestBody ApiRatingRequest apiRatingEntity,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside createOrUpdateApiRating method with ApiRatingRequest : {} ", apiRatingEntity.toString());
+        try {
+            return apiService.createOrUpdateApiRating(id, apiRatingEntity);
+        } catch (Exception ex) {
+            logger.info("Exception occured in createOrUpdateApiRating :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in createOrUpdateApiRating", ex);
+        }
+
+    }
+
+
+    @PostMapping(value = "/apis/{apiId}/feedback")
+    public ResponseEntity<List<String>> createApiFeedback(
+            @PathVariable("apiId") long id,
+            @RequestBody ApiFeedbackRequest apiFeedbackEntity,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside createApiFeedback method with ApiFeedbackRequest: {} ", apiFeedbackEntity.toString());
+        try {
+            return apiService.createApiFeedback(id, apiFeedbackEntity);
+        } catch (Exception ex) {
+            logger.info("Exception occured in createApiFeedback :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in createApiFeedback", ex);
+        }
+    }
+
+
+    @GetMapping(value = "/apis/{apiId}/feedback")
+    public ResponseEntity<List<ApiFeedback>> getApiFeedback(
+            @PathVariable("apiId") long id,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside getApiFeedback method  : ");
+        try {
+            return apiService.getApiFeedback(id);
+        } catch (Exception ex) {
+            logger.info("Exception occured in getApiFeedback :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in getApiFeedback", ex);
+        }
+    }
+
+
+    @PostMapping(value = "/apis/{apiId}/sdk")
+    public ResponseEntity<List<String>> createSdk(
+            @PathVariable("apiId") long id,
+            @RequestBody SdkResponse sdkReq,
+            @RequestHeader(value = "X-JWT", required = false) String jwtToken,
+            @RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+            @RequestHeader(value = "x-trace-id") String xTraceId) {
+        logger.info("Inside createSdk method with SdkRequest: {}", sdkReq.toString());
+        if (jwtToken == null || jwtToken.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        try {
+            loggedInAdmin(jwtToken);
+            return apiService.createSdk(id, sdkReq);
+        } catch (Exception ex) {
+            logger.info("Exception occured in createSdk :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in createSdk", ex);
+        }
+
+
+    }
+
+    // gateway hostname calls-
+    @GetMapping(value = "/gateway")
+    public ResponseEntity<List<GatewayHostnameResponse>> getAllGatewayInfo(
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside getGatewayInfo method  : ");
+        try {
+            return apiService.getAllGatewayInfo();
+        } catch (Exception ex) {
+            logger.error("Exception occured in getGatewayInfo :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in getGatewayInfo", ex);
+        }
+    }
+
+    @GetMapping(value = "/gateway/{gatewayId}")
+    public ResponseEntity<GatewayHostnameResponse> getGatewayById(
+            @PathVariable int gatewayId,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside getGatewayById method  : ");
+        try {
+            return apiService.getGatewayById(gatewayId);
+        } catch (Exception ex) {
+            logger.error("Exception occured in getGatewayInfo :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in getGatewayById", ex);
+        }
+    }
+
+    @PostMapping("/apis/internal-api/bulksync")
+    public ResponseEntity bulkSync(
+            @RequestHeader(value = "X-JWT", required = false) String jwtToken,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside bulksync new logger method :");
+        if (jwtToken == null || jwtToken.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        loggedInAdmin(jwtToken);
+        try {
+            return apiService.bulkSyncOfApisToOpenSearch(xTraceId);
+        } catch (Exception ex) {
+            logger.error("Exception occured in bulksync :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+        }
+
+    }
+
+    @PostMapping("/apis/internal-api/bulksync/ondemand")
+    public ResponseEntity bulkSyncOnDemand(
+            @RequestHeader(value = "X-JWT", required = false) String jwtToken,
+            @RequestBody BulkSyncOnDemandRequest bulkSyncOnDemandRequest,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException {
+        logger.info("Inside bulksync method :");
+        if (jwtToken == null || jwtToken.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        loggedInAdmin(jwtToken);
+        if (bulkSyncOnDemandRequest == null) {
+            return new ResponseEntity<>("Request body is missing", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            return apiService.bulkSyncOfApisToOpenSearch(bulkSyncOnDemandRequest, xTraceId);
+        } catch (Exception ex) {
+            logger.error("Exception occured in bulkSyncOnDemand :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+        }
+
+    }
+
+    @GetMapping("/apis/opensearch")
+    public ResponseEntity<DocumentSearchResponse> openSearch(
+            @RequestParam(required = false) Integer pageNum,
+            @RequestParam(required = false) Integer pageSize,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortOrder,
+            @RequestHeader(value = "x-trace-id") String xTraceId,
+            @RequestParam(required = false) String must,
+            @RequestParam(required = false) String mustNot){
+
+        logger.info("Inside openSearch method:");
+        ResponseEntity<DocumentSearchResponse> response = null;
+        try {
+            if(must!=null && !must.isEmpty()){
+                if(!isJsonValid(must)){
+                    logger.info("Exception occurred in open search. Invalid must Json:{}",must);
+                    DocumentSearchResponse docResponse = new DocumentSearchResponse();
+                    docResponse.setStatus(HttpStatus.BAD_REQUEST.toString());
+                    docResponse.setDocuments(null);
+                    docResponse.setDetailedMessage("Invalid must json: ".concat(must));
+                    docResponse.setIndex(null);
+                    docResponse.setHighLevelError("Invalid Json");
+                    return ResponseEntity.badRequest().body(docResponse);
+                }
+            }
+            if(mustNot!=null && !mustNot.isEmpty()){
+                if(!isJsonValid(mustNot)){
+                    logger.info("Exception occurred in open search. Invalid mustNot Json:{}",mustNot);
+                    DocumentSearchResponse docResponse = new DocumentSearchResponse();
+                    docResponse.setStatus(HttpStatus.BAD_REQUEST.toString());
+                    docResponse.setDocuments(null);
+                    docResponse.setDetailedMessage("Invalid mustNot json: ".concat(mustNot));
+                    docResponse.setIndex(null);
+                    docResponse.setHighLevelError("Invalid Json");
+                    return ResponseEntity.badRequest().body(docResponse);
+                }
+            }
+//			Code for implementing PINXTSS-2634 start
+            boolean status = true;
+            JSONObject mustJson = new JSONObject();
+            if(must!=null && !must.isEmpty()){
+                mustJson = new JSONObject(must);
+            }
+            mustJson.put("status",status);
+            must = mustJson.toString();
+//			Code for implementing PINXTSS-2634 end
+            response = apiService.openSearch(pageNum,pageSize,sortBy,sortOrder,xTraceId,must,mustNot);
+            logger.info("GET search response :",response);
+            return response;
+        } catch (Exception ex) {
+            logger.info("Exception occurred in open search :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
+        }
+    }
+
+    //	Code for 4xx error handling start
+    private boolean isJsonValid(String json){
+        try{
+            objectMapper.readTree(json);
+            return true;
+        } catch (JsonProcessingException e) {
+            return false;
+        }
+    }
+//	Code for 4xx error handling end
+
+    public ResponseEntity<String> loggedInAdmin(String authToken) {
+        logger.info("Inside loggedInAdmin Method");
+        ArrayList<String> userRoleAndEmail = tokenValidation(authToken);
+
+        String userRole = userRoleAndEmail.get(0);
+
+        try {
+            logger.info("Inside loggedInAdmin JWT  userRole :");
+            if (userRole == null) {
+                userRole = "0";
+            }
+
+            if ("0".equals(userRole)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not Registered");
+            } else if (!"Admin".equals(userRole)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Does not have Admin Privileges");
+            }
+
+        } catch (Exception exception) {
+            logger.error("Inside loggedInAdmin JWT Catch Block :",exception);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, exception.getMessage());
+        }
+
+        return new ResponseEntity<>(userRole, HttpStatus.OK);
+    }
+
+
+    //public ResponseEntity<String> loggedInAdminPost(String authToken, Long productId, TagAssignments[] tagAssignments) {
+    public ResponseEntity<String> loggedInUserPost(String authToken, Long productId, TagAssignments[] tagAssignments) {
+        logger.info("Inside loggedInUserPost Method");
+        ArrayList<String> userRoleAndEmail = tokenValidation(authToken);
+
+        String userRole = userRoleAndEmail.get(0);
+        String email = userRoleAndEmail.get(1);
+
+        try {
+            logger.info("Inside loggedInUserPost JWT   userRole :");
+
+            String productOwner = apiRepository.getProductOwner(productId);
+
+            List<String> domainOwnerNames = new ArrayList<>();
+            if (tagAssignments != null && tagAssignments.length > 0){
+                for (TagAssignments arr :tagAssignments) {
+
+                    if (arr.getTags() != null) {
+                        for (String tag :arr.getTags()) {
+                            domainOwnerNames.add(apiRepository.getDomainOwner(tag));
+                        }
+                    }
+                }
+            }
+
+
+            if (userRole == null) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not Registered");
+            } else if (Boolean.TRUE.equals(isEditingDisabled) && !("Admin".equals(userRole))) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            } else if ("Admin".equals(userRole) || "Developer".equals(userRole) || "OrgAdmin".equals(userRole) || "Manager".equals(userRole)) {
+                return new ResponseEntity<>(userRole, HttpStatus.OK);
+            } else if (!"Admin".equals(userRole) && !"Developer".equals(userRole) && !"OrgAdmin".equals(userRole) || !"Manager".equals(userRole)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Does not have required Privileges");
+            }
+
+            if (email.equals(productOwner)) {
+                return new ResponseEntity<>(productOwner, HttpStatus.OK);
+            }
+
+            if (domainOwnerNames.contains(email)) {
+                return new ResponseEntity<>(email, HttpStatus.OK);
+            }
+
+        }
+        catch (Exception exception) {
+            logger.error("Inside loggedInUserPost JWT  Catch Block :");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, exception.getMessage());
+        }
+
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Does not have required Privileges");
+    }
+
+    //public ResponseEntity<String> loggedInAdminPatch(String authToken, long apiId) {
+    public ResponseEntity<String> loggedInUserPatch(String authToken, long apiId) {
+        logger.info("Inside loggedInUserPatch Method");
+        ArrayList<String> userRoleAndEmail = tokenValidation(authToken);
+
+        String userRole = userRoleAndEmail.get(0);
+        String email = userRoleAndEmail.get(1);
+
+        try {
+            String productOwner = apiRepository.getProductOwner(apiRepository.getProductId(apiId));
+
+            List<String> domainOwnerNames = new ArrayList<>();
+
+
+            String tag = apiRepository.getTags(apiId);
+            if (tag != null && !tag.isEmpty()){
+
+
+                String[] arrOfStr = tag.split("\\^");
+
+                for (int k = 0; k < arrOfStr.length; k++) {
+                    String[] valArr = arrOfStr[k].split("\\|");
+                    for (int i = 0; i < valArr.length; i++) {
+                        String[] tagnm;
+                        tagnm = valArr[1].split("~");
+                        for (String tagval :tagnm)
+                            domainOwnerNames.add(apiRepository.getDomainOwner(tagval));
+
+                    }
+                }
+            }
+
+            String reqBy = apiRepository.getRequestedBy(apiId);
+
+            if (userRole == null) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not Registered");
+            } else if (Boolean.TRUE.equals(isEditingDisabled) && !("Admin".equals(userRole))) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            } else if ("Admin".equals(userRole) || "Developer".equals(userRole) || "Manager".equals(userRole) || "OrgAdmin".equals(userRole)) {
+                return new ResponseEntity<>(userRole, HttpStatus.OK);
+            } else if (!"Admin".equals(userRole) && !"Developer".equals(userRole) && !"OrgAdmin".equals(userRole) && !"Manager".equals(userRole)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User doesn't have the required privileges");
+            }
+
+            if (email.equals(productOwner)) {
+                return new ResponseEntity<>(productOwner, HttpStatus.OK);
+            } else if (domainOwnerNames.contains(email)) {
+                return new ResponseEntity<>(email, HttpStatus.OK);
+            } else if (reqBy.equals(email)) {
+                return new ResponseEntity<>(email, HttpStatus.OK);
+            }
+
+
+        }
+        catch (Exception exception) {
+            logger.error("Inside loggedInUserPatch JWT  Catch Block :");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, exception.getMessage());
+        }
+
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Does not have required Privileges");
+    }
+
+    public ArrayList<String> tokenValidation(String authToken) {
+        String token = authToken;
+        String[] tokenArray = token.split("\\.");
+        String tokenHeader = tokenArray[0];
+        String tokenPayload = tokenArray[1];
+
+        String userRole = null;
+
+        ArrayList<String> userRoleAndEmail = new ArrayList<>();
+
+        try {
+            logger.info("Inside try block");
+            //Extracting Payload and validating JSON
+            logger.info("before decoding");
+            byte[] decodedPayload = Base64.getDecoder().decode(tokenPayload);
+            String decodedPayloadString = new String(decodedPayload);
+            logger.info("before validation");
+            boolean isValidPaylaod = this.isJSONValid(decodedPayloadString);
+            logger.info("after decoding");
+
+            //Extracting Values from JSON
+            JSONObject jsonObject = new JSONObject(decodedPayloadString);
+
+            String iss = jsonObject.getString("iss");
+            int exp = jsonObject.getInt("exp");
+            String email = jsonObject.getString("Email");
+            long currentTimestamp = Instant.now().getEpochSecond();
+
+            if (exp < currentTimestamp) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The token has expired");
+            }
+            if (iss == null) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Issuer Null");
+            } else if (!iss.equals(appConfig.getIssString())) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Issuer Mismatch");
+            }
+            email = email.toLowerCase();
+
+            userRole = apiRepository.getRole(email);
+
+            userRoleAndEmail.add(userRole);
+            userRoleAndEmail.add(email);
+
+        } catch (Exception exception) {
+            logger.info("Exception occured in loggedInInternalUser method :{}", exception.getMessage());
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, exception.getMessage());
+        }
+        return userRoleAndEmail;
+    }
+
+    public boolean isJSONValid(String jsonInString) {
+        try {
+            final ObjectMapper mapper = new ObjectMapper();
+            mapper.readTree(jsonInString);
+            return true;
+        }
+        catch (IOException e) {
+            return false;
+        }
+    }
+
+    //	Code for implementing PINXTSS-2705 start
+    @PostMapping("/apis/version-locks")
+    public ResponseEntity<VersionLockResponse> versionLocks(
+            @RequestHeader(value = "X-JWT", required = false) String jwtToken,
+            @RequestBody VersionLockRequest versionLockRequest,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws JsonProcessingException {
+        logger.info("Inside versionLocks method  with versionLockRequest: {}", versionLockRequest.toString());
+        if (jwtToken == null || jwtToken.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        ResponseEntity<VersionLockResponse> response = null;
+        String userId = getUserIdForVersionLock(jwtToken);
+        return apiService.createOrUpdateVersionLock(versionLockRequest,userId);
+    }
+
+    @DeleteMapping("/apis/version-locks/{apiId}")
+    public ResponseEntity<VersionLockResponse> deleteVersionLocks(
+            @PathVariable("apiId") Integer apiId,
+            @RequestHeader(value = "x-trace-id") String xTraceId) throws JsonProcessingException {
+        logger.info("Inside deleteVersionLocks method  with apiId: {}", apiId);
+        ResponseEntity<VersionLockResponse> response = null;
+        return apiService.deleteVersionLock(apiId);
+    }
+
+    public String getUserIdForVersionLock(String jwtToken){
+        logger.info("X-JWT:{}",jwtToken);
+        String[] tokenArray = jwtToken.split("\\.");
+        String tokenHeader = tokenArray[0];
+        String tokenPayload = tokenArray[1];
+        byte[] decodedPayload = Base64.getDecoder().decode(tokenPayload);
+        String decodedPayloadString = new String(decodedPayload);
+        logger.info("decodedPayloadString: {}",decodedPayloadString);
+        JSONObject jsonObject = new JSONObject(decodedPayloadString);
+        return jsonObject.getString("Email").toLowerCase();
+    }
+//	Code for implementing PINXTSS-2705 end
+
+    //	Code for implementing PINXTSS-3601 start
+    @GetMapping("/app/validate")
+    public ResponseEntity<CMDBAppValidationResponse> validateApp(@RequestHeader(value = "X-JWT", required = false) String jwtToken, @RequestParam(required = false) String appId,
+                                                                 @RequestParam(required = false) String appRefId, @RequestHeader(value = "x-trace-id", required = true) String traceId) {
+//		logger.info("Inside validateApp()");
+        return apiService.validateApp(appId, appRefId, traceId);
+    }
+//	Code for implementing PINXTSS-3601 end
+}
+
+---------------------------------------------------------------------------
+
+ApiService
+----------------------
+
+@Service
+@RequiredArgsConstructor
+public class ApiService {
+
+
+    private static final String BASEPATH_CANT_BE_CHANGED_FOR_MINOR_VERSION = "Client Basepath can't be changed for minor version upgrades of same API.";
+    private static final String ITDMINTAKE = "ITDMINTAKE";
+    private static final long PRIVATE_GATEWAY_ID = 99L;
+    private static final long NONE_GATEWAY_ID = 88L;
+    private static final long OTHER_GATEWAY_ID = 100L;
+
+    private static final String STATUS = "true";
+
+    private static final String TICKET_TYPE = "STORY";
+
+    private static final String RESOURCE = "Service";
+
+    //	Code for implementing PINXTSS-3601 start
+    @Value("${isCMDBInfoValidationEnabled:false}")
+    private boolean isCMDBInfoValidationEnabled;
+
+    @Value("${cmdb.service.url}")
+    private String cmdbServiceUrl;
+
+    @Value("${app.hostname}")
+    private String appHostname;
+
+    @Value("${specpath.urlPattern}")
+    private String specPathUrlPattern;
+
+    @Value("${sbspecBucketName}")
+    private String sbspecBucketName;
+
+    @Value("${nbspecBucketName}")
+    private String nbspecBucketName;
+
+    private static final Pattern APP_ID_PATTERN = Pattern.compile("^APP\\d{4}$");
+    private static final Pattern APP_REF_ID_PATTERN = Pattern.compile("^[A-Za-z0-9]{5}$");
+    private static final String INTERNALSERVERERROR = "Internal Server Error";
+    private static final String BADREQUEST = "Bad Request";
+    private static final String CMDB_VALIDATION_FEATURE_NOT_ENABLED="CMDB Validation feature not enabled";
+    private static final String INVALID_REQUEST_TO_CMDB_SERVICE="Invalid request to CMDB service";
+    private static final String CMDB_SERVICE_UNAVAILABLE="CMDB service temporarily unavailable";
+    private static final String UNEXPECTED_ERROR_CALLING_CMDB="Unexpected error calling CMDB service";
+    private static final String APPID_OR_APPREFID_MUST_BE_PRESENT="Either appId or appRefId must be present";
+    private static final String INVALID_APP_ID_FORMAT="Invalid AppId";
+    private static final String INVALID_APP_REF_ID_FORMAT="Invalid AppRefId";
+    private static final String VALID_INPUT="Valid Input";
+    @Autowired
+    private ObjectMapper objectMapper;
+
+//	Code for implementing PINXTSS-3601 end
+
+
+    @Autowired
+    ApiRepository apiRepository;
+
+    @Autowired
+    ApiContactsRepository apiContactsRepository;
+
+    @Autowired
+    GatewayHostnameRepository gatewayHostnameRepository;
+
+    @Autowired
+    ApiRatingRepository apiRatingRepository;
+
+    @Autowired
+    ApiFeedbackRepository apiFeedbackRepository;
+
+    @Autowired
+    ApiSdkRepository apiSdkRepository;
+
+    @Autowired
+    ApiPluginDataRepository apiPluginDataRepository;
+
+    @Autowired
+    ApiTargetMappingRepository apiTargetMappingRepository;
+
+    @Autowired
+    GatewayScopeRepository gatewayScopeRepository;
+
+    @Autowired
+    ClientRepository clientRepository;
+
+    @Autowired
+    ApiVersionLocksRepository apiVersionLocksRepository;//Code for implementing PINXTSS-2705
+
+    @Autowired
+    AdminDashboardRepository adminDashboardRepository;
+
+    @Autowired
+    TeamsRepository teamsRepository;
+
+
+    @Autowired
+    private ApiMonitoringInfoRepository monitoringInfoRepository;
+
+
+    @Autowired //Code for implementing PINXTSS-2695
+    ApifamiliesRepository apifamiliesRepository;
+
+     @Autowired
+    NativeSqlQuery sqlClass;
+
+    @Autowired
+    ModelMapper modelMapper;
+
+    @Autowired
+    ServiceClientTrackerRepository serviceClientTrackerRepository;
+
+    //	Code for implementing PINXTSS-3021 start
+    @Autowired
+    ApiToCmdbAppMappingRepository apiToCmdbAppMappingRepository;
+
+    @Autowired
+    private ApiResourceLinkRepository apiResourceLinkRepository;
+
+     @Autowired
+    NativeSqlQuery sqlClass;
+
+    @Autowired
+    ModelMapper modelMapper;
+
+    @Autowired
+    ServiceClientTrackerRepository serviceClientTrackerRepository;
+
+    //	Code for implementing PINXTSS-3021 start
+    @Autowired
+    ApiToCmdbAppMappingRepository apiToCmdbAppMappingRepository;
+
+    @Autowired
+    private ApiResourceLinkRepository apiResourceLinkRepository;
+
+    public ResponseEntity<List<String>> createNewApi(ApiRequest apiReq)
+            throws JsonMappingException, JsonProcessingException {
+        logger.info("Inside createNew Api method : {}", apiReq.toString());
+        Apis newEntity = new Apis();
+        try {
+            newEntity.setApiName(StringUtils.isEmpty(apiReq.getApiName()) ? "" : apiReq.getApiName());
+            logger.info(String.format("apiName: %1$s", apiReq.getApiName()));
+            newEntity.setApiDescription(
+                    StringUtils.isEmpty(apiReq.getApiDescription()) ? "" : apiReq.getApiDescription());
+            newEntity.setApiAdditionalInfo(
+                    StringUtils.isEmpty(apiReq.getApiAdditionalInfo()) ? "" : apiReq.getApiAdditionalInfo());
+            newEntity.setApiVersion(StringUtils.isEmpty(apiReq.getApiVersion()) ? "" : apiReq.getApiVersion());
+            newEntity.setRequestedBy(StringUtils.isEmpty(apiReq.getRequestedBy()) ? "" : apiReq.getRequestedBy());
+            if (StringUtils.isEmpty(apiReq.getProductId())) {
+                newEntity.setStatus(false);
+            } else {
+                newEntity.setStatus(apiReq.getStatus());
+            }
+            //
+            newEntity.setSpecPath(SpecPathUtil.extractFileName(apiReq.getSpecPath()));
+            //
+            newEntity.setNbSecurity(StringUtils.isEmpty(apiReq.getNbSecurity()) ? "" : apiReq.getNbSecurity());
+            newEntity.setNbSecurityType(
+                    StringUtils.isEmpty(apiReq.getNbSecurityType()) ? "" : apiReq.getNbSecurityType());
+            newEntity.setNbCORS(apiReq.getNbCORS());
+            newEntity.setNbCSRF(apiReq.getNbCSRF());
+            newEntity.setNbXSS(apiReq.getNbCORS());
+            newEntity.setSbSecurity(StringUtils.isEmpty(apiReq.getSbSecurity()) ? "" : apiReq.getSbSecurity());
+            newEntity.setSbSecurityType(
+                    StringUtils.isEmpty(apiReq.getSbSecurityType()) ? "" : apiReq.getSbSecurityType());
+            newEntity.setSbTarget(apiReq.getSbTarget());
+            newEntity.setSbTargetType(StringUtils.isEmpty(apiReq.getSbTargetType()) ? "" : apiReq.getSbTargetType());
+            newEntity.setSbSSL(apiReq.getSbSSL());
+            Long seqNumber = apiRepository.getMaxSeqNumber(apiReq.getProductId());
+            if (seqNumber != null) {
+                newEntity.setSequenceNumber(seqNumber + 1);
+            } else {
+                newEntity.setSequenceNumber(1L);
+            }
+            newEntity.setTrending(apiReq.getTrending());
+
+            newEntity.setApiQuotaInterval(
+                    StringUtils.isEmpty(apiReq.getApiQuotaInterval()) ? "" : apiReq.getApiQuotaInterval().toString());
+            newEntity.setAppQuotaInterval(
+                    StringUtils.isEmpty(apiReq.getAppQuotaInterval()) ? "" : apiReq.getAppQuotaInterval().toString());
+
+            newEntity.setApiQuotaLimit(apiReq.getApiQuotaLimit());
+
+            newEntity.setAppQuotaLimit(apiReq.getAppQuotaLimit());
+            newEntity.setConsumerType(apiReq.getConsumerType());
+            newEntity.setSpecType(apiReq.getSpecType());
+            newEntity.setSbSpecType(apiReq.getSbSpecType());
+            //
+            newEntity.setSbSpecPath(SpecPathUtil.extractFileName(apiReq.getSbSpecPath()));
+            //
+            newEntity.setNbAuthUrl(apiReq.getNbAuthUrl());
+            newEntity.setNbTokenUrl(apiReq.getNbTokenUrl());
+            newEntity.setNbRefreshUrl(apiReq.getNbRefreshUrl());
+            newEntity.setNbAuthScopes(apiReq.getNbAuthScopes());
+            newEntity.setSbAuthUrl(apiReq.getSbAuthUrl());
+            newEntity.setSbTokenUrl(apiReq.getSbTokenUrl());
+            newEntity.setSbRefreshUrl(apiReq.getSbRefreshUrl());
+            newEntity.setSbAuthScopes(apiReq.getSbAuthScopes());
+            newEntity.setSbRoutingLocation(apiReq.getSbRoutingLocation());
+            newEntity.setSbRoutingField(apiReq.getSbRoutingField());
+            newEntity.setSbRoutingPath(apiReq.getSbRoutingPath());
+            newEntity.setPayloadSizeLimit(apiReq.getPayloadSizeLimit());
+            newEntity.setPayloadSizeUnit(apiReq.getPayloadSizeUnit());
+            newEntity.setBasePath(apiReq.getBasePath());
+            newEntity.setNbAuthLocation(apiReq.getNbAuthLocation());
+            newEntity.setNbAuthField(apiReq.getNbAuthField());
+            newEntity.setNbAuthPath(apiReq.getNbAuthPath());
+            newEntity.setSbAuthLocation(apiReq.getSbAuthLocation());
+            newEntity.setSbAuthField(apiReq.getSbAuthField());
+            newEntity.setSbAuthPath(apiReq.getSbAuthPath());
+            newEntity.setResponseCache(apiReq.getResponseCache());
+            newEntity.setAlternateName(apiReq.getAlternateName());
+
+            List<Long> prodlist = new ArrayList<>();
+            prodlist = apiRepository.getAllProductId();
+            logger.info(" DB  call to fetch getAllProducts  prodList: {}", prodlist.toString());
+            String val = "";
+            if (apiReq.getTagAssignments() != null && apiReq.getTagAssignments().length > 0) {
+                for (TagAssignments arr : apiReq.getTagAssignments()) {
+                    String act = "";
+
+                    if (arr.getTags() != null) {
+                        for (String tag : arr.getTags()) {
+                            act += tag + "~";
+                        }
+                    } else {
+                        act = "";
+                    }
+                    act = act.substring(0, act.length() - 1);
+                    val += arr.getCategoryName() + "|" + act + "^";
+                }
+                val = val.substring(0, val.length() - 1);
+                newEntity.setTags(val);
+            } else {
+                newEntity.setTags(null);
+            }
+
+            if (apiReq.getProductId() != null && prodlist.contains(apiReq.getProductId())) {
+                newEntity.setProductId(apiReq.getProductId());
+            } else {
+                return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            }
+            logger.info("saving the api request : {}", newEntity.toString());
+
+            newEntity.setTargetBasePath(apiReq.getTargetBasePath());
+            newEntity.setAdditionalPluginRequirements(apiReq.getAdditionalPluginRequirements());
+            newEntity.setTeamId(apiReq.getTeamId());
+
+            newEntity.setModality(apiReq.getModality());
+
+            if (apiReq.getCapacity() != null) {
+                newEntity.setCapacity(apiReq.getCapacity());
+            }
+            if (apiReq.getDeployedEnvironments() != null && !apiReq.getDeployedEnvironments().isEmpty()) {
+                newEntity.setDeployedEnvironments(apiReq.getDeployedEnvironments());
+            }
+
+            if (apiReq.getLifeCycleStage() != null && !apiReq.getLifeCycleStage().isEmpty()) {
+                newEntity.setLifeCycleStage(apiReq.getLifeCycleStage());
+            }
+
+            if (apiReq.getLifeCycleComment() != null && !apiReq.getLifeCycleComment().isEmpty()) {
+                newEntity.setLifeCycleComment(apiReq.getLifeCycleComment());
+            }
+//			Code for implementing PINXTSS-2695 start
+//			validateVersion(newEntity.getApiVersion());// Commented code to implement validation removal for PINXTSS-3035
+            if (apiReq.getApiFamilyId() != null) {
+                newEntity.setApiFamilyId(apiReq.getApiFamilyId());
+            } else {
+                ApiFamilies apiFamily = new ApiFamilies();
+                apiFamily.setFamilyName(newEntity.getApiName());
+                apiFamily = apifamiliesRepository.save(apiFamily);
+                newEntity.setApiFamilyId(apiFamily.getApiFamilyId());
+            }
+            newEntity.setIsLatest(false);
+
+            //
+            List<ApiMonitoringInfo> monitoringInfos = new ArrayList<>();
+            if (apiReq.getMonitoringInfo() != null) {
+                for (MonitoringInfoDTO dto : apiReq.getMonitoringInfo()) {
+                    ApiMonitoringInfo info = modelMapper.map(dto, ApiMonitoringInfo.class);
+                    info.setApi(newEntity); // Set the owning API entity
+                    monitoringInfos.add(info);
+                }
+            }
+            newEntity.setMonitoringInfo(monitoringInfos);
+            //
+//			Code for implementing PINXTSS-2695 end
+            logger.info("saving newEntity with overrides object :{}", newEntity);
+            Apis api = apiRepository.save(newEntity);
+            createOrUpdateTargetMapping(apiReq, api);
+            createOrUpdateApiContacts(apiReq, api);
+
+            logger.info("Api persisted :{}", api.toString());
+            if (apiReq.getApiGatewayId() == 99 || apiReq.getApiGatewayId() == 88 || apiReq.getApiGatewayId() >= 100) {
+                logger.info("Skipping the saving of plugin data for the gateway id :{}", apiReq.getApiGatewayId());
+                logger.info("Skipping the saving of intakeJIRAs data for the gateway id :{}", apiReq.getApiGatewayId());//Code for implementing PINXTSS-2546 and PINXTSS-2547
+            } else {
+                savePluginData(apiReq, api);
+                logger.info("Saving intakeJIRAs for api:{}", api.getApiId());
+                saveIntakeJIRAs(apiReq, api);//Code for implementing PINXTSS-2546 and PINXTSS-2547
+            }
+
+            if (apiReq.getSdks() != null) {
+                SdkResponse[] sdkresponse = new SdkResponse[apiReq.getSdks().length];
+
+
+                for (int i = 0; i < apiReq.getSdks().length; i++) {
+                    ApiSdk apiSdk = new ApiSdk();
+                    apiSdk.setApiId(newEntity.getApiId());
+                    apiSdk.setSdkLanguage(apiReq.getSdks()[i].getSdkLanguage());
+                    apiSdk.setSdkURL(apiReq.getSdks()[i].getSdkURL());
+                    logger.info("saving the apiSdk: {}", apiSdk.toString());
+                    apiSdkRepository.save(apiSdk);
+                }
+            }
+
+//			Code for implementing PINXTSS-3021 start
+            CmdbAppMapping mapping = apiReq.getCmdbAppMapping();
+            if (mapping == null || mapping.getAppRefs() == null || mapping.getAppRefs().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "CMDB App Mapping and AppRefs cannot be null or empty");
+            }
+
+            String cmdbAppId = mapping.getCmdbAppId();
+            if (cmdbAppId == null || cmdbAppId.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "CMDB App ID cannot be null or empty");
+            }
+
+            for (ApiToCmdbAppMapping apiToCmdb : mapping.getAppRefs()) {
+                apiToCmdb.setCmdbAppId(cmdbAppId);
+                apiToCmdb.setApiId(api.getApiId());
+                apiToCmdb.setGatewayId(apiReq.getApiGatewayId());
+                logger.info("Saving Record to CMDB table:{}", apiToCmdb);
+                apiToCmdbAppMappingRepository.save(apiToCmdb);
+                logger.info("Record saved successfully to CMDB table:{}", apiToCmdb);
+            }
+//			Code for implementing PINXTSS-3021 end
+
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Exception occured while creating api details", ex);
+        }
+        Optional<GetApiRequest> entity = apiRepository.getAllApiById(newEntity.getApiId());
+        ApiResponse apientity = this.getEntityOpt(entity);
+        apientity.setContacts(getApiContactsByApiId(entity.get().getApiId()));
+        logger.info("Response ApiEntity : {}", apientity.toString());
+        return new ResponseEntity(apientity, HttpStatus.CREATED);
+    }
+     public void createOrUpdateApiContacts(ApiRequest apiReq, Apis api) {
+        logger.info("Inside createOrUpdateApiContacts, apiRequest: {}", apiReq);
+        try {
+            if (apiReq != null && api != null) {
+                apiContactsRepository.deleteContactsWhileUpdating(api.getApiId());
+                logger.info("Api id: {}", api.getApiId());
+                if (apiReq.getContacts() != null && !apiReq.getContacts().isEmpty()) {
+                    for (Contacts contacts : apiReq.getContacts()) {
+                        ApiContacts apiContacts = new ApiContacts();
+                        apiContacts.setApiId(api.getApiId());
+                        if (contacts.getContactType() != null) {
+                            apiContacts.setContactType(contacts.getContactType());
+                        }
+
+                        if (contacts.getTeamId() != null) {
+                            apiContacts.setTeamId(contacts.getTeamId());
+                        }
+
+                        apiContactsRepository.save(apiContacts);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Inside Catch Block of createOrUpdateApiContacts method: {}", e.getMessage());
+            throw new MethodFailureException(
+                    "Exception occurred in createOrUpdateApiContacts method: " + e.getMessage());
+        }
+    }
+    public ResponseEntity getApisWithTeamName(long id) throws JsonMappingException, JsonProcessingException {
+        logger.info("Inside getApiWithId method : ");
+        try {
+            Optional<GetApiRequest> entity = apiRepository.getAllApiById(id);
+            if (entity.isPresent()) {
+                ApiResponse apientity = this.getEntityOpt(entity);
+                apientity.setContacts(getApiContactsWithTeamName(entity.get().getApiId()));
+                logger.info("apientity object for response:{}", apientity);
+                return new ResponseEntity(apientity, HttpStatus.OK);
+
+            } else {
+                throw new RecordNotFoundException("No record exist for given id");
+            }
+        } catch (Exception e) {
+            logger.error("Exception occured in getApiWithId method:{}", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Exception occured in getApiWithId method:", e);
+        }
+    }
+
+    //	Code for implementing PINXTSS-2730 start
+    public ResponseEntity getVersions(Integer apiFamilyId, String status) throws RecordNotFoundException {//Code for implementing PINXTSS-2891. Added new paramenter status to getVersions().
+        logger.info("Inside getVersions method : ");
+        logger.info("Parameters recieved: apiFamilyId:{}, status:{}", apiFamilyId, status);//Code for implementing PINXTSS-2891
+//		Below code commented to implement PINXTSS-2891.
+//			List<Map<String, Object>> versionsDetailsList = apiRepository.findVersionsByApiFamilyId(apiFamilyId);
+//		Above code commented to implement PINXTSS-2891
+//		Code for implementing PINXTSS-2891 start
+        List<Map<String, Object>> versionsDetailsList = null;
+        if (status.equalsIgnoreCase(APPROVED)) {
+            logger.info("Fetching versions details for Approved apis for apiFamilyId: {}", apiFamilyId);
+            versionsDetailsList = apiRepository.findApprovedVersionsByApiFamilyId(apiFamilyId, APPROVED);
+        } else {
+            logger.info("Fetching versions details for all apis for given apiFamilyId:{}", apiFamilyId);
+            versionsDetailsList = apiRepository.findVersionsByApiFamilyId(apiFamilyId);
+        }
+//		Code for implementing PINXTSS-2891 end
+        if (!versionsDetailsList.isEmpty()) {
+            logger.info("versionsDetailsList not empty");
+            logger.info("versionsDetailsList:{}", versionsDetailsList);
+            List<VersionsDetails> resVersionsDetailsList = versionsDetailsList.stream().map(result -> new VersionsDetails(
+                    (Long) result.get("apiId"),
+                    (Long) result.get("requestId"),
+                    (String) result.get("version"),
+                    (Boolean) result.get("isLatest")
+            )).collect(Collectors.toList());
+            ApiFamiliesVersionsResponse response = new ApiFamiliesVersionsResponse();
+            response.setApiFamilyId(apiFamilyId);
+            response.setVersions(resVersionsDetailsList);
+            logger.info("ApiFamiliesVersionsResponse:{}", response);
+            return new ResponseEntity(response, HttpStatus.OK);
+
+        } else {
+            logger.info("versionsDetailsList is empty");
+            throw new RecordNotFoundException("No API versions found for the given apiFamilyId");
+        }
+    }
+//	Code for implementing PINXTSS-2730 end
+
+    @Transactional
+    public ResponseEntity getApiWithAvailability(Long apiId, String apiName, String basePath, String status,
+                                                 String apiVersion, Long gatewayId, Integer apiFamilyId) {
+        logger.info("Inside getApiWithAvailability method");
+        CheckAvailabilityResponse avail = new CheckAvailabilityResponse();
+        List<ApiMatch> list = new ArrayList<>();
+
+        List<GetAvailability> apis = new ArrayList<>();
+        ApiMatch match = new ApiMatch();
+        try {
+            if (apiName != null) {
+                apis = apiRepository.getFullMatchWithApiName(apiName.toLowerCase());
+            }
+            getFullMatches(apiId, apiName, basePath, apiVersion, avail, apis, match, gatewayId, status, apiFamilyId);
+            getPartialMatches(apiId, apiName, basePath, avail, list);
+        } catch (Exception ex) {
+            logger.info("Exception occured in getApiWithAvailability method :", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Exception occured in getApiWithAvailability method", ex);
+        }
+        return new ResponseEntity(avail, HttpStatus.OK);
+    }
+
+     @Transactional //Change to fix CMDB transactional rollback failure issue.
+    public ResponseEntity updateApi(long id, ApiRequest apiReq, Boolean isSimpleEdit, String xTraceId) throws JsonMappingException, JsonProcessingException {
+
+        logger.info("Inside updateApi method:");
+        Apis newEntity = null;
+        Optional<Apis> userDet = apiRepository.findById(id);
+        logger.info("Fetching userDet from DB :");
+        if (userDet.isPresent()) {
+            newEntity = userDet.get();
+//			Code for implementing PINXTSS-2695 start
+            if (apiReq.getApiFamilyId() == null || apiReq.getApiFamilyId().describeConstable().isEmpty()) {
+                logger.error("Invalid apiFamilyId:{}", apiReq.getApiFamilyId());
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid apiFamilyId");
+            }
+//			Code for implementing PINXTSS-2695 end
+            newEntity.setApiName(
+                    StringUtils.isEmpty(apiReq.getApiName()) ? newEntity.getApiName() : apiReq.getApiName());
+            newEntity.setApiDescription(StringUtils.isEmpty(apiReq.getApiDescription()) ? newEntity.getApiDescription()
+                    : apiReq.getApiDescription());
+            newEntity.setApiAdditionalInfo(
+                    StringUtils.isEmpty(apiReq.getApiAdditionalInfo()) ? newEntity.getApiAdditionalInfo()
+                            : apiReq.getApiAdditionalInfo());
+            newEntity.setApiVersion(
+                    StringUtils.isEmpty(apiReq.getApiVersion()) ? newEntity.getApiVersion() : apiReq.getApiVersion());
+            newEntity.setRequestedBy(
+                    StringUtils.isEmpty(apiReq.getRequestedBy()) ? newEntity.getRequestedBy().toLowerCase()
+                            : apiReq.getRequestedBy().toLowerCase());
+
+            if (apiReq.getStatus() != null) {
+                newEntity.setStatus(apiReq.getStatus());
+            }
+
+            newEntity.setSpecPath(
+                    StringUtils.isEmpty(apiReq.getSpecPath()) ? SpecPathUtil.extractFileName(newEntity.getSpecPath()) : SpecPathUtil.extractFileName(apiReq.getSpecPath()));
+
+            newEntity.setNbSecurity(
+                    StringUtils.isEmpty(apiReq.getNbSecurity()) ? newEntity.getNbSecurity() : apiReq.getNbSecurity());
+
+            newEntity.setNbSecurityType(StringUtils.isEmpty(apiReq.getNbSecurityType()) ? newEntity.getNbSecurityType()
+                    : apiReq.getNbSecurityType());
+
+            newEntity.setConsumerType(StringUtils.isEmpty(apiReq.getConsumerType()) ? newEntity.getConsumerType()
+                    : apiReq.getConsumerType());
+            newEntity.setSpecType(
+                    StringUtils.isEmpty(apiReq.getSpecType()) ? newEntity.getSpecType() : apiReq.getSpecType());
+            newEntity.setSbSpecType(
+                    StringUtils.isEmpty(apiReq.getSbSpecType()) ? newEntity.getSbSpecType() : apiReq.getSbSpecType());
+            newEntity.setSbSpecPath(
+                    StringUtils.isEmpty(apiReq.getSbSpecPath()) ? SpecPathUtil.extractFileName(newEntity.getSbSpecPath()) : SpecPathUtil.extractFileName(apiReq.getSbSpecPath()));
+
+            newEntity.setNbAuthUrl(
+                    StringUtils.isEmpty(apiReq.getNbAuthUrl()) ? newEntity.getNbAuthUrl() : apiReq.getNbAuthUrl());
+            newEntity.setNbTokenUrl(
+                    StringUtils.isEmpty(apiReq.getNbTokenUrl()) ? newEntity.getNbTokenUrl() : apiReq.getNbTokenUrl());
+            newEntity.setNbRefreshUrl(StringUtils.isEmpty(apiReq.getNbRefreshUrl()) ? newEntity.getNbRefreshUrl()
+                    : apiReq.getNbRefreshUrl());
+            newEntity.setNbAuthScopes(StringUtils.isEmpty(apiReq.getNbAuthScopes()) ? newEntity.getNbAuthScopes()
+                    : apiReq.getNbAuthScopes());
+            newEntity.setSbAuthUrl(
+                    StringUtils.isEmpty(apiReq.getSbAuthUrl()) ? newEntity.getSbAuthUrl() : apiReq.getSbAuthUrl());
+            newEntity.setSbTokenUrl(
+                    StringUtils.isEmpty(apiReq.getSbTokenUrl()) ? newEntity.getSbTokenUrl() : apiReq.getSbTokenUrl());
+            newEntity.setSbRefreshUrl(StringUtils.isEmpty(apiReq.getSbRefreshUrl()) ? newEntity.getSbRefreshUrl()
+                    : apiReq.getSbRefreshUrl());
+            newEntity.setSbAuthScopes(StringUtils.isEmpty(apiReq.getSbAuthScopes()) ? newEntity.getSbAuthScopes()
+                    : apiReq.getSbAuthScopes());
+            newEntity.setSbRoutingLocation(
+                    StringUtils.isEmpty(apiReq.getSbRoutingLocation()) ? newEntity.getSbRoutingLocation()
+                            : apiReq.getSbRoutingLocation());
+            newEntity.setSbRoutingField(StringUtils.isEmpty(apiReq.getSbRoutingField()) ? newEntity.getSbRoutingField()
+                    : apiReq.getSbRoutingField());
+            newEntity.setSbRoutingPath(StringUtils.isEmpty(apiReq.getSbRoutingPath()) ? newEntity.getSbRoutingPath()
+                    : apiReq.getSbRoutingPath());
+            if (apiReq.getPayloadSizeLimit() != null) {
+                newEntity.setPayloadSizeLimit(apiReq.getPayloadSizeLimit());
+            }
+            newEntity.setPayloadSizeUnit(
+                    StringUtils.isEmpty(apiReq.getPayloadSizeUnit()) ? newEntity.getPayloadSizeUnit()
+                            : apiReq.getPayloadSizeUnit());
+            newEntity.setBasePath(
+                    StringUtils.isEmpty(apiReq.getBasePath()) ? newEntity.getBasePath() : apiReq.getBasePath());
+            newEntity.setNbAuthLocation(StringUtils.isEmpty(apiReq.getNbAuthLocation()) ? newEntity.getNbAuthLocation()
+                    : apiReq.getNbAuthLocation());
+            newEntity.setNbAuthField(StringUtils.isEmpty(apiReq.getNbAuthField()) ? newEntity.getNbAuthField()
+                    : apiReq.getNbAuthField());
+            newEntity.setNbAuthPath(
+                    StringUtils.isEmpty(apiReq.getNbAuthPath()) ? newEntity.getNbAuthPath() : apiReq.getNbAuthPath());
+            newEntity.setSbAuthLocation(StringUtils.isEmpty(apiReq.getSbAuthLocation()) ? newEntity.getSbAuthLocation()
+                    : apiReq.getSbAuthLocation());
+            newEntity.setSbAuthField(StringUtils.isEmpty(apiReq.getSbAuthField()) ? newEntity.getSbAuthField()
+                    : apiReq.getSbAuthField());
+            newEntity.setSbAuthPath(
+                    StringUtils.isEmpty(apiReq.getSbAuthPath()) ? newEntity.getSbAuthPath() : apiReq.getSbAuthPath());
+            newEntity.setAlternateName(StringUtils.isEmpty(apiReq.getAlternateName()) ? newEntity.getAlternateName()
+                    : apiReq.getAlternateName());
+            if (apiReq.getResponseCache() != null) {
+                newEntity.setResponseCache(apiReq.getResponseCache());
+            }
+
+            if (apiReq.getApiQuotaInterval() != null) {
+                newEntity.setApiQuotaInterval(apiReq.getApiQuotaInterval().toString());
+            }
+            if (apiReq.getAppQuotaInterval() != null) {
+                newEntity.setAppQuotaInterval(apiReq.getAppQuotaInterval().toString());
+            }
+
+            if (apiReq.getNbCSRF() != null) {
+                newEntity.setNbCSRF(apiReq.getNbCSRF());
+            }
+
+            if (apiReq.getNbCORS() != null) {
+                newEntity.setNbCORS(apiReq.getNbCORS());
+            }
+
+            if (apiReq.getNbXSS() != null) {
+                newEntity.setNbXSS(apiReq.getNbXSS());
+            }
+
+            if (apiReq.getSbSSL() != null) {
+                newEntity.setSbSSL(apiReq.getSbSSL());
+            }
+            newEntity.setSbSecurity(
+                    StringUtils.isEmpty(apiReq.getSbSecurity()) ? newEntity.getSbSecurity() : apiReq.getSbSecurity());
+            newEntity.setSbSecurityType(StringUtils.isEmpty(apiReq.getSbSecurityType()) ? newEntity.getSbSecurityType()
+                    : apiReq.getSbSecurityType());
+
+            if (apiReq.getSbTarget() != null) {
+                newEntity.setSbTarget(apiReq.getSbTarget());
+            }
+            newEntity.setSbTargetType(StringUtils.isEmpty(apiReq.getSbTargetType()) ? newEntity.getSbTargetType()
+                    : apiReq.getSbTargetType());
+
+            if (apiReq.getSequenceNumber() != null) {
+                newEntity.setSequenceNumber(apiReq.getSequenceNumber());
+            }
+
+            if (apiReq.getApiQuotaLimit() != null) {
+                newEntity.setApiQuotaLimit(apiReq.getApiQuotaLimit());
+            }
+
+            if (apiReq.getAppQuotaLimit() != null) {
+                newEntity.setAppQuotaLimit(apiReq.getAppQuotaLimit());
+            }
+
+            if (apiReq.getTrending() != null) {
+                newEntity.setTrending(apiReq.getTrending());
+            }
+            if (apiReq.getTagAssignments() != null && apiReq.getTagAssignments().length > 0) {
+                String val = "";
+                for (TagAssignments arr : apiReq.getTagAssignments()) {
+                    String act = "";
+                    if (arr.getTags() != null) {
+                        for (String tag : arr.getTags()) {
+                            act += tag + "~";
+                        }
+                    } else {
+                        act = "";
+                    }
+                    act = act.substring(0, act.length() - 1);
+                    val += arr.getCategoryName() + "|" + act + "^";
+                }
+                val = val.substring(0, val.length() - 1);
+                newEntity.setTags(val);
+
+            } else {
+                newEntity.setTags(null);
+            }
+            if (apiReq.getProductId() != null) {
+                newEntity.setProductId(apiReq.getProductId());
+            }
+
+            if (!StringUtils.isEmpty(apiReq.getAdditionalPluginRequirements())) {
+                newEntity.setAdditionalPluginRequirements(apiReq.getAdditionalPluginRequirements());
+            }
+            if (apiReq.getTeamId() != null) {
+                newEntity.setTeamId(apiReq.getTeamId());
+            }
+
+            if (apiReq.getModality() != null) {
+                newEntity.setModality(apiReq.getModality());
+            }
+
+            if (apiReq.getCapacity() != null) {
+                newEntity.setCapacity(apiReq.getCapacity());
+            }
+            if (apiReq.getDeployedEnvironments() != null && !apiReq.getDeployedEnvironments().isEmpty()) {
+                newEntity.setDeployedEnvironments(apiReq.getDeployedEnvironments());
+            }
+            if (apiReq.getLifeCycleStage() != null && !apiReq.getLifeCycleStage().isEmpty()) {
+                newEntity.setLifeCycleStage(apiReq.getLifeCycleStage());
+            }
+            if (apiReq.getLifeCycleComment() != null && !apiReq.getLifeCycleComment().isEmpty()) {
+                newEntity.setLifeCycleComment(apiReq.getLifeCycleComment());
+            }
+        }
+//			validateVersion(newEntity.getApiVersion());// Code for implementing PINXTSS-2695// Commented code to implement validation removal for PINXTSS-3035
+        logger.info("saving the api request : {}", newEntity.toString());
+
+        newEntity.setTargetBasePath(apiReq.getTargetBasePath());
+        newEntity.setUpdatedTimestamp(new Timestamp(System.currentTimeMillis()));//Code for implementing PINXTSS-3142
+        logger.info("saving newEntity with overrides object :{}", newEntity);
+        //
+        updateMonitoringInfo(apiReq, newEntity);
+        //
+        Apis api = apiRepository.save(newEntity);
+//			Code for implementing PINXTSS-2695 start
+//			logger.info("updating isLatest information");
+//			String targetMajorVersion = getMajorVersion(api.getApiVersion());
+//			updateIsLatestForApis(api.getApiFamilyId(),targetMajorVersion);
+//			logger.info("isLatest information updated successfully for apiFamilyId: {} for major version: {}",api.getApiFamilyId(),targetMajorVersion);
+//			Code for implementing PINXTSS-2695 end
+        createOrUpdateTargetMapping(apiReq, api);
+        createOrUpdateApiContacts(apiReq, api);
+        logger.info("Api persisted :{}", api.toString());
+
+        if (apiReq.getApiGatewayId() == 99 || apiReq.getApiGatewayId() == 88 || apiReq.getApiGatewayId() >= 100) {
+            logger.info("Skipping the saving of plugin data for the gateway id :{}", apiReq.getApiGatewayId());
+            apiPluginDataRepository.deleteByApiId(id);
+        } else {
+            savePluginData(apiReq, api);
+            logger.info("Updating intakeJIRAs for api:{}", api.getApiId());
+            saveIntakeJIRAs(apiReq, api);//Code for implementing PINXTSS-2546 and PINXTSS-2547
+        }
+        dynamicScopeManagement(apiReq);
+        if (apiReq.getSdks() != null) {
+
+            for (int i = 0; i < apiReq.getSdks().length; i++) {
+                ApiSdk apiSdk = new ApiSdk();
+                apiSdk.setApiId(newEntity.getApiId());
+                apiSdk.setSdkLanguage(apiReq.getSdks()[i].getSdkLanguage());
+                apiSdk.setSdkURL(apiReq.getSdks()[i].getSdkURL());
+                logger.info("saving apiSdk   : {} ", apiSdk.toString());
+                apiSdkRepository.save(apiSdk);
+            }
+        }
+
+        Optional<GetApiRequest> entity = apiRepository.getAllApiById(newEntity.getApiId());
+        //		Code for implementing PINXTSS-3021 start
+        apiToCmdbAppMappingRepository.deleteByApiId(api.getApiId());
+        if (apiReq.getCmdbAppMapping() != null) {
+            List<ApiToCmdbAppMapping> apiToCmdbAppMappingList = apiReq.getCmdbAppMapping().getAppRefs();
+            if (apiToCmdbAppMappingList != null && !apiToCmdbAppMappingList.isEmpty()) {
+                for (ApiToCmdbAppMapping apiToCmdb : apiToCmdbAppMappingList) {
+                    apiToCmdb.setCmdbAppId(apiReq.getCmdbAppMapping().getCmdbAppId());
+                    apiToCmdb.setApiId(api.getApiId());
+                    apiToCmdb.setGatewayId(apiReq.getApiGatewayId());
+                    logger.info("Saving Record to CMDB table (update call):{}", apiToCmdb);
+                    apiToCmdbAppMappingRepository.save(apiToCmdb);
+                    logger.info("Record saved successfully to CMDB table (update call):{}", apiToCmdb);
+                }
+            } else {
+                ApiToCmdbAppMapping apiToCmdb = new ApiToCmdbAppMapping();
+                apiToCmdb.setCmdbAppId(apiReq.getCmdbAppMapping().getCmdbAppId());
+                apiToCmdb.setApiId(api.getApiId());
+                apiToCmdb.setGatewayId(apiReq.getApiGatewayId());
+                logger.info("Saving default CMDB mapping (no appRefs present):{}", apiToCmdb);
+                apiToCmdbAppMappingRepository.save(apiToCmdb);
+                logger.info("Default CMDB mapping saved successfully (no appRefs present):{}", apiToCmdb);
+            }
+            logger.info("All records saved successfully:{}", apiToCmdbAppMappingList);
+        }
+
+        //	Code for implementing PINXTSS-3021 end
+        logger.info("ApiId in entity: {}", entity.get().getApiId());
+        ApiResponse apientity = this.getEntityOpt(entity);
+        apientity.setContacts(getApiContactsByApiId(entity.get().getApiId()));
+        logger.info("Response from ApiService.updateApi method :{}", apientity.toString());
+
+        AdminDashboard adminDashboard = adminDashboardRepository.findByApiId(api.getApiId());
+        if (adminDashboard != null)//added condition for fixing NPE in patch apis/{apiId} flow
+        {
+            adminDashboard.setApiDetails(apientity);//Code for fixing Edit Page issue.
+        }
+        logger.info("AdminDashboard Object:{}", adminDashboard);
+        if (adminDashboard != null && adminDashboard.getStatus().equalsIgnoreCase("Approved") && isSimpleEdit != null && isSimpleEdit) {
+            logger.info("Update the API details in OpenSearch only when the isSimpleEdit flag is set to true.");
+            updateDocumentToOpenSearch(api, adminDashboard);
+        }
+        //
+//		Code for implementing PINXTSS-2695 start
+//			if(adminDashboard != null && adminDashboard.getStatus().equalsIgnoreCase(("Approved")) && isSimpleEdit==null){
+//				logger.info("updating isLatest information");
+//				String targetMajorVersion = getMajorVersion(api.getApiVersion());
+//				updateIsLatestForApis(api.getApiFamilyId(),targetMajorVersion);
+//				logger.info("isLatest information updated successfully for apiFamilyId: {} for major version: {}",api.getApiFamilyId(),targetMajorVersion);
+//				logger.info("Synchronizing documents in Open Search for isLatest.");
+//				syncIslatestApisToOpenSearch(xTraceId, targetMajorVersion, api.getApiFamilyId());
+//				logger.info("Documents synced in Open Search for isLatest successfully.");
+//			}
+//		Code for implementing PINXTSS-2695 end
+//		Code for implementing PINXTSS-3021 start
+        if (apientity.getCmdbAppMapping() != null) {
+            List<ApiToCmdbAppMappingResponse> apiToCmdbAppMappingResponseList = apientity.getCmdbAppMapping().getAppRefs();
+            CmdbAppMappingResponse cmdbAppMappingResponse = new CmdbAppMappingResponse();
+            cmdbAppMappingResponse.setCmdbAppId(apientity.getCmdbAppMapping().getCmdbAppId());
+            cmdbAppMappingResponse.setAppRefs(apiToCmdbAppMappingResponseList);
+            apientity.setCmdbAppMapping(cmdbAppMappingResponse);
+            logger.info("Response entity:{}", apientity);
+        }
+//		Code for implementing PINXTSS-3021 end
+        logger.info("returning object..");
+        return new ResponseEntity(apientity, HttpStatus.OK);
+    }
+
+    public void updateMonitoringInfo(ApiRequest apiReq, Apis newEntity) {
+        logger.info("Inside updateMonitoringInfo method:");
+
+        List<MonitoringInfoDTO> monitoringInfoList = apiReq.getMonitoringInfo();
+        if (monitoringInfoList == null || monitoringInfoList.isEmpty()) {
+            logger.info("Monitoring info is null or empty. Deleting all existing monitoring info.");
+
+            // Delete all existing monitoring info
+            List<ApiMonitoringInfo> existingLinks = monitoringInfoRepository.findByApiApiId(apiReq.getApiId());
+            for (ApiMonitoringInfo toDelete : existingLinks) {
+                monitoringInfoRepository.delete(toDelete);
+            }
+
+            newEntity.getMonitoringInfo().clear(); // Clear entity's monitoring info
+            return;
+        }
+
+        Map<Long, ApiMonitoringInfo> existingLinks = monitoringInfoRepository
+                .findByApiApiId(apiReq.getApiId())
+                .stream()
+                .collect(Collectors.toMap(ApiMonitoringInfo::getLinkId, Function.identity()));
+
+        List<ApiMonitoringInfo> updatedList = new ArrayList<>();
+
+        for (MonitoringInfoDTO dto : apiReq.getMonitoringInfo()) {
+            if (dto.getLinkId() != null && existingLinks.containsKey(dto.getLinkId())) {
+                ApiMonitoringInfo existing = existingLinks.get(dto.getLinkId());
+                modelMapper.map(dto, existing); // Update fields
+                updatedList.add(existing);
+                existingLinks.remove(dto.getLinkId());
+            } else {
+                ApiMonitoringInfo newInfo = modelMapper.map(dto, ApiMonitoringInfo.class);
+                newInfo.setApi(newEntity);
+                updatedList.add(newInfo);
+            }
+        }
+
+        // Delete remaining
+        for (ApiMonitoringInfo toDelete : existingLinks.values()) {
+            monitoringInfoRepository.delete(toDelete);
+        }
+
+        //newEntity.setMonitoringInfo(updatedList);
+        newEntity.getMonitoringInfo().clear(); // removes all existing entries
+        newEntity.getMonitoringInfo().addAll(updatedList); // adds updated/new entries
+    }
+     /* test method */
+    public ResponseEntity<List<ApiResponse>> getApiMethod(Long productId, Boolean status, Boolean trending,
+                                                          String apiName, String poUserId, String category, Long limit) throws Exception {
+        logger.info("Inside getApiMethod method:");
+
+        List<ApiResMod> value = sqlClass.getApis(productId, status, trending, apiName, poUserId, category, limit);
+
+        List<ApiResponse> apilst = new ArrayList<ApiResponse>();
+        for (ApiResMod entity : value) {
+            ApiResponse apientity = this.getEntity(entity);
+            apilst.add(apientity);
+
+        }
+        logger.info("apilst :{}  ", apilst.toString());
+        return new ResponseEntity<>(apilst, HttpStatus.OK);
+    }
+
+    public ResponseEntity<List<LightweightApiResp>> getLightWeightResp(Boolean status, Long apiGatewayId)
+            throws Exception {
+        logger.info("Inside getLightWeightResp");
+        List<LightweightApiResp> apiList = new ArrayList<>();
+        try {
+            if (apiGatewayId != null) {
+                logger.info("Getting the lightweight response of active apis with gateway id :{}", apiGatewayId);
+                apiList = apiRepository.findByGatewayId(String.valueOf(apiGatewayId), status);
+            } else {
+                apiList = apiRepository.getAllApis(status);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to get lightweight response of apis with status :{}", status);
+            throw e;
+        }
+        return new ResponseEntity<>(apiList, HttpStatus.OK);
+    }
+
+    public ApiResponse getEntity(ApiResMod entity) {
+
+        ApiResponse apientity = new ApiResponse();
+//		apientity.setApiAdditionalInfo(entity.getApiAdditionalInfo());
+//		apientity.setNbSecurityType(entity.getNbSecurityType());
+        apientity.setRequestedBy(entity.getRequestedBy());
+        apientity.setRequestId(entity.getRequestId());
+//		apientity.setNbSecurity(entity.getNbSecurity());
+        apientity.setApiId(entity.getApiId());
+        apientity.setApiVersion(entity.getApiVersion());
+        apientity.setApiName(entity.getApiName());
+//		apientity.setSequenceNumber(entity.getSeqNumber());
+        apientity.setStatus(entity.getStatus());
+//		apientity.setSpecPath(entity.getSpecPath());
+//		apientity.setNbCSRF(entity.getNbCSRF());
+//		apientity.setSbTarget(entity.getSbTarget());
+        apientity.setTrending(entity.getTrending());
+//		apientity.setSbSecurityType(entity.getSbSecurityType());
+//		apientity.setNbCORS(entity.getNbCORS());
+        apientity.setApiDescription(entity.getApiDescription());
+//		apientity.setSbSSL(entity.getSbSSL());
+        apientity.setProductId(entity.getProductId());
+//		apientity.setSbSecurity(entity.getSbSecurity());
+//		apientity.setNbXSS(entity.getNbXSS());
+//		apientity.setSbTargetType(entity.getSbTargetType());
+        apientity.setProductName(entity.getProductName());
+//		apientity.setRequestedTimestamp(entity.getRequestedTimestamp());
+//		apientity.setDefaultPlanId(entity.getDefaultPlanId());
+//		apientity.setDefaultPlanName(entity.getDefaultPlanName());
+//		apientity.setConsumerType(entity.getConsumerType());
+//		apientity.setSpecType(entity.getSpecType());
+//		apientity.setSbSpecType(entity.getSbSpecType());
+//		apientity.setSbSpecPath(entity.getSbSpecPath());
+//		apientity.setNbAuthUrl(entity.getNbAuthUrl());
+//		apientity.setNbTokenUrl(entity.getNbTokenUrl());
+//		apientity.setNbRefreshUrl(entity.getNbRefreshUrl());
+//		apientity.setNbAuthScopes(entity.getNbAuthScopes());
+//		apientity.setSbAuthUrl(entity.getSbAuthUrl());
+//		apientity.setSbTokenUrl(entity.getSbTokenUrl());
+//		apientity.setSbRefreshUrl(entity.getSbRefreshUrl());
+//		apientity.setSbAuthScopes(entity.getSbAuthScopes());
+//		apientity.setSbRoutingLocation(entity.getSbRoutingLocation());
+//		apientity.setSbRoutingField(entity.getSbRoutingField());
+//		apientity.setSbRoutingPath(entity.getSbRoutingPath());
+//		apientity.setPayloadSizeLimit(entity.getPayloadSizeLimit());
+//		apientity.setPayloadSizeUnit(entity.getPayloadSizeUnit());
+//		apientity.setBasePath(entity.getBasePath());
+//		apientity.setNbAuthLocation(entity.getNbAuthLocation());
+//		apientity.setNbAuthField(entity.getNbAuthField());
+//		apientity.setNbAuthPath(entity.getNbAuthPath());
+//		apientity.setSbAuthLocation(entity.getSbAuthLocation());
+//		apientity.setSbAuthField(entity.getSbAuthField());
+//		apientity.setSbAuthPath(entity.getSbAuthPath());
+//		apientity.setResponseCache(entity.getResponseCache());
+//		apientity.setAlternateName(entity.getAlternateName());
+
+        /*
+         * Extension extension=new Extension(); Long
+         * avgRating=apiRatingRepository.getAvgRating(entity.getApiId()); Long
+         * ratingCount=apiRatingRepository.getRatingCount(entity.getApiId()); Long
+         * feedbackCount=apiFeedbackRepository.getFeedbackCount(entity.getApiId());
+         * if(avgRating!=null) { extension.setAvgRating(avgRating);} else {
+         * extension.setAvgRating(0); } if(ratingCount!=null) {
+         * extension.setRatingCount(ratingCount); } else { extension.setRatingCount(0);
+         * } if(feedbackCount!=null) { extension.setFeedbackCount(feedbackCount); } else
+         * { extension.setFeedbackCount(0); }
+         *
+         * apientity.setExtension(extension);
+         */
+
+        Extension extension = new Extension();
+//		Long avgRating=entity.getAvgRating().longValue();
+//		Long ratingCount=entity.getRatingCount().longValue();
+//		Long feedbackCount=entity.getFeedbackCount().longValue();
+        if (entity.getAvgRating() != null) {
+            extension.setAvgRating(entity.getAvgRating().longValue());
+        } else {
+            extension.setAvgRating(0);
+        }
+        if (entity.getRatingCount() != null) {
+            extension.setRatingCount(entity.getRatingCount().longValue());
+        } else {
+            extension.setRatingCount(0);
+        }
+        if (entity.getFeedbackCount() != null) {
+            extension.setFeedbackCount(entity.getFeedbackCount().longValue());
+        } else {
+            extension.setFeedbackCount(0);
+        }
+
+        apientity.setExtension(extension);
+
+//		apientity.setApiQuotaInterval(entity.getApiQuotaInterval());
+//		apientity.setApiQuotaLimit(entity.getApiQuotaLimit());
+//		apientity.setAppQuotaInterval(entity.getAppQuotaInterval());
+//		apientity.setAppQuotaLimit(entity.getAppQuotaLimit());
+        String tag = entity.getTags();
+        if (tag != null) {
+
+            String[] arrOfStr = tag.split("\\^");
+
+            TagAssignments[] assignments = new TagAssignments[arrOfStr.length];
+            for (int k = 0; k < arrOfStr.length; k++) {
+                String[] valArr = arrOfStr[k].split("\\|");
+                for (int i = 0; i < valArr.length; i++) {
+                    TagAssignments tagval = new TagAssignments();
+                    tagval.setCategoryName(valArr[0]);
+                    String[] tagnm;
+                    tagnm = valArr[1].split("~");
+                    tagval.setTags(tagnm);
+                    assignments[k] = tagval;
+                }
+            }
+            apientity.setTagAssignments(assignments);
+        } else {
+            apientity.setTagAssignments(null);
+        }
+//		List<ApiSdk> sdklist=apiSdkRepository.findById(entity.getApiId().longValue());
+//
+//		SdkResponse[] sdkres=new SdkResponse[sdklist.size()];
+//		for(int i=0;i<sdkres.length;i++) {
+//			SdkResponse sdkvar=new SdkResponse();
+//			ApiSdk apisdk=sdklist.get(i);
+//			sdkvar.setSdkId(apisdk.getSdkId());
+//			sdkvar.setSdkLanguage(apisdk.getSdkLanguage());
+//			sdkvar.setSdkURL(apisdk.getSdkURL());
+//			sdkres[i]=sdkvar;
+//
+//		}
+//
+//		apientity.setSdks(sdkres);
+
+        return apientity;
+    }
+
+    public ApiResponse getEntityOpt(Optional<GetApiRequest> entity)
+            throws JsonMappingException, JsonProcessingException {
+        logger.info("Inside getEntityOpt method : ");
+        logger.info("Entity.getAPIFamilyId:{}", entity.get().getApiFamilyId());//Code for implementing PINXTSS-2695
+        logger.info("Entity.getIsLatest:{}", entity.get().getIsLatest());//Code for implementing PINXTSS-2695
+        ApiResponse apientity = new ApiResponse();
+        String nbspecPathFromDb = "";
+        String sbspecPathFromDb = "";
+        try {
+            if (entity.isPresent()) {
+                apientity.setApiFamilyId(entity.get().getApiFamilyId());//Code for implementing PINXTSS-2695
+                apientity.setIsLatest(entity.get().getIsLatest());//Code for implementing PINXTSS-2695
+                apientity.setApiAdditionalInfo(entity.get().getApiAdditionalInfo());
+                apientity.setNbSecurityType(entity.get().getNbSecurityType());
+                apientity.setRequestedBy(entity.get().getRequestedBy());
+                apientity.setNbSecurity(entity.get().getNbSecurity());
+                apientity.setApiId(entity.get().getApiId());
+                apientity.setApiVersion(entity.get().getApiVersion());
+                apientity.setApiName(entity.get().getApiName());
+                apientity.setSequenceNumber(entity.get().getSeqNumber());
+                apientity.setStatus(entity.get().getStatus());
+
+                //
+                nbspecPathFromDb = entity.get().getSpecPath();
+                constructAndSetSpecPath(apientity, nbspecPathFromDb, nbspecBucketName, ApiResponse::setSpecPath);
+                //
+
+                apientity.setNbCSRF(entity.get().getNbCSRF());
+                apientity.setSbTarget(entity.get().getSbTarget());
+                apientity.setTrending(entity.get().getTrending());
+                apientity.setSbSecurityType(entity.get().getSbSecurityType());
+                apientity.setNbCORS(entity.get().getNbCORS());
+                apientity.setApiDescription(entity.get().getApiDescription());
+                apientity.setSbSSL(entity.get().getSbSSL());
+                apientity.setProductId(entity.get().getProductId());
+                apientity.setSbSecurity(entity.get().getSbSecurity());
+                apientity.setNbXSS(entity.get().getNbXSS());
+                apientity.setSbTargetType(entity.get().getSbTargetType());
+                apientity.setProductName(entity.get().getProductName());
+                apientity.setRequestedTimestamp(entity.get().getRequestedTimestamp());
+                apientity.setConsumerType(entity.get().getConsumerType());
+                apientity.setSpecType(entity.get().getSpecType());
+                apientity.setSbSpecType(entity.get().getSbSpecType());
+
+                //
+                sbspecPathFromDb = entity.get().getSbSpecPath();
+                constructAndSetSpecPath(apientity, sbspecPathFromDb, sbspecBucketName, ApiResponse::setSbSpecPath);
+                //
+
+                apientity.setNbAuthUrl(entity.get().getNbAuthUrl());
+                apientity.setNbTokenUrl(entity.get().getNbTokenUrl());
+                apientity.setNbRefreshUrl(entity.get().getNbRefreshUrl());
+                apientity.setNbAuthScopes(entity.get().getNbAuthScopes());
+                apientity.setSbAuthUrl(entity.get().getSbAuthUrl());
+                apientity.setSbTokenUrl(entity.get().getSbTokenUrl());
+                apientity.setSbRefreshUrl(entity.get().getSbRefreshUrl());
+                apientity.setSbAuthScopes(entity.get().getSbAuthScopes());
+                apientity.setSbRoutingLocation(entity.get().getSbRoutingLocation());
+                apientity.setSbRoutingField(entity.get().getSbRoutingField());
+                apientity.setSbRoutingPath(entity.get().getSbRoutingPath());
+                apientity.setPayloadSizeLimit(entity.get().getPayloadSizeLimit());
+                apientity.setPayloadSizeUnit(entity.get().getPayloadSizeUnit());
+                apientity.setBasePath(entity.get().getBasePath());
+                apientity.setNbAuthLocation(entity.get().getNbAuthLocation());
+                apientity.setNbAuthField(entity.get().getNbAuthField());
+                apientity.setNbAuthPath(entity.get().getNbAuthPath());
+                apientity.setSbAuthLocation(entity.get().getSbAuthLocation());
+                apientity.setSbAuthField(entity.get().getSbAuthField());
+                apientity.setSbAuthPath(entity.get().getSbAuthPath());
+                apientity.setResponseCache(entity.get().getResponseCache());
+                apientity.setAlternateName(entity.get().getAlternateName());
+                apientity.setAdditionalPluginRequirements(entity.get().getAdditionalPluginRequirements());
+                apientity.setTeamId(entity.get().getTeamId());
+
+                apientity.setModality(entity.get().getModality());
+
+                if (entity.get().getCapacity() != null) {
+                    apientity.setCapacity(entity.get().getCapacity());
+                }
+                if (entity.get().getDeployedEnvironments() != null && !entity.get().getDeployedEnvironments().isEmpty()) {
+                    apientity.setDeployedEnvironments(entity.get().getDeployedEnvironments());
+                } else {
+                    apientity.setDeployedEnvironments(List.of());
+                }
+                if (entity.get().getLifeCycleStage() != null && !entity.get().getLifeCycleStage().isEmpty()) {
+                    apientity.setLifeCycleStage(entity.get().getLifeCycleStage());
+                }
+                if (entity.get().getLifeCycleComment() != null && !entity.get().getLifeCycleComment().isEmpty()) {
+                    apientity.setLifeCycleComment(entity.get().getLifeCycleComment());
+                }
+//Code for implementing APIMC-4344 start
+                try {
+
+                        List<ApiResourceLink> resourceLinks = apiResourceLinkRepository.
+                                findByApiFamilyIdOrderByCategoryIdAscSubcategoryIdAscLinkIdAsc(apientity.getApiFamilyId());
+                        logger.info("Fetched {} resource links for apiId={}, apiFamilyId={}",
+                                resourceLinks.size(), apientity.getApiId(),apientity.getApiFamilyId());
+                        logger.debug("Fetched resource links: {}", resourceLinks);
+                        apientity.setApiResourceLinks(resourceLinks);
+
+                }
+                catch (Exception e){
+                    logger.error("Failed to fetch resource links for apiId={}, apiFamilyId={}",
+                            apientity.getApiId(),apientity.getApiFamilyId(),e);
+
+                    apientity.setApiResourceLinks(Collections.emptyList());
+
+                }
+                //Code for implementing APIMC-4344 end
+//				Code for implementing PINXTSS-2546 and PINXTSS-2547 start
+//				if (entity.get().getIntakeJIRAs() != null && !entity.get().getIntakeJIRAs().isEmpty()) {
+                logger.info("apiId Value:{}", entity.get().getApiId());
+                String ticketType = "Intake Request";
+                List<ServiceClientTracker> serviceClientTrackers = serviceClientTrackerRepository.findByResourceIdAndTicketType(String.valueOf(entity.get().getApiId()), ticketType);
+                if (serviceClientTrackers != null) {
+                    logger.info("serviceClientTrackers:{}", serviceClientTrackers);
+                    List<String> intakeJIRAsList = new ArrayList<>();
+                    for (ServiceClientTracker sct : serviceClientTrackers) {
+                        intakeJIRAsList.add(sct.getKey());
+                    }
+                    logger.info("intakeJIRAsList:{}", intakeJIRAsList);
+                    apientity.setIntakeJIRAs(intakeJIRAsList);
+                    logger.info("getIntakeJIRAs:{}", apientity.getIntakeJIRAs());
+                }
+                Code for implementing PINXTSS-2546 and PINXTSS-2547 end
+                Extension extension = new Extension();
+                logger.info("DB call to fetch avgRating :");
+                Long avgRating = apiRatingRepository.getAvgRating(entity.get().getApiId());
+                logger.info("DB call to fetch ratingCount :");
+                Long ratingCount = apiRatingRepository.getRatingCount(entity.get().getApiId());
+                logger.info("DB call to fetch feedbackCount :");
+                Long feedbackCount = apiFeedbackRepository.getFeedbackCount(entity.get().getApiId());
+
+                if (avgRating != null) {
+                    extension.setAvgRating(avgRating);
+                } else {
+                    extension.setAvgRating(0);
+                }
+                if (ratingCount != null) {
+                    extension.setRatingCount(ratingCount);
+                } else {
+                    extension.setRatingCount(0);
+                }
+                if (feedbackCount != null) {
+                    extension.setFeedbackCount(feedbackCount);
+                } else {
+                    extension.setFeedbackCount(0);
+                }
+
+                apientity.setExtension(extension);
+                apientity.setApiQuotaInterval(entity.get().getApiQuotaInterval());
+                apientity.setApiQuotaLimit(entity.get().getApiQuotaLimit());
+                apientity.setAppQuotaInterval(entity.get().getAppQuotaInterval());
+                apientity.setAppQuotaLimit(entity.get().getAppQuotaLimit());
+                String tag = entity.get().getTags();
+                if (tag != null && !tag.isEmpty()) {
+
+                    String[] arrOfStr = tag.split("\\^");
+                    String[] arrOfTag;
+                    TagAssignments[] assignments = new TagAssignments[arrOfStr.length];
+                    for (int k = 0; k < arrOfStr.length; k++) {
+                        String[] valArr = arrOfStr[k].split("\\|");
+                        for (int i = 0; i < valArr.length; i++) {
+                            TagAssignments tagval = new TagAssignments();
+                            tagval.setCategoryName(valArr[0]);
+                            String[] tagnm;
+                            tagnm = valArr[1].split("~");
+                            tagval.setTags(tagnm);
+                            assignments[k] = tagval;
+                        }
+                    }
+                    apientity.setTagAssignments(assignments);
+                } else {
+                    apientity.setTagAssignments(new TagAssignments[0]);
+                }
+
+                List<ApiPluginData> apiPluginDataList = apiPluginDataRepository.findByApiId(entity.get().getApiId());
+                logger.info("ApiPluginDataList :{}", apiPluginDataList);
+                List<CpAttachedPlugins> cpAttachedPluginsList = new ArrayList<>();
+                List<SpAttachedPlugins> spAttachedPluginsList = new ArrayList<>();
+                Gson gson = new Gson();
+                if (apiPluginDataList != null && !apiPluginDataList.isEmpty()) {
+                    for (ApiPluginData pluginData : apiPluginDataList) {
+                        if (pluginData.getPluginType().equalsIgnoreCase(CLIENT_PLUGIN)) {
+                            CpAttachedPlugins cpAttachedPlugins = gson.fromJson(pluginData.getPluginData(),
+                                    CpAttachedPlugins.class);
+                            cpAttachedPluginsList.add(cpAttachedPlugins);
+                        } else if (pluginData.getPluginType().equalsIgnoreCase(SERVICE_PLUGIN)) {
+                            SpAttachedPlugins spAttachedPlugins = gson.fromJson(pluginData.getPluginData(),
+                                    SpAttachedPlugins.class);
+                            spAttachedPluginsList.add(spAttachedPlugins);
+                        }
+
+                    }
+                    apientity.setCpAttachedPlugins(cpAttachedPluginsList);
+                    apientity.setSpAttachedPlugins(spAttachedPluginsList);
+                } else {
+                    apientity.setCpAttachedPlugins(new ArrayList<>());
+                    apientity.setSpAttachedPlugins(new ArrayList<>());
+                }
+
+                List<TargetMappingGet> targetMappingGetResponse = new ArrayList<>();
+
+                List<ApiTargetMapping> apitargetMapping = apiTargetMappingRepository
+                        .getTargetMapping(entity.get().getApiId());
+                if (apitargetMapping != null && !apitargetMapping.isEmpty()) {
+                    logger.info("Fetching apitargetMapping from DB: {}", apitargetMapping);
+                    for (ApiTargetMapping tm : apitargetMapping) {
+                        if (tm.getOverrideInd() == null) {
+                            TargetMappingGet targetMappingGet = new TargetMappingGet();
+                            targetMappingGet.setMappingId(tm.getMappingId());
+                            targetMappingGet.setEnvId(tm.getEnvId());
+                            targetMappingGet.setEnvDesc(tm.getEnvDesc());
+                            targetMappingGet.setTargetURL(tm.getTargetURL());
+                            targetMappingGet.setOverrideInd(tm.getOverrideInd());
+                            targetMappingGet.setMethod(tm.getMethod());
+                            targetMappingGet.setOperation(tm.getResourceLocation());
+                            targetMappingGet.setCreateTs(tm.getCreateTs());
+                            targetMappingGet.setUpdateTs(tm.getUpdateTs());
+                            targetMappingGetResponse.add(targetMappingGet);
+                        }
+                    }
+
+                    Map<Object, List<ApiTargetMapping>> overridesByMethod = apitargetMapping.stream()
+                            .filter(tm -> (tm.getOverrideInd() != null && tm.getOverrideInd().equals(true)))
+                            .collect(Collectors.groupingBy(p -> Arrays.asList(p.getMethod(), p.getResourceLocation())));
+                    logger.info("Fetching overrides data : {}", overridesByMethod);
+
+                    List<Overrides> overridesList = new ArrayList<>();
+
+                    for (Entry<Object, List<ApiTargetMapping>> entry : overridesByMethod.entrySet()) {
+                        Overrides overrides = new Overrides();
+                        List<TargetURLOverride> targetUrlOverrideList = new ArrayList<>();
+
+                        for (ApiTargetMapping apiTargetMapping : entry.getValue()) {
+                            overrides.setMethod(apiTargetMapping.getMethod());
+                            overrides.setResourceLocation(apiTargetMapping.getResourceLocation());
+                            overrides.setOverrideInd(apiTargetMapping.getOverrideInd());
+                            TargetURLOverride targetURLOverride = new TargetURLOverride();
+                            targetURLOverride.setGatewayEnvId(apiTargetMapping.getEnvId());
+                            targetURLOverride.setTargetEnvDesc(apiTargetMapping.getEnvDesc());
+                            targetURLOverride.setTargetURL(apiTargetMapping.getTargetURL());
+                            targetUrlOverrideList.add(targetURLOverride);
+                            overrides.setTargetURLOverride(targetUrlOverrideList);
+
+                        }
+                        overridesList.add(overrides);
+                    }
+                    apientity.setOverrides(overridesList);
+                    apientity.setApiGatewayId(apitargetMapping.get(0).getApiGatewayId());
+                    apientity.setTargetMapping(targetMappingGetResponse);
+                } else {
+                    apientity.setOverrides(new ArrayList<>());
+                    apientity.setTargetMapping(new ArrayList<>());
+                }
+
+
+
+                apientity.setTargetBasePath(entity.get().getTargetBasePath());
+                List<ApiSdk> sdklist = apiSdkRepository.findById(entity.get().getApiId());
+                logger.info("sdklist :{}", sdklist.toString());
+                if (sdklist != null) {
+                    SdkResponse[] sdkres = new SdkResponse[sdklist.size()];
+                    for (int i = 0; i < sdkres.length; i++) {
+                        SdkResponse sdkvar = new SdkResponse();
+                        ApiSdk apisdk = sdklist.get(i);
+                        sdkvar.setSdkId(apisdk.getSdkId());
+                        sdkvar.setSdkLanguage(apisdk.getSdkLanguage());
+                        sdkvar.setSdkURL(apisdk.getSdkURL());
+                        sdkres[i] = sdkvar;
+
+                    }
+                    apientity.setSdks(sdkres);
+                }
+                // apientity.setContacts(getApiContacts(entity));
+//			Code for implementing PINXTSS-3021 start
+                List<ApiToCmdbAppMapping> appRefs = apiToCmdbAppMappingRepository.findByApiId(entity.get().getApiId());
+                String cmdbAppId = null;
+                List<ApiToCmdbAppMappingResponse> cmdbAppRefs = new ArrayList<>();
+                if (!appRefs.isEmpty()) {
+                    logger.info("AppRefs: {}", appRefs);
+                    cmdbAppId = appRefs.get(0).getCmdbAppId();
+                    for (ApiToCmdbAppMapping aref : appRefs) {
+                        ApiToCmdbAppMappingResponse apiToCmdbAppMappingResponse = new ApiToCmdbAppMappingResponse();
+                        apiToCmdbAppMappingResponse.setEnvId(aref.getEnvId());
+                        apiToCmdbAppMappingResponse.setEnvDesc(aref.getEnvDesc());
+                        logger.info("CMDB AppRefId: {}", aref.getCmdbAppRefId());
+                        apiToCmdbAppMappingResponse.setCmdbAppRefId(aref.getCmdbAppRefId());
+                        apiToCmdbAppMappingResponse.setRecId(aref.getRecId());
+                        cmdbAppRefs.add(apiToCmdbAppMappingResponse);
+                    }
+                    CmdbAppMappingResponse cmdbAppMappingResponse = new CmdbAppMappingResponse();
+                    cmdbAppMappingResponse.setAppRefs(cmdbAppRefs);
+                    cmdbAppMappingResponse.setCmdbAppId(cmdbAppId);
+                    logger.info("CMDB APP Mapping Details for apiId {}:{}", entity.get().getApiId(), cmdbAppMappingResponse);
+                    apientity.setCmdbAppMapping(cmdbAppMappingResponse);
+                } else {
+                    apientity.setCmdbAppMapping(null);
+                }
+                //
+                List<ApiMonitoringInfo> monitoringInfos = monitoringInfoRepository.findByApiApiId(entity.get().getApiId());
+
+                List<MonitoringInfoDTO> monitoringInfoDTOs = monitoringInfos.stream()
+                        .map(info -> modelMapper.map(info, MonitoringInfoDTO.class))
+                        .collect(Collectors.toList());
+
+                apientity.setMonitoringInfo(monitoringInfoDTOs);
+                //
+//			Code for implementing PINXTSS-3021 end
+                logger.info("apientity object logged for different fields:{}", apientity);
+
+
+                logger.info("apientity :{}", apientity.toString());
+            }
+        } catch (Exception e) {
+            logger.error("Unable to read the apis:", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to read the apis:", e);
+        }
+        return apientity;
+    }
+
+
+
