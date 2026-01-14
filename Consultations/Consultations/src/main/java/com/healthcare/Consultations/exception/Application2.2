@@ -1,0 +1,415 @@
+package com.infy.api.cloud.model;
+
+
+import java.sql.Timestamp;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+public class ApiResMod {
+
+
+	Long apiId;
+	String apiName;
+	String apiDescription;
+	String apiVersion;
+	String apiAdditionalInfo;
+	Long productId;
+	String productName;
+
+	Integer defaultPlanId;
+	Long requestId;
+	String defaultPlanName;
+	String requestedBy;
+	Timestamp requestedTimestamp;
+	Boolean status;
+	Boolean trending;
+	Long seqNumber;
+	String specPath;
+	String nbSecurity;
+	String nbSecurityType;
+	Boolean nbCORS;
+	Boolean nbCSRF;
+	Boolean nbXSS;
+	String tags;
+	String sbSecurity;
+	String sbSecurityType;
+	Boolean sbSSL;
+	Boolean sbTarget;
+	String sbTargetType;
+	Long apiQuotaLimit;
+	String apiQuotaInterval;
+	Long appQuotaLimit;
+	String appQuotaInterval;
+	String consumerType;
+	String specType;
+	String sbSpecType;
+	String sbSpecPath;
+	String nbAuthUrl;
+	String nbTokenUrl;
+	String nbRefreshUrl;
+	String nbAuthScopes;
+	String sbAuthUrl;
+	String sbTokenUrl;
+	String sbRefreshUrl;
+	String sbAuthScopes;
+	String sbRoutingLocation;
+	String sbRoutingField;
+	String sbRoutingPath;
+	Integer payloadSizeLimit;
+	String payloadSizeUnit;
+	String basePath;
+	String nbAuthLocation;
+	String nbAuthField;
+	String nbAuthPath;
+	String sbAuthLocation;
+	String sbAuthField;
+	String sbAuthPath;
+	Boolean responseCache;
+	String alternateName;
+	Double avgRating;
+	Double ratingCount;
+	Double feedbackCount;
+
+	@Override
+	public String toString() {
+		return "ApiResMod [apiId=" + apiId + ", apiName=" + apiName + ", apiDescription=" + apiDescription
+				+ ", apiVersion=" + apiVersion + ", apiAdditionalInfo=" + apiAdditionalInfo + ", productId=" + productId
+				+ ", productName=" + productName + ", defaultPlanId=" + defaultPlanId + ", defaultPlanName="
+				+ defaultPlanName + ", requestedBy=" + requestedBy + ", requestedTimestamp=" + requestedTimestamp
+				+ ", status=" + status + ", trending=" + trending + ", seqNumber=" + seqNumber + ", specPath="
+				+ specPath + ", nbSecurity=" + nbSecurity + ", nbSecurityType=" + nbSecurityType + ", nbCORS=" + nbCORS
+				+ ", nbCSRF=" + nbCSRF + ", nbXSS=" + nbXSS + ", tags=" + tags + ", sbSecurity=" + sbSecurity
+				+ ", sbSecurityType=" + sbSecurityType + ", sbSSL=" + sbSSL + ", sbTarget=" + sbTarget
+				+ ", sbTargetType=" + sbTargetType + ", apiQuotaLimit=" + apiQuotaLimit + ", apiQuotaInterval="
+				+ apiQuotaInterval + ", appQuotaLimit=" + appQuotaLimit + ", appQuotaInterval=" + appQuotaInterval
+				+ ", consumerType=" + consumerType + ", specType=" + specType + ", sbSpecType=" + sbSpecType
+				+ ", sbSpecPath=" + sbSpecPath + ", nbAuthUrl=" + nbAuthUrl + ", nbTokenUrl=" + nbTokenUrl
+				+ ", nbRefreshUrl=" + nbRefreshUrl + ", nbAuthScopes=" + nbAuthScopes + ", sbAuthUrl=" + sbAuthUrl
+				+ ", sbTokenUrl=" + sbTokenUrl + ", sbRefreshUrl=" + sbRefreshUrl + ", sbAuthScopes=" + sbAuthScopes
+				+ ", sbRoutingLocation=" + sbRoutingLocation + ", sbRoutingField=" + sbRoutingField + ", sbRoutingPath="
+				+ sbRoutingPath + ", payloadSizeLimit=" + payloadSizeLimit + ", payloadSizeUnit=" + payloadSizeUnit
+				+ ", basePath=" + basePath + ", nbAuthLocation=" + nbAuthLocation + ", nbAuthField=" + nbAuthField
+				+ ", nbAuthPath=" + nbAuthPath + ", sbAuthLocation=" + sbAuthLocation + ", sbAuthField=" + sbAuthField
+				+ ", sbAuthPath=" + sbAuthPath + ", responseCache=" + responseCache + ", alternateName=" + alternateName
+				+ ", avgRating=" + avgRating + ", ratingCount=" + ratingCount + ", feedbackCount=" + feedbackCount
+				+ "]";
+	}
+
+
+}
+-----------------------------------------------------
+
+package com.infy.api.cloud.service;
+
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Query;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
+
+import com.infy.api.cloud.model.ApiResMod;
+
+
+@Component
+public class NativeSqlQuery {
+
+	@Autowired
+	private EntityManagerFactory entityManagerFactory;
+
+	@SuppressWarnings("unchecked")
+	public List<ApiResMod> getApis(Long productId, Boolean status, Boolean trending, String apiName, String poUserId, String category, Long limit)
+			throws Exception {
+
+		EntityManager session = entityManagerFactory.createEntityManager();
+
+		try {
+			String subQuery1ForCat = "SELECT * FROM (";
+			String subQuery2ForCat = "   , COUNT (AR.RATING) + COUNT(AF.FEEDBACK_TXT) AS reviewCount \n";
+			String selectClause = """
+				SELECT  
+					A.API_ID AS apiId,
+					A.API_NM AS apiName,
+					A.API_DESC AS apiDescription,
+					A.VERSION AS apiVersion,
+					A.PRODUCT_ID AS productId,
+					P.PRODUCT_NM AS productName,
+					A.REQUESTED_BY AS requestedBy,
+					A.STATUS AS status,
+					A.TRENDING AS trending,
+					A.TAGS AS tags,
+					ROUND(AVG(AR.RATING),0) AS rating,
+					COUNT(AR.RATING_ID) as ratingcount,
+					COUNT(AF.FEEDBACK_ID) as feedbackcount,				
+					AD.REQUEST_ID as requestId
+				""";
+
+
+			String fromClause = """
+					FROM
+						APICLOUD.APIS A
+						INNER JOIN APICLOUD.PRODUCTS P ON A.PRODUCT_ID = P.PRODUCT_ID
+						LEFT OUTER JOIN APICLOUD.API_RATINGS AR ON A.API_ID = AR.API_ID
+						LEFT OUTER JOIN APICLOUD.API_FEEDBACK AF ON A.API_ID = AF.API_ID
+						INNER JOIN APICLOUD.ADMIN_DASHBOARD AD ON A.API_ID = AD.API_ID
+					""";
+//					+ "\tLEFT OUTER JOIN APICLOUD.PLANS PL ON P.DEFAULT_PLAN_ID = PL.PLAN_ID\n";
+
+			String whereClause = "Where ";
+			if (status != null) {
+
+				whereClause = whereClause.concat("A.STATUS= " + status);
+
+			}
+
+			if (apiName != null) {
+				if ("Where ".equalsIgnoreCase(whereClause)) {
+					whereClause = whereClause.concat("A.API_NM= '" + apiName + "'");
+				} else {
+					whereClause = whereClause.concat(" AND A.API_NM= '" + apiName + "'");
+				}
+			}
+
+			if (trending != null) {
+				if ("Where ".equalsIgnoreCase(whereClause)) {
+					whereClause = whereClause.concat("A.TRENDING= " + trending);
+				} else {
+					whereClause = whereClause.concat(" AND A.TRENDING= " + trending);
+				}
+			}
+
+			if (poUserId != null) {
+				if ("Where ".equalsIgnoreCase(whereClause)) {
+					whereClause = whereClause.concat("P.PRODUCT_OWNER = '" + poUserId + "'");
+				} else {
+					whereClause = whereClause.concat(" AND P.PRODUCT_OWNER = '" + poUserId + "'");
+				}
+			}
+
+			if (productId != null) {
+				if ("Where ".equalsIgnoreCase(whereClause)) {
+					whereClause = whereClause.concat("A.PRODUCT_ID= " + productId);
+				} else {
+					whereClause = whereClause.concat(" AND A.PRODUCT_ID= " + productId);
+				}
+			}
+
+			if ("Where ".equalsIgnoreCase(whereClause)) {
+				whereClause = "";
+			}
+
+
+			String groupByClause = """
+					GROUP BY
+					A.API_ID,
+					A.API_NM,
+					A.API_DESC,
+					 A.VERSION,
+					A.PRODUCT_ID,
+					P.PRODUCT_NM,
+					A.REQUESTED_BY,
+					A.STATUS,
+					A.TRENDING,
+					P.PRODUCT_NM,
+					AD.REQUEST_ID 
+				""";
+//					+ "\tP.DEFAULT_PLAN_ID ,\n"
+//					+ "\tA.SB_SSL,\n"
+//					+ "\tA.SB_TARGET,\n"
+//					+ "\tA.CONSUMER_TYPE,\n"
+//					+ "\tA.SPEC_TYPE , \n"
+//					+ "\tA.SB_SPEC_TYPE , \n"
+//					+ "\tA.SB_SPEC_PATH , \n"
+//					+ "\tA.NB_AUTH_URL,\n"
+//					+ "\tA.NB_TOKEN_URL , \n"
+//					+ "\tA.NB_REFRESH_URL , \n"
+//					+ "\tA.NB_AUTH_SCOPES, \n"
+//					+ "\tA.SB_AUTH_URL , \n"
+//					+ "\tA.SB_TOKEN_URL, \n"
+//					+ "\tA.SB_REFRESH_URL , \n"
+//					+ "\tA.SB_AUTH_SCOPES,\n"
+//					+ "\tA.SB_ROUTING_LOCATION, \n"
+//					+ "\tA.SB_ROUTING_FIELD, \n"
+//					+ "\tA.SB_ROUTING_PATH, \n"
+//					+ "\tA.PAYLOAD_SIZE_LIMIT , \n"
+//					+ "\tA.PAYLOAD_SIZE_UNIT ,\n"
+//					+ "\tA.BASE_PATH ,\n"
+//					+ "\tA.NB_AUTH_LOCATION ,\n"
+//					+ "\tA.NB_AUTH_FIELD ,\n"
+//					+ "\tA.NB_AUTH_PATH ,\n"
+//					+ "\tA.SB_AUTH_LOCATION, \n"
+//					+ "\tA.SB_AUTH_FIELD ,\n"
+//					+ "\tA.SB_AUTH_PATH, \n"
+//					+ "\tA.RESPONSE_CACHE, \n"
+//					+ "\tA.SB_TARGET_TYPE, \n"
+//			        + "\tA.ALTERNATE_NM \n";
+			
+			
+			String orderByClause = "";
+			if (category == null) {
+
+				orderByClause = """
+							ORDER BY
+						A.PRODUCT_ID,
+						A.SEQ_NUMBER
+						""";
+			} else if (category.contains("newlyAdded")) {
+
+				orderByClause = """
+						 	 ORDER BY
+						    A.UPDATED_TS DESC
+						""";
+			} else if (category.contains("mostReviewed")) {
+
+				selectClause = subQuery1ForCat.concat(selectClause).concat(subQuery2ForCat);
+
+				orderByClause = """
+			            	 ORDER BY
+			                reviewCount DESC) T WHERE reviewCount > 0 
+			            """;
+			}
+			String limitClause = " LIMIT " + limit;
+
+			String query = "";
+			if (limit != null) {
+				query = selectClause + fromClause + whereClause + groupByClause + orderByClause + limitClause;
+			} else {
+				query = selectClause + fromClause + whereClause + groupByClause + orderByClause;
+			}
+
+
+			Query value = session.createNativeQuery(query);
+			//System.out.println("jedis--" + jedis.get(0).getApiName());
+			return getResultList(value);
+
+		} finally {
+			if (session.isOpen()) {
+				session.close();
+			}
+		}
+
+	}
+
+
+	public static <T> List<ApiResMod> getResultList(Query value) {
+		@SuppressWarnings("unchecked")
+		List<Object[]> records = value.getResultList();
+		List<ApiResMod> responseList = new ArrayList<>();
+
+		//return map(type, records);
+		for (Object[] val :records) {
+			ApiResMod responseclass = new ApiResMod();
+			responseclass.setApiId(convertToLong(val[0]));
+			responseclass.setApiName(ObjectUtils.isEmpty(val[1]) ? null : (val[1].toString()));
+			responseclass.setApiDescription(ObjectUtils.isEmpty(val[2]) ? null : (val[2].toString()));
+			responseclass.setApiVersion(ObjectUtils.isEmpty(val[3]) ? null : (val[3].toString()));
+//			responseclass.setApiAdditionalInfo(StringUtils.isEmpty(val[4]) ? null : (val[4].toString()));
+			responseclass.setProductId(convertToLong(val[4]));
+			responseclass.setProductName(ObjectUtils.isEmpty(val[5]) ? null : (val[5].toString()));
+//			responseclass.setDefaultPlanId(StringUtils.isEmpty(val[7]) ? null : convertToInt(val[7]));
+//			responseclass.setDefaultPlanName(StringUtils.isEmpty(val[8]) ? null : (val[8].toString()));
+
+//			responseclass.setRequestedBy(StringUtils.isEmpty(val[9]) ? null : (val[9].toString()));
+			
+			responseclass.setRequestedBy(ObjectUtils.isEmpty(val[6]) ? null : (val[6].toString()));
+
+//			responseclass.setRequestedTimestamp((Timestamp) val[10]);
+			
+//			responseclass.setStatus(StringUtils.isEmpty(val[11]) ? null : (Boolean) val[11]);
+//			responseclass.setTrending(StringUtils.isEmpty(val[12]) ? null : (Boolean) val[12]);
+			
+			responseclass.setStatus(ObjectUtils.isEmpty(val[7]) ? null : (Boolean) val[7]);
+			responseclass.setTrending(ObjectUtils.isEmpty(val[8]) ? null : (Boolean) val[8]);
+
+//			responseclass.setSeqNumber(StringUtils.isEmpty(val[13]) ? null : convertToLong(val[13]));
+//			responseclass.setSpecPath(StringUtils.isEmpty(val[14]) ? null : (val[14].toString()));
+//			responseclass.setNbSecurity(StringUtils.isEmpty(val[15]) ? null : (val[15].toString()));
+//			responseclass.setNbSecurityType(StringUtils.isEmpty(val[16]) ? null : (val[16].toString()));
+//			responseclass.setNbCORS(StringUtils.isEmpty(val[17]) ? null : (Boolean)val[17]);
+//			responseclass.setNbCSRF(StringUtils.isEmpty(val[18]) ? null : (Boolean)val[18]);
+//			responseclass.setNbXSS(StringUtils.isEmpty(val[19]) ? null : (Boolean)val[19]);
+			
+//			responseclass.setTags(StringUtils.isEmpty(val[20]) ? null : (val[20].toString()));
+			
+			responseclass.setTags(ObjectUtils.isEmpty(val[9]) ? null : (val[9].toString()));
+
+//			responseclass.setSbSecurity(StringUtils.isEmpty(val[21]) ? null : (val[21].toString()));
+//			responseclass.setSbSecurityType(StringUtils.isEmpty(val[22]) ? null : (val[22].toString()));
+//			responseclass.setSbSSL(StringUtils.isEmpty(val[23]) ? null : (Boolean)val[23]);
+//			responseclass.setSbTarget(StringUtils.isEmpty(val[24]) ? null : (Boolean)val[24]);
+//			responseclass.setSbTargetType(StringUtils.isEmpty(val[25]) ? null : (val[25].toString()));
+//			responseclass.setApiQuotaLimit(StringUtils.isEmpty(val[26]) ? null : convertToLong(val[26]));
+//			responseclass.setAppQuotaLimit(StringUtils.isEmpty(val[27]) ? null : convertToLong(val[27]));
+//			responseclass.setAppQuotaInterval(StringUtils.isEmpty(val[28]) ? null : (val[28].toString()));
+//			responseclass.setApiQuotaInterval(StringUtils.isEmpty(val[29]) ? null : (val[29].toString()));
+//			responseclass.setConsumerType(StringUtils.isEmpty(val[30]) ? null : (val[30].toString()));
+//			responseclass.setSpecType(StringUtils.isEmpty(val[31]) ? null : (val[31].toString()));
+//			responseclass.setSbSpecType(StringUtils.isEmpty(val[32]) ? null : (val[32].toString()));
+//			responseclass.setSbSpecPath(StringUtils.isEmpty(val[33]) ? null : (val[33].toString()));
+//			responseclass.setNbAuthUrl(StringUtils.isEmpty(val[34]) ? null : (val[34].toString()));
+//			responseclass.setNbTokenUrl(StringUtils.isEmpty(val[35]) ? null : (val[35].toString()));
+//			responseclass.setNbRefreshUrl(StringUtils.isEmpty(val[36]) ? null : (val[36].toString()));
+//			responseclass.setNbAuthScopes(StringUtils.isEmpty(val[37]) ? null : (val[37].toString()));
+//			responseclass.setSbAuthUrl(StringUtils.isEmpty(val[38]) ? null : (val[38].toString()));
+//			responseclass.setSbTokenUrl(StringUtils.isEmpty(val[39]) ? null : (val[39].toString()));
+//			responseclass.setSbRefreshUrl(StringUtils.isEmpty(val[40]) ? null : (val[40].toString()));
+//			responseclass.setSbAuthScopes(StringUtils.isEmpty(val[41]) ? null : (val[41].toString()));
+//			responseclass.setSbRoutingLocation(StringUtils.isEmpty(val[42]) ? null : (val[42].toString()));
+//			responseclass.setSbRoutingField(StringUtils.isEmpty(val[43]) ? null : (val[43].toString()));
+//			responseclass.setSbRoutingPath(StringUtils.isEmpty(val[44]) ? null : (val[44].toString()));
+//			responseclass.setPayloadSizeLimit(StringUtils.isEmpty(val[45]) ? null : convertToInt(val[45]));
+//			responseclass.setPayloadSizeUnit(StringUtils.isEmpty(val[46]) ? null : (val[46].toString()));
+//			responseclass.setBasePath(StringUtils.isEmpty(val[47]) ? null : (val[47].toString()));
+//			responseclass.setNbAuthLocation(StringUtils.isEmpty(val[48]) ? null : (val[48].toString()));
+//			responseclass.setNbAuthField(StringUtils.isEmpty(val[49]) ? null : (val[49].toString()));
+//			responseclass.setNbAuthPath(StringUtils.isEmpty(val[50]) ? null : (val[50].toString()));
+//			responseclass.setSbAuthLocation(StringUtils.isEmpty(val[51]) ? null : (val[51].toString()));
+//			responseclass.setSbAuthField(StringUtils.isEmpty(val[52]) ? null : (val[52].toString()));
+//			responseclass.setSbSpecPath(StringUtils.isEmpty(val[53]) ? null : (val[53].toString()));
+//			responseclass.setResponseCache(StringUtils.isEmpty(val[54]) ? null : (Boolean)val[54]);
+//			responseclass.setAvgRating(StringUtils.isEmpty(val[55]) ? null : convertToDouble(val[55]));
+//			responseclass.setRatingCount(StringUtils.isEmpty(val[56]) ? null : convertToDouble(val[56]));
+//			responseclass.setFeedbackCount(StringUtils.isEmpty(val[57]) ? null : convertToDouble(val[57]));
+			
+			responseclass.setAvgRating(ObjectUtils.isEmpty(val[10]) ? null : convertToDouble(val[10]));
+			responseclass.setRatingCount(ObjectUtils.isEmpty(val[11]) ? null : convertToDouble(val[11]));
+			responseclass.setFeedbackCount(ObjectUtils.isEmpty(val[12]) ? null : convertToDouble(val[12]));
+
+			responseclass.setRequestId(convertToLong(val[13]));
+
+//			responseclass.setAlternateName(StringUtils.isEmpty(val[55]) ? null : (val[58].toString()));
+//			
+			responseList.add(responseclass);
+		}
+		return responseList;
+	}
+
+	public static Long convertToLong(Object o) {
+		String stringToConvert = String.valueOf(o);
+		return Long.parseLong(stringToConvert);
+
+	}
+
+	public static Integer convertToInt(Object o) {
+		String stringToConvert = String.valueOf(o);
+		return Integer.parseInt(stringToConvert);
+
+	}
+
+	public static Double convertToDouble(Object o) {
+		String stringToConvert = String.valueOf(o);
+		return Double.parseDouble(stringToConvert);
+
+	}
+}
