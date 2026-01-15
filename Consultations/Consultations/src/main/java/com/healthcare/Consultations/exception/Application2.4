@@ -1,0 +1,218 @@
+4435
+---------------------------------------
+Ticket/ Task : Dashboard and api layer changes for handling CREATE resource links
+
+This story is required to capture and store Resource Links. So that this information is accessible when needed.
+
+Implementation Details:
+
+To capture API Contact information during API Creation, Update, and Retrieval -The following endpoint payload needs to be enhanced with API contact information
+
+POST https://apis-internal-corp.shared.dev-spectrum.net/pinxt-selfservice/v1/dashboard
+POST https://apis-internal-corp.shared.dev-spectrum.net/pinxt-selfservice/v1/apis
+Payload:
+
+{
+    "apiName": "Spectrum Payment Service API",
+    "apiDescription": "Comprehensive payment processing service for mobile billing",
+    "apiVersion": "v2.1.0",
+    "productId": 1,
+    "requestedBy": "john.doe@charter.com",
+    "apiResourceLinks": [
+        {
+            "categoryId": 1,
+            "subcategoryId": 2,
+            "title": "SPS Architecture & Design",
+            "url": "https://chalk.charter.com/spaces/SPS/pages/1466988255/Architecture+Design"
+        },
+        {
+            "categoryId": 1,
+            "subcategoryId": 3,
+            "title": "SPS Sequence Diagram",
+            "url": "https://chalk.charter.com/spaces/SPECTRUMMOBIT2/pages/1764243194/Universal+Orchestration+Framework?preview=%2F1764243194%2F1764243243%2Fsps+sequence+flow.png"
+        },
+        {
+            "categoryId": 3,
+            "subcategoryId": 9,
+            "title": "Business Glossary",
+            "url": "https://chalk.charter.com/spaces/M2BILLINGSD/pages/2279422063/Mobile+Glossary"
+        },
+        {
+            "categoryId": 3,
+            "subcategoryId": 10,
+            "title": "Technical Abbreviations",
+            "url": "https://chalk.charter.com/spaces/DPOS/pages/2573212391/Mobile+Billing+and+Mobile+Payment#MobileBillingandMobilePayment-Abbreviations"
+        },
+        {
+            "categoryId": 2,
+            "subcategoryId": 5,
+            "title": "MOB Bit Bucket Repo",
+            "url": "https://bitbucket.corp.chartercom.com/projects/BL"
+        },
+        {
+            "categoryId": 4,
+            "subcategoryId": 12,
+            "title": "Integration Test Results",
+            "url": "https://reporter.sth.spectrumtoolbox.com/test-runs?product=PINXT&start=1756706400000&version=1.57.0"
+        }
+    ],
+    "tagAssignments": [
+        {
+            "categoryName": "Domain",
+            "tags": ["Mobile", "Billing"]
+        }
+    ],
+    "basePath": "/spectrum-payment-service",
+    "specPath": "https://api.charter.com/sps/v2.1/swagger.yaml",
+    "status": true
+}
+Acceptance Criteria:
+AC1: ApiRequest Model Enhancement
+GIVEN existing ApiRequest model
+WHEN enhancing for resource links support
+THEN 
+apiResourceLinks field is added as 
+
+List<ApiResourceLink>
+ 
+
+AND 
+ApiResourceLink class includes 
+
+categoryId, 
+
+subcategoryId, 
+
+title, 
+
+url
+ 
+
+AND all fields have appropriate validation annotations
+AC2: Request Validation - Required Fields
+GIVEN API creation request with resource links
+WHEN validating request payload
+THEN 
+categoryId, 
+
+subcategoryId, 
+
+title, and 
+
+url are required
+ 
+
+AND validation errors return meaningful messages for missing fields
+AC3: Request Validation - Category/Subcategory References
+GIVEN API creation request with resource links
+WHEN validating category and subcategory IDs
+THEN 
+categoryId must exist in 
+
+api_resource_categories table
+ 
+
+AND 
+subcategoryId must exist in 
+
+api_resource_subcategories table
+ 
+
+AND 
+subcategoryId must belong to the specified 
+
+categoryId
+ 
+
+AND validation errors return specific messages for invalid references
+ 
+
+AC5: Database Transaction Processing
+GIVEN valid API creation request with resource links
+WHEN processing the request
+THEN API creation and resource links insertion occur in single transaction
+AND if API creation fails, no resource links are inserted
+AND if resource links insertion fails, API creation is rolled back
+AC6: Resource Links Storage
+GIVEN successful API creation with resource links
+WHEN storing resource links
+THEN each link is inserted into 
+api_resource_links table
+ 
+
+AND 
+api_family_id is populated from created API
+ 
+
+AND 
+created_ts and 
+
+updated_ts are automatically set
+ 
+
+AND all foreign key relationships are properly established
+AC7: Empty Resource Links Handling
+GIVEN API creation request without resource links
+WHEN processing the request
+THEN API is created successfully without resource links
+AND no entries are made in 
+api_resource_links table
+ 
+
+AND existing API creation functionality remains unchanged
+AC9: Service Layer Enhancement
+GIVEN enhanced API creation functionality
+WHEN implementing service layer changes
+THEN 
+ApiService.createNewApi() method handles resource links processing
+ 
+
+AND separate method validates category/subcategory references
+AND proper exception handling for validation and database errors
+AND transactional annotations ensure data consistency
+AC10: Repository Layer Enhancement
+GIVEN resource links need database operations
+WHEN implementing repository layer
+THEN 
+ApiResourceLinksRepository is created for CRUD operations
+ 
+
+AND validation queries check category/subcategory existence and relationships
+AND batch insert operations for multiple resource links
+AND proper error handling for constraint violations
+AC11: Error Response Standardization
+GIVEN validation or processing errors occur
+WHEN returning error responses
+THEN errors follow standard format 
+AND validation errors return HTTP 400 Bad Request
+AND database errors return HTTP 500 Internal Server Error
+AND error messages are specific and actionable
+AC12: Backward Compatibility
+GIVEN existing API creation requests without resource links
+WHEN processing these requests
+THEN requests continue to work without modification
+AND response format remains consistent
+AND no breaking changes to existing functionality
+AC15: Performance Validation
+GIVEN API creation with multiple resource links
+WHEN processing requests with 10+ resource links
+THEN response time remains within acceptable limits
+AND database operations are optimized with batch processing
+AND memory usage remains reasonable for large payloads
+AC16: Logging Best Practices Implementation
+GIVEN enhanced API creation functionality with resource links
+WHEN implementing logging throughout the application
+THEN INFO level logging includes only essential information (method entry, success/failure, key identifiers)
+AND DEBUG level logging is used for detailed object contents and troubleshooting data
+AND complete request/response objects are logged only at DEBUG level
+AND INFO logs contain minimal context: 
+"API creation started for apiName: {}, resourceLinks count: {}"
+ 
+
+AND DEBUG logs contain full object details: 
+"Full API request payload: {}"
+ 
+
+AND ERROR logs include exception details without sensitive data
+AND no sensitive information (tokens, passwords, personal data) is logged at any level
+AND correlation IDs (trace-id, transaction-id) are included in all log levels for request tracking
