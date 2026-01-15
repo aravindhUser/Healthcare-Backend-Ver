@@ -413,3 +413,628 @@ public class NativeSqlQuery {
 
 	}
 }
+-----------------------------------------------------------
+ApiRepository
+-----------------------------
+
+package com.infy.api.cloud.repository;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+import com.infy.api.cloud.model.APIDocument;
+import com.infy.api.cloud.model.APIDocumentProjection;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.infy.api.cloud.entity.Apis;
+import com.infy.api.cloud.model.GetApiRequest;
+import com.infy.api.cloud.model.GetAvailability;
+import com.infy.api.cloud.model.LightweightApiResp;
+
+import jakarta.transaction.Transactional;
+
+@Repository
+@Transactional
+public interface ApiRepository extends JpaRepository<Apis, Long> {
+
+	Optional<Apis> findByApiIdAndApiFamilyId(Long apiId, Integer apiFamilyId);//Code for implementing PINXTSS-2705
+
+
+	@Query(value = """
+			SELECT A.API_ID                              AS apiId,
+				   A.TEAM_ID 							 AS teamId,
+				   A.CAPACITY							 AS capacity,
+				   A.API_NM                              AS apiName,
+				   A.API_DESC                            AS apiDescription,
+				   A.VERSION                             AS apiVersion,
+				   A.ADDL_INFO                           AS apiAdditionalInfo,
+				   A.PRODUCT_ID                          AS productId,
+				   P.PRODUCT_NM                          AS productName,
+				   P.DEFAULT_PLAN_ID                     AS defaultPlanId,
+				   PL.PLAN_NM                            AS defaultPlanName,
+				   A.REQUESTED_BY                        AS requestedBy,
+				   A.UPDATED_TS                          AS requestedTimestamp,
+				   A.STATUS                              AS status,
+				   A.TRENDING                            AS trending,
+				   A.SEQ_NUMBER                          AS seqNumber,
+				   A.SPEC_PATH                           AS specPath,
+				   A.NB_SECURITY                         AS nbSecurity,
+				   A.NB_SECURITY_TYPE                    AS nbSecurityType,
+				   A.NB_CORS                             AS nbCORS,
+				   A.NB_CSRF                             AS nbCSRF,
+				   A.NB_XSS                              AS nbXSS,
+				   A.TAGS                                AS tags,
+				   A.SB_SECURITY                         AS sbSecurity,
+				   A.SB_SECURITY_TYPE                    AS sbSecurityType,
+				   A.SB_SSL                              AS sbSSL,
+				   A.SB_TARGET                           AS sbTarget,
+				   A.SB_TARGET_TYPE                      AS sbTargetType,
+				   A.API_QUOTA_LIMIT                     AS apiQuotaLimit,
+				   A.APP_QUOTA_LIMIT                     AS appQuotaLimit,
+				   A.APP_QUOTA_INTERVAL                  AS appQuotaInterval,
+				   A.API_QUOTA_INTERVAL                  AS apiQuotaInterval,
+				   A.CONSUMER_TYPE                       AS consumerType,
+				   A.SPEC_TYPE                           AS specType,
+				   A.SB_SPEC_TYPE                        AS sbSpecType,
+				   A.SB_SPEC_PATH                        AS sbSpecPath,
+				   A.NB_AUTH_URL                         AS nbAuthUrl,
+				   A.NB_TOKEN_URL                        AS nbTokenUrl,
+				   A.NB_REFRESH_URL                      AS nbRefreshUrl,
+				   A.NB_AUTH_SCOPES                      AS nbAuthScopes,
+				   A.SB_AUTH_URL                         AS sbAuthUrl,
+				   A.SB_TOKEN_URL                        AS sbTokenUrl,
+				   A.SB_REFRESH_URL                      AS sbRefreshUrl,
+				   A.SB_AUTH_SCOPES                      AS sbAuthScopes,
+				   A.SB_ROUTING_LOCATION                 AS sbRoutingLocation,
+				   A.SB_ROUTING_FIELD                    AS sbRoutingField,
+				   A.SB_ROUTING_PATH                     AS sbRoutingPath,
+				   A.PAYLOAD_SIZE_LIMIT                  AS payloadSizeLimit,
+				   A.PAYLOAD_SIZE_UNIT                   AS payloadSizeUnit,
+				   A.BASE_PATH                           AS basePath,
+				   A.NB_AUTH_LOCATION                    AS nbAuthLocation,
+				   A.NB_AUTH_FIELD                       AS nbAuthField,
+				   A.NB_AUTH_PATH                        AS nbAuthPath,
+				   A.SB_AUTH_LOCATION                    AS sbAuthLocation,
+				   A.SB_AUTH_FIELD                       AS sbAuthField,
+				   A.SB_AUTH_PATH                        AS sbAuthPath,
+				   A.RESPONSE_CACHE                      AS responseCache,
+				   A.TARGET_BASE_PATH                    AS targetBasePath,
+				   A.ALTERNATE_NM                        AS alternateName,
+				   A.ADDITIONAL_PLUGIN_REQUIREMENTS      AS additionalPluginRequirements,
+				   COALESCE(ROUND(AVG(AR.RATING), 1), 0) AS avgRating,
+				   COUNT(AR.RATING)                      AS ratingCount,
+				   COUNT(AF.FEEDBACK_TXT)                AS feedbackCount,
+				   A.MODALITY							 AS modality,
+				   A.DEPLOYED_ENVS						 AS deployedEnvironments,
+				   A.LIFECYCLE_STAGE					 AS lifeCycleStage,
+				   A.LIFECYCLE_COMMENT					 AS lifeCycleComment,
+				   A.API_FAMILY_ID						 AS apiFamilyId,
+				   A.IS_LATEST							 AS isLatest
+			FROM APICLOUD.APIS A
+					 INNER JOIN APICLOUD.PRODUCTS P ON A.PRODUCT_ID = P.PRODUCT_ID
+					 LEFT OUTER JOIN APICLOUD.API_RATINGS AR ON A.API_ID = AR.API_ID
+					 LEFT OUTER JOIN APICLOUD.API_FEEDBACK AF ON A.API_ID = AF.API_ID
+					 LEFT OUTER JOIN APICLOUD.PLANS PL ON P.DEFAULT_PLAN_ID = PL.PLAN_ID
+			WHERE A.API_ID = :id
+			GROUP BY A.API_ID,
+					 A.API_NM,
+					 A.API_DESC,
+					 A.VERSION,
+					 A.ADDL_INFO,
+					 A.PRODUCT_ID,
+					 P.PRODUCT_NM,
+					 A.REQUESTED_BY,
+					 A.UPDATED_TS,
+					 A.STATUS,
+					 A.TRENDING,
+					 A.SEQ_NUMBER,
+					 A.SPEC_PATH,
+					 A.NB_SECURITY,
+					 A.NB_SECURITY_TYPE,
+					 A.NB_CORS,
+					 A.NB_CSRF,
+					 A.NB_XSS,
+					 A.SB_SECURITY,
+					 A.SB_SECURITY_TYPE,
+					 PL.PLAN_NM,
+					 P.PRODUCT_NM,
+					 P.DEFAULT_PLAN_ID,
+					 A.SB_SSL,
+					 A.SB_TARGET,
+					 A.CONSUMER_TYPE,
+					 A.SPEC_TYPE,
+					 A.SB_SPEC_TYPE,
+					 A.SB_SPEC_PATH,
+					 A.NB_AUTH_URL,
+					 A.NB_TOKEN_URL,
+					 A.NB_REFRESH_URL,
+					 A.NB_AUTH_SCOPES,
+					 A.SB_AUTH_URL,
+					 A.SB_TOKEN_URL,
+					 A.SB_REFRESH_URL,
+					 A.SB_AUTH_SCOPES,
+					 A.SB_ROUTING_LOCATION,
+					 A.SB_ROUTING_FIELD,
+					 A.SB_ROUTING_PATH,
+					 A.PAYLOAD_SIZE_LIMIT,
+					 A.PAYLOAD_SIZE_UNIT,
+					 A.BASE_PATH,
+					 A.NB_AUTH_LOCATION,
+					 A.NB_AUTH_FIELD,
+					 A.NB_AUTH_PATH,
+					 A.SB_AUTH_LOCATION,
+					 A.SB_AUTH_FIELD,
+					 A.SB_AUTH_PATH,
+					 A.RESPONSE_CACHE,
+					 A.SB_TARGET_TYPE,
+					 A.ALTERNATE_NM,
+					 A.ADDITIONAL_PLUGIN_REQUIREMENTS
+			ORDER BY A.PRODUCT_ID,
+					 A.SEQ_NUMBER
+			""", nativeQuery = true)
+	Optional<GetApiRequest> getAllApiById(@Param("id") long id);
+
+//	Code for implementing PINXTSS-2730 start
+	@Query(value = "SELECT api.api_id AS \"apiId\", dr.request_id AS \"requestId\", api.version AS version, api.is_latest AS \"isLatest\" \n" +
+			"FROM apicloud.apis as api\n" +
+			"LEFT JOIN\n" +
+			"apicloud.admin_dashboard as dr ON api.api_id = dr.api_id\n" +
+			"WHERE api.api_family_id = :apiFamilyId\n" +
+			"ORDER BY api.version DESC", nativeQuery = true)
+	List<Map<String,Object>> findVersionsByApiFamilyId(@Param("apiFamilyId") Integer apiFamilyId);
+//	Code for implementing PINXTSS-2730 end
+
+//	Code for implementing PINXTSS-2891 start
+	@Query(value = "SELECT api.api_id AS \"apiId\", dr.request_id AS \"requestId\", api.version AS version, api.is_latest AS \"isLatest\" \n" +
+			"FROM apicloud.apis as api\n" +
+			"LEFT JOIN\n" +
+			"apicloud.admin_dashboard as dr ON api.api_id = dr.api_id\n" +
+			"WHERE api.api_family_id = :apiFamilyId\n" +
+			"AND dr.status = :dashboardStatus\n"+
+			"ORDER BY api.version DESC", nativeQuery = true)
+	List<Map<String,Object>> findApprovedVersionsByApiFamilyId(@Param("apiFamilyId") Integer apiFamilyId, @Param("dashboardStatus") String dashboardStatus);
+//	Code for implementing PINXTSS-2891 end
+
+
+	@Query(value = "SELECT PRODUCT_ID FROM APICLOUD.PRODUCTS", nativeQuery = true)
+	List<Long> getAllProductId();
+
+	@Query(value = "SELECT tag_nm from apicloud.tags WHERE tag_id = :id", nativeQuery = true)
+	String getTagName(@Param("id") long id);
+
+	@Query(value = "Select MAX(P.SEQ_NUMBER) from APICLOUD.APIS P where P.PRODUCT_ID=?1", nativeQuery = true)
+	Long getMaxSeqNumber(Long productId);
+
+
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE
+			    A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			    AND LOWER(REPLACE(A.API_NM, ' ', '')) = LOWER(REPLACE(:apiName, ' ', ''))
+			    AND LOWER(REPLACE(A.version, ' ', ''))= LOWER(REPLACE(:apiVersion, ' ', ''))
+			""", nativeQuery = true)
+	Optional<GetAvailability> getFullMatch(String apiName, String apiVersion);
+
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE
+				   A.API_ID != :apiId
+			    AND A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			    AND LOWER(REPLACE(A.API_NM, ' ', '')) = LOWER(REPLACE(:apiName, ' ', ''))
+			    AND LOWER(REPLACE(A.version, ' ', ''))= LOWER(REPLACE(:apiVersion, ' ', '')) 
+			""", nativeQuery = true)
+	Optional<GetAvailability> getFullMatchWithOutApiId(String apiName, String apiVersion, long apiId);
+
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE
+			    A.STATUS = true
+			    AND LOWER(REPLACE(A.API_NM, ' ', '')) = LOWER(REPLACE(:apiName, ' ', ''))
+			""", nativeQuery = true)
+	List<GetAvailability> getFullMatchWithApiName(String apiName);
+	
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE
+			    A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			    AND LOWER(REPLACE(A.API_NM, ' ', '')) LIKE %:apiName%
+			""", nativeQuery = true)
+	List<GetAvailability> getPartialMatch(String apiName);
+
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE
+			    A.API_ID != :apiId
+			    AND A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			    AND LOWER(REPLACE(A.API_NM, ' ', '')) LIKE %:apiName%
+			""", nativeQuery = true)
+	List<GetAvailability> getPartialMatchWithOutApiId(String apiName, long apiId);
+
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE
+			    A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true 
+			    AND LOWER(CASE WHEN RIGHT(A.BASE_PATH, 1) = '/' THEN SUBSTRING(A.BASE_PATH FROM 1 FOR LENGTH(A.BASE_PATH)-1) 
+			    ELSE LOWER(A.BASE_PATH) END) = :normalizedBasePath
+			""", nativeQuery = true)
+	List<GetAvailability> getFullMatchBasePath(String normalizedBasePath);
+
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE
+				   A.API_ID != :apiId
+			    AND A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			    AND LOWER(A.BASE_PATH) = :basePath
+			""", nativeQuery = true)
+	Optional<GetAvailability> getFullMatchBasePathWithOutApiId(String basePath, long apiId);
+
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE
+			    A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			    AND LOWER(A.BASE_PATH) LIKE %:basePath%
+			""", nativeQuery = true)
+	List<GetAvailability> getPartialMatchBasePath(String basePath);
+
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE
+				   A.API_ID != :apiId
+			    AND A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			    AND LOWER(A.BASE_PATH) LIKE %:basePath%
+			""", nativeQuery = true)
+	List<GetAvailability> getPartialMatchBasePathWithOutApiId(String basePath, long apiId);
+
+	@Query(value = "SELECT ROLE FROM APICLOUD.USER_ROLE_MAP WHERE USER_ID = :userId", nativeQuery = true)
+	String getRole(String userId);
+
+	@Query(value = "SELECT ORGANIZATION_TYPE FROM APICLOUD.USER_ROLE_MAP WHERE USER_ID = :userId", nativeQuery = true)
+	String getOrgType(String userId);
+
+	@Query(value = "SELECT P.PRODUCT_OWNER from APICLOUD.PRODUCTS P WHERE P.PRODUCT_ID = :id", nativeQuery = true)
+	String getProductOwner(@Param("id") long id);
+
+	@Query(value = "SELECT T.DOMAIN_OWNER FROM APICLOUD.TAGS T WHERE TAG_NM = :tag_nm", nativeQuery = true)
+	String getDomainOwner(String tag_nm);
+
+	@Query(value = "SELECT A.PRODUCT_ID FROM APICLOUD.APIS A WHERE A.API_ID = :id", nativeQuery = true)
+	long getProductId(long id);
+
+	@Query(value = "SELECT A.TAGS FROM APICLOUD.APIS A WHERE A.API_ID = :id", nativeQuery = true)
+	String getTags(long id);
+
+	@Query(value = "SELECT A.requested_by FROM APICLOUD.APIS A WHERE A.API_ID = :id", nativeQuery = true)
+	String getRequestedBy(long id);
+
+	@Query(value = "SELECT * FROM APICLOUD.APIS A WHERE A.API_NM = :apiName", nativeQuery = true)
+	List<Apis> findByApiName(String apiName);
+
+	@Query(value = "SELECT * FROM APICLOUD.APIS A WHERE LOWER(A.BASE_PATH) = :basePath", nativeQuery = true)
+	List<Apis> findByBasePath(String basePath);
+
+	@Query(value = "SELECT * FROM APICLOUD.APIS A WHERE A.API_ID= :apiId", nativeQuery = true)
+	Apis findByApiId(@Param("apiId") long apiId);
+
+	@Query(value = "SELECT Cast(apis.api_override_data as varchar) FROM apicloud.apis WHERE apis.api_id=:id", nativeQuery = true)
+	String getOverRides(long id);
+	
+    @Query(value = "SELECT A.api_id as apiId, A.api_nm as apiName,A.version as apiVersion,cast(AD.api_gateway as BIGINT) as apiGatewayId "
+    		+ "FROM apicloud.apis A, apicloud.admin_dashboard AD \n"
+    		+ "WHERE A.api_id= AD.api_id  AND A.status =:status AND AD.api_gateway = :gatewayId", nativeQuery = true)
+    List<LightweightApiResp> findByGatewayId(String gatewayId, boolean status);
+    
+    
+    @Query(value = "SELECT A.api_id as apiId, A.api_nm as apiName,A.version as apiVersion, CAST(AD.api_gateway as BIGINT) as apiGatewayId \n"
+    		+ "FROM apicloud.apis A, apicloud.admin_dashboard AD \n"
+    		+ "WHERE A.api_id=AD.api_id AND A.status =:status",nativeQuery = true)
+    List<LightweightApiResp> getAllApis(boolean status);
+
+//    @Query(value="SELECT a FROM apicloud.apis a WHERE a.status = true AND REGEXP_REPLACE(a.basePath, '[0-9]', '', 'g') = :inputPath")
+//	Stream<Apis> streamAllBasePaths(String inputPath);
+    
+    @Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE 
+				A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			    AND REGEXP_REPLACE(a.base_path, '[0-9]', '', 'g') = :inputPath
+			""", nativeQuery = true)
+	List<GetAvailability> streamAllBasePaths(String inputPath);
+    
+    @Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE 
+				A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			""", nativeQuery = true)
+	List<GetAvailability> getAllBasePaths();
+
+	@Query(value = """
+			SELECT
+			   AP.api_id as apiId,
+			   AP.api_nm as apiName,
+			   AP.API_DESC as apiDescription,
+			   AP.version as apiVersion,
+			   AP.base_path as clientBasePath,
+			   AP.MODALITY as modality,
+			   AP.TARGET_BASE_PATH as serviceBasePath,
+			   AP.CONSUMER_TYPE as clientAccessType,
+			   AP.LIFECYCLE_STAGE as lifeCycleStage,
+			   AP.status as status,
+			   AP.api_family_id as apiFamilyId,
+			   AP.is_latest as isLatest,
+			   AD.creation_ts as creationTimestamp,
+			   AD.updated_ts as updatedTimestamp,
+			   (select distinct gateway_name from apicloud.gateway_hostname gh where gh.gateway_id = cast(AD.api_gateway as INT)) as gatewayName,
+			   AD.REQUEST_ID as requestId
+			   
+			   FROM APICLOUD.ADMIN_DASHBOARD AD
+			   INNER JOIN APICLOUD.APIS AP ON AD.API_ID = AP.API_ID
+			   WHERE AD.status = :dashboardStatus AND CAST(AP.STATUS as varchar) = :status 
+			""", nativeQuery = true)
+	List<APIDocumentProjection> getApis(String status, String dashboardStatus);
+	
+	
+	@Query(value = """
+		    SELECT
+		       AP.api_id as apiId,
+		       AP.api_nm as apiName,
+		       AP.API_DESC as apiDescription,
+		       AP.version as apiVersion,
+		       AP.base_path as clientBasePath,
+		       AP.MODALITY as modality,
+		       AP.TARGET_BASE_PATH as serviceBasePath,
+		       AP.CONSUMER_TYPE as clientAccessType,
+		       AP.LIFECYCLE_STAGE as lifeCycleStage,
+		       AP.status as status,
+		       AP.api_family_id as apiFamilyId,
+		       AP.is_latest as isLatest,
+		       AD.creation_ts as creationTimestamp,
+		       AD.updated_ts as updatedTimestamp,
+		       (select distinct gateway_name from apicloud.gateway_hostname gh where gh.gateway_id = cast(AD.api_gateway as INT)) as gatewayName,
+		       AD.REQUEST_ID as requestId
+		       
+		       FROM APICLOUD.ADMIN_DASHBOARD AD
+		       INNER JOIN APICLOUD.APIS AP ON AD.API_ID = AP.API_ID
+		       WHERE AD.status = :dashboardStatus AND CAST(AP.STATUS as varchar) = :status 
+		         AND AP.api_id IN :apiIds
+		    """, nativeQuery = true)
+	List<APIDocumentProjection> getDetailsForApis(
+		    @Param("status") String status, 
+		    @Param("dashboardStatus") String dashboardStatus,
+		    @Param("apiIds") List<Long> apiIds
+		);
+
+	
+
+	@Query(value = "select ap.plugin_name from apicloud.api_plugindata pd,apicloud.plugin ap where pd.plugin_id = ap.plugin_id and pd.api_id= :id" , nativeQuery = true)
+	List<String> getPlugins(long id);
+
+	@Query(value ="select client_details.short_name From apicloud.client_api_access,apicloud.client_details where client_details.client_uuid = client_api_access.client_uuid and api_id= :id" ,nativeQuery = true)
+	List<String> getClients(long id);
+
+	@Query(value = "select sct.key from apicloud.service_client_tracker sct where CAST(sct.project as varchar) = :projectType AND CAST(sct.resource_id as integer) = :apiId", nativeQuery = true)
+	List<String> getIntakeTickets(Integer apiId, String projectType);
+
+	@Query(value = "select sct.key from apicloud.service_client_tracker sct where CAST(sct.resource_id as integer) = :apiId AND CAST(sct.resource as varchar) = :resource "
+			+ "AND CAST(sct.ticket_type as varchar) = :ticketType AND CAST(sct.project as varchar) <> :excludeItdmintake", nativeQuery = true)
+	List<String> getPinxtTrackingInfo(String resource, String ticketType, Integer apiId, String excludeItdmintake);
+
+//	Code for implementing PINXTSS-2695 start
+	List<Apis> findByApiFamilyId(Long apiFamilyId);
+
+	@Query(value = """
+			SELECT
+			   AP.api_id as apiId,
+			   AP.api_nm as apiName,
+			   AP.API_DESC as apiDescription,
+			   AP.version as apiVersion,
+			   AP.base_path as clientBasePath,
+			   AP.MODALITY as modality,
+			   AP.TARGET_BASE_PATH as serviceBasePath,
+			   AP.CONSUMER_TYPE as clientAccessType,
+			   AP.LIFECYCLE_STAGE as lifeCycleStage,
+			   AP.status as status,
+			   AP.API_FAMILY_ID as apiFamilyId,
+			   AP.IS_LATEST as isLatest,
+			   AD.creation_ts as creationTimestamp,
+			   AD.updated_ts as updatedTimestamp,
+			   (select distinct gateway_name from apicloud.gateway_hostname gh where gh.gateway_id = cast(AD.api_gateway as INT)) as gatewayName,
+			   AD.REQUEST_ID as requestId
+			   
+			   FROM APICLOUD.ADMIN_DASHBOARD AD
+			   INNER JOIN APICLOUD.APIS AP ON AD.API_ID = AP.API_ID
+			   WHERE AD.status = :dashboardStatus AND CAST(AP.STATUS as varchar) = :status AND AP.API_FAMILY_ID = :apiFamilyId
+			   AND SUBSTRING(AP.version,'v([0-9]+)\\.') = :targetMajorVersion
+			""", nativeQuery = true)
+	List<APIDocumentProjection> getApisForFamilyId(String status, String dashboardStatus, Long apiFamilyId, String targetMajorVersion);
+	
+//	Code for implementing PINXTSS-2695 end
+	
+	
+//	@Query(value = """
+//			SELECT
+//			    A.API_ID AS apiId,
+//			    A.API_NM AS apiName,
+//			    A.API_DESC AS apiDescription,
+//			    A.BASE_PATH AS basePath,
+//			    A.VERSION AS apiVersion,
+//			    A.PRODUCT_ID AS productId,
+//			    P.PRODUCT_NM AS productName
+//			FROM
+//			    APICLOUD.APIS A,
+//			    APICLOUD.PRODUCTS P
+//			WHERE A.PRODUCT_ID = P.PRODUCT_ID
+//			    AND A.BASE_PATH = :basePath
+//			""", nativeQuery = true)
+//	List<GetAvailability> findApisByBasepath(@Param("basePath") String basePath);
+	
+	@Query(value = """
+	        SELECT
+	            A.API_ID AS apiId,
+	            A.API_NM AS apiName,
+	            A.API_DESC AS apiDescription,
+	            A.BASE_PATH AS basePath,
+	            A.VERSION AS apiVersion,
+	            A.PRODUCT_ID AS productId,
+	            P.PRODUCT_NM AS productName
+	        FROM
+	            APICLOUD.APIS A
+	        JOIN
+	            APICLOUD.PRODUCTS P ON A.PRODUCT_ID = P.PRODUCT_ID
+	        JOIN
+	            APICLOUD.ADMIN_DASHBOARD AD ON A.API_ID = AD.API_ID
+	        WHERE
+	            A.BASE_PATH = :basePath
+	            AND AD.STATUS IN (:statuses)
+	        """, nativeQuery = true)
+	List<GetAvailability> findApisByBasepath(
+	    @Param("basePath") String basePath,
+	    @Param("statuses") List<String> statuses
+	);
+
+	
+	@Query(value = """
+			SELECT
+			    A.API_ID AS apiId,
+			    A.API_NM AS apiName,
+			    A.API_DESC AS apiDescription,
+			    A.BASE_PATH AS basePath,
+			    A.VERSION AS apiVersion,
+			    A.PRODUCT_ID AS productId,
+			    P.PRODUCT_NM AS productName
+			FROM
+			    APICLOUD.APIS A,
+			    APICLOUD.PRODUCTS P
+			WHERE A.PRODUCT_ID = P.PRODUCT_ID
+			    AND A.STATUS = true
+			    AND A.API_NM = :apiName 
+			    AND A.API_FAMILY_ID IS NOT NULL AND A.API_FAMILY_ID != :apiFamilyId
+			""", nativeQuery = true)
+	List<GetAvailability> findApisByApiNameAndDifferentApiFamily(@Param("apiName") String apiName, @Param("apiFamilyId") Integer apiFamilyId);
+
+}
