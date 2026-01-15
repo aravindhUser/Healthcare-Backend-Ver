@@ -1,3 +1,166 @@
+4436
+Create new DB Table for apicloud.api_resource_links
+
+
+This user story is to make the necessary Database changes to hold Resource Links in the DB.  
+
+Implementation Details:
+
+CREATE TABLE apicloud.api_resource_links (
+    link_id BIGSERIAL PRIMARY KEY,
+    api_family_id BIGINT NOT NULL,
+    category_id INTEGER NOT NULL,
+    subcategory_id INTEGER NOT NULL,
+    title VARCHAR(255) ,
+    url TEXT NOT NULL,
+    created_ts TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+    updated_ts TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+    
+    CONSTRAINT fk_api_resource_links_family FOREIGN KEY (api_family_id)
+        REFERENCES apicloud.api_families(api_family_id) ON DELETE CASCADE,
+    CONSTRAINT fk_api_resource_links_category FOREIGN KEY (category_id)
+        REFERENCES apicloud.api_resource_categories(category_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_api_resource_links_subcategory FOREIGN KEY (subcategory_id)
+        REFERENCES apicloud.api_resource_subcategories(subcategory_id) ON DELETE RESTRICT
+);
+
+-- Indexes for performance
+CREATE INDEX idx_api_resource_links_family ON apicloud.api_resource_links(api_family_id);
+CREATE INDEX idx_api_resource_links_category ON apicloud.api_resource_links(category_id);
+CREATE INDEX idx_api_resource_links_subcategory ON apicloud.api_resource_links(subcategory_id);
+CREATE INDEX idx_api_resource_links_family_category ON apicloud.api_resource_links(api_family_id, category_id);  
+ 
+
+Acceptance Criteria:
+AC1: Table Creation
+GIVEN the database migration script is executed
+WHEN the DDL statements are run
+THEN 
+apicloud.api_resource_links table is created with all specified columns
+ 
+
+AND all foreign key constraints are established successfully
+AND all indexes are created without errors
+AC2: Table Structure Validation
+GIVEN the table is created
+WHEN validating table structure
+THEN table has columns: 
+link_id, 
+
+api_family_id, 
+
+category_id, 
+
+subcategory_id, 
+
+title, 
+
+url, 
+
+ 
+
+created_ts, 
+
+updated_ts
+ 
+
+AND 
+link_id is BIGSERIAL primary key
+ 
+
+AND 
+api_family_id is BIGINT NOT NULL
+ 
+
+AND 
+category_id and 
+
+subcategory_id are INTEGER NOT NULL
+ 
+
+AND 
+title is VARCHAR(255) NOT NULL
+ 
+
+AND 
+url is TEXT NOT NULL
+ 
+
+AND timestamps are 
+TIMESTAMP WITHOUT TIME ZONE with 
+
+NOW() default
+ 
+
+AC3: Foreign Key Constraints Validation
+GIVEN the table exists with foreign keys
+WHEN testing referential integrity
+THEN cannot insert link with non-existent 
+api_family_id
+ 
+
+AND cannot insert link with non-existent 
+category_id
+ 
+
+AND cannot insert link with non-existent 
+subcategory_id
+ 
+
+AND deleting API family cascades to delete associated links
+AND deleting category/subcategory is restricted if links exist
+AC4: Data Insertion Validation
+GIVEN the table exists
+WHEN inserting valid test data
+THEN can successfully insert links with valid foreign key references
+AND 
+created_ts and 
+
+updated_ts are automatically populated
+ 
+
+AND can insert multiple links for same API family
+AND can insert links with same category but different subcategories
+AC5: Index Performance Validation
+GIVEN table and indexes exist
+WHEN executing queries by 
+api_family_id
+ 
+
+THEN query uses 
+idx_api_resource_links_family index
+ 
+
+AND queries by category use appropriate indexes
+AND composite queries use 
+idx_api_resource_links_family_category index
+ 
+
+AC6: Query Functionality Validation
+GIVEN test data exists in the table
+WHEN executing JOIN queries with categories and subcategories
+THEN can retrieve all links for an API family with category/subcategory names
+AND can filter links by specific categories
+AND can group links by category for display purposes
+AC7: GitLab Repository Check-in
+GIVEN database script is ready
+WHEN committing to GitLab repository
+THEN DDL script is checked into 
+https://gitlab.spectrumflow.net/pinxt-self-service-dev/db-scripts
+ 
+
+AND script follows repository naming conventions
+AND commit message includes JIRA ticket reference
+ 
+AC10: Sample Data Testing
+GIVEN table is created successfully
+WHEN inserting sample resource links
+THEN can insert documentation links for API families
+AND can insert source control repository links
+AND can insert testing and reference material links
+AND all sample data follows expected patterns
+
+-----------------------------------------------------------
 4435
 ---------------------------------------
 Ticket/ Task : Dashboard and api layer changes for handling CREATE resource links
