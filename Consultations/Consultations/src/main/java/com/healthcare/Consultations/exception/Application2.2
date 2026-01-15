@@ -1,3 +1,253 @@
+package com.infy.api.cloud.entity;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+@Entity
+@Table(name = "APIS", schema = "apicloud")
+@Setter
+@Getter
+@ToString
+public class Apis {
+
+	@Id
+	@Column(name = "API_ID")
+//	@GeneratedValue(strategy = GenerationType.AUTO)
+	@SequenceGenerator(name = "APICLOUD.APIS_API_ID_SEQ", sequenceName = "APICLOUD.APIS_API_ID_SEQ", allocationSize = 1)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "APICLOUD.APIS_API_ID_SEQ")
+	private long apiId;
+
+	@Column(name = "API_NM")
+	private String apiName;
+
+	@Column(name = "API_DESC")
+	private String apiDescription;
+
+	@Column(name = "ADDL_INFO")
+	private String apiAdditionalInfo;
+
+	@Column(name = "VERSION")
+	private String apiVersion;
+
+	@Column(name = "SPEC_PATH")
+	private String specPath;
+
+	@Column(name = "STATUS")
+	private Boolean status;
+
+	@Column(name = "REQUESTED_BY")
+	private String requestedBy;
+
+	@Column(name = "NB_SECURITY")
+	private String nbSecurity;
+
+	@Column(name = "NB_SECURITY_TYPE")
+	private String nbSecurityType;
+
+	@Column(name = "NB_CORS")
+	private Boolean nbCORS;
+
+	@Column(name = "NB_CSRF")
+	private Boolean nbCSRF;
+
+	@Column(name = "NB_XSS")
+	private Boolean nbXSS;
+
+	@Column(name = "SB_SECURITY")
+	private String sbSecurity;
+
+	@Column(name = "SB_SECURITY_TYPE")
+	private String sbSecurityType;
+
+	@Column(name = "SB_TARGET")
+	private Boolean sbTarget;
+
+	@Column(name = "SB_TARGET_TYPE")
+	private String sbTargetType;
+
+	@Column(name = "SB_SSL")
+	private Boolean sbSSL;
+
+	@Column(name = "SEQ_NUMBER")
+	private Long sequenceNumber;
+
+	@Column(name = "TRENDING")
+	private Boolean trending;
+
+	@Column(name = "PRODUCT_ID")
+	private long productId;
+
+	@Column(name = "REQUESTED_DT", nullable = false, updatable = false)
+	@CreationTimestamp
+	private Timestamp requestedTimestamp;
+
+	@Column(name = "CREATION_TS", nullable = false, updatable = false)
+	@CreationTimestamp
+	private Timestamp createdTimestamp;
+
+	@Column(name = "UPDATED_TS")
+	@UpdateTimestamp
+	private Timestamp updatedTimestamp;
+
+
+	@Column(name = "TAGS")
+	private String tags;
+
+
+	@Column(name = "API_QUOTA_INTERVAL")
+	private String apiQuotaInterval;
+
+	@Column(name = "APP_QUOTA_INTERVAL")
+	private String appQuotaInterval;
+
+	@Column(name = "APP_QUOTA_LIMIT")
+	private Long appQuotaLimit;
+
+	@Column(name = "API_QUOTA_LIMIT")
+	private Long apiQuotaLimit;
+
+	@Column(name = "CONSUMER_TYPE")
+	private String consumerType;
+
+	@Column(name = "SPEC_TYPE")
+	private String specType;
+
+	@Column(name = "SB_SPEC_TYPE")
+	private String sbSpecType;
+
+	@Column(name = "SB_SPEC_PATH")
+	private String sbSpecPath;
+
+	@Column(name = "NB_AUTH_URL")
+	private String nbAuthUrl;
+
+	@Column(name = "NB_TOKEN_URL")
+	private String nbTokenUrl;
+
+	@Column(name = "NB_REFRESH_URL")
+	private String nbRefreshUrl;
+
+	@Column(name = "NB_AUTH_SCOPES")
+	private String nbAuthScopes;
+
+	@Column(name = "SB_AUTH_URL")
+	private String sbAuthUrl;
+
+	@Column(name = "SB_TOKEN_URL")
+	private String sbTokenUrl;
+
+	@Column(name = "SB_REFRESH_URL")
+	private String sbRefreshUrl;
+
+	@Column(name = "SB_AUTH_SCOPES")
+	private String sbAuthScopes;
+
+	@Column(name = "SB_ROUTING_LOCATION")
+	private String sbRoutingLocation;
+
+	@Column(name = "SB_ROUTING_FIELD")
+	private String sbRoutingField;
+
+	@Column(name = "SB_ROUTING_PATH")
+	private String sbRoutingPath;
+
+	@Column(name = "PAYLOAD_SIZE_LIMIT")
+	private Integer payloadSizeLimit;
+
+	@Column(name = "PAYLOAD_SIZE_UNIT")
+	private String payloadSizeUnit;
+
+	@Column(name = "BASE_PATH")
+	private String basePath;
+
+	@Column(name = "NB_AUTH_LOCATION")
+	private String nbAuthLocation;
+
+	@Column(name = "NB_AUTH_FIELD")
+	private String nbAuthField;
+
+	@Column(name = "NB_AUTH_PATH")
+	private String nbAuthPath;
+
+	@Column(name = "SB_AUTH_LOCATION")
+	private String sbAuthLocation;
+
+	@Column(name = "SB_AUTH_FIELD")
+	private String sbAuthField;
+
+	@Column(name = "SB_AUTH_PATH")
+	private String sbAuthPath;
+
+	@Column(name = "RESPONSE_CACHE")
+	private Boolean responseCache;
+
+	@Column(name = "ALTERNATE_NAME")
+	private String alternateName;
+
+
+	@Column(name = "TARGET_BASE_PATH")
+	private String targetBasePath;
+
+	@Column(name = "ADDITIONAL_PLUGIN_REQUIREMENTS")
+	private String additionalPluginRequirements;
+	
+	@Column(name = "TEAM_ID")
+	private Long teamId;
+	
+	@Column(name = "Capacity")
+	private Short capacity;
+
+	@Column(name = "MODALITY")
+	private String modality;
+
+	@Column (name= "DEPLOYED_ENVS" , columnDefinition = "TEXT[]" )
+	private List<String> deployedEnvironments;
+
+	@Column(name = "LIFECYCLE_STAGE")
+	private String lifeCycleStage;
+	
+	@Column(name = "LIFECYCLE_COMMENT", columnDefinition = "TEXT")
+	private String lifeCycleComment;
+
+//	Code for implementing PINXTSS-2695 start
+	@Column(name = "API_FAMILY_ID")
+	private Integer apiFamilyId;
+
+	@Column(name = "IS_LATEST")
+	private Boolean isLatest;
+//	Code for implementing PINXTSS-2695 end
+	
+//    @Column(name = "API_OVERRIDE_DATA", columnDefinition = "jsonb")
+//    @Type(type = "jsonb")
+//	private String apiOverrideData;
+	
+	@OneToMany(mappedBy = "api", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<ApiMonitoringInfo> monitoringInfo = new ArrayList<>();
+	
+
+}
+
+---------------------------------------------------------
 package com.infy.api.cloud.model;
 
 
