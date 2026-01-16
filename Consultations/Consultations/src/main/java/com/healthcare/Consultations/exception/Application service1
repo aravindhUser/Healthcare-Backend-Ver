@@ -1,0 +1,46 @@
+    public ResponseEntity getApisWithTeamName(long id, String transactionID, String xTraceId) throws JsonMappingException, JsonProcessingException {
+        logger.info("Inside getApiWithId method : ");
+
+        logger.info("traceId={} transactionId={} - Fetching API details for apiId{}", xTraceId, transactionID, id);
+
+        try {
+            Optional<GetApiRequest> entity = apiRepository.getAllApiById(id);
+            if (entity.isPresent()) {
+                ApiResponse apientity = this.getEntityOpt(entity);
+                apientity.setContacts(getApiContactsWithTeamName(entity.get().getApiId()));
+
+                Integer apiFamilyId = entity.get().getApiFamilyId();
+                try {
+                    List<ApiResourceLinks> links =
+                            apiResourceLinksRepository.findApiResourceLinksByApiFamilyId(apiFamilyId);
+
+                    apientity.setApiResourceLinks(
+                            (links == null || links.isEmpty()) ? Collections.emptyList() : links
+                    );
+
+                    logger.info("traceId={} transactionId={} - Retrieved API {} with {} resource links",
+                            xTraceId, transactionID, id, apientity.getApiResourceLinks().size());
+
+                    logger.debug("traceId={} transactionId={} - API resource links: {}",
+                            xTraceId, transactionID, id, apientity.getApiResourceLinks());
+                }
+                catch (Exception ex) {
+                    logger.error("traceId={} transactionId={} - Failed to retrieve resource links for API {} : {}",
+                            xTraceId, transactionID, id, ex.getMessage(),ex);
+                    throw ex;
+                }
+                logger.info("traceId={} transactionId={} - Successfully built API response for apiId={}",
+                        xTraceId, transactionID, id);
+
+                logger.info("apientity object for response:{}", apientity);
+                return new ResponseEntity(apientity, HttpStatus.OK);
+
+            } else {
+                throw new RecordNotFoundException("No record exist for given id");
+            }
+        } catch (Exception e) {
+            logger.error("Exception occured in getApiWithId method:{}", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Exception occured in getApiWithId method:", e);
+        }
+    }
