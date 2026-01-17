@@ -1,0 +1,403 @@
+app.context.path=/apiCloud/v1/
+issuerString=https://localhost/auth/saml/v2/corporate/user/sso/auth
+
+logging.level.org.springframework.boot.autoconfigure=INFO
+logging.level.org.springframework=ERROR
+
+server.error.include-message=always
+server.error.include-stacktrace=never
+server.error.whitelabel.enabled=false
+
+server.port=8080
+
+
+spring.application.name=apicloud-service-dashboard
+
+#spring.sql.init.mode=always
+#spring.datasource.password=""
+#spring.sql.init.platform=postgres
+#spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+#spring.datasource.username=kong
+#
+#spring.jpa.hibernate.ddl-auto=none
+#spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect
+#spring.jpa.properties.hibernate.enable_lazy_load_no_trans=true
+#spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
+
+
+spring.sql.init.mode=always
+#spring.datasource.password=""
+spring.sql.init.platform=postgres
+#spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+#spring.datasource.username=kong
+
+spring.datasource.url=jdbc:postgresql://localhost:5434/pinxtselfservicedevbetards
+spring.datasource.username=postgres
+spring.datasource.password=4baQ96ukPsmDK1LxJv1l
+
+#svc-jira-pinxtss.username=
+#svc-jira-pinxtss.password=
+
+spring.main.banner-mode=off
+spring.mvc.throw-exception-if-no-handler-found=true
+spring.web.resources.add-mappings=false
+
+springdoc.swagger-ui.path=/swagger-ui.html
+#OpenAPI 3.0 documentation config
+springdoc.api-docs.path=/v3/api-docs
+springdoc.api-docs.enabled=true
+springdoc.swagger-ui.enabled=false
+springdoc.writer-with-default-pretty-printer=true
+springdoc.writer-with-order-by-keys=true
+springdoc.api-docs.version=OPENAPI_3_0
+
+apiServicePath=http://localhost:8081/pinxt-selfservice/v1/apis
+#apiServicePath=http://selfservice-kong-ingress.shared.dev-spectrum.net/pinxt-selfservice/v1/apis
+planServicePath=http://selfservice-kong-ingress.shared.dev-spectrum.net/pinxt-selfservice/v1/plans/
+publishServicePath=http://selfservice-kong-ingress.shared.dev-spectrum.net/pinxt-selfservice/v1/publish
+env.cluster-url=shared.dev-spectrum.net
+openSearchUtilityServicePath=http://apicloudopensearchutility.${env.cluster-url}/pinxt-selfservice/v1/opensearch
+apiDocumentSearchIndex=chtr-api-catalog-dev-beta
+
+bucket.name_zip=pinxt-chtr-publish-dev
+publishBucketName=${bucket.name_zip}
+sbspecBucketName=pinxt-chtr-sb-specs-dev
+nbspecBucketName=pinxt-chtr-nb-specs-dev
+
+s3.location.CLIENT_OPEN_API_SPEC=s3://${sbspecBucketName}/{productName}-{apiName}-{apiVersion}.yaml
+s3.location.CLIENT_SWAGGER_PATH=s3://${publishBucketName}/{productName}-{apiName}-{apiMajorVersion}/{apiVersion}/apispec/{productName}-{apiName}-{apiMajorVersion}.yaml
+s3.location.SERVICE_CONF_FILE_PATH=s3://${publishBucketName}/{productName}-{apiName}-{apiMajorVersion}/{apiVersion}/apiproxy/{productName}-{apiName}-{apiMajorVersion}.conf
+s3.location.SERVICE_ROUTING_INFO=s3://${publishBucketName}/{productName}-{apiName}-{apiMajorVersion}/{apiVersion}/api_db_scripts
+s3.location.SERVICE_PLUGIN_INFO=s3://${publishBucketName}/{productName}-{apiName}-{apiMajorVersion}/{apiVersion}/api_db_scripts
+
+# these need to be updated with valid entries
+emailServicePath=""
+# emailServicePath=http://apicloud-utility-emailnotification-svc:8080/sendEmail
+emailServiceRequired=False
+# emailUrl=https://oneclickapi.imapnext.com/profile
+emailUrl=""
+# emailUrlProd=https://apicloud.infosysapps.com/profile
+emailUrlProd=""
+#Central Logging Framework
+#logging.file.name=./log/spring_app_log_file.log
+#logging.file.max-size=1MB
+httpprobes.isalive.endpoint=/isAlive
+httpprobes.isready.endpoint=/isReady
+httpprobes.healthinfo.endpoint=/healthInfo
+override.httpprobes.isalive.endpoint=false
+override.httpprobes.isready.endpoint=false
+override.httpprobes.healthinfo.endpoint=false
+management.endpoint.health.show-details=always
+management.health.defaults.enabled=false
+management.server.port=8081
+
+
+
+#Connecting through local
+#spring.datasource.initialization-mode=always
+#spring.datasource.platform=postgres
+#spring.datasource.url=jdbc:postgresql://localhost:8080/postgres
+#spring.datasource.username=postgres
+#spring.datasource.password=Selfservice2022
+
+spring.config.import=optional:configtree:/mnt/vault/secrets/
+
+jira.server=https://jira-uat.corp.chartercom.com
+# possibility to configure different values for service/client onboarding
+jira.server.service-onboarding=${jira.server}
+
+jira.retry.attempts=3
+jira.retry.delay=2000
+
+jira.rest.template.read.timeout=5000
+jira.rest.template.connect.timeout=5000
+
+
+jira.process.PINXTMIGEN.gateways=Enterprise GW,Spectrum Payment Services GW,Mobile GW
+jira.process.PINXTMIGEN.after-submit=pinxtmigen-epic,pinxtmigen-main-story,pinxtmigen-review-subtask
+jira.process.PINXTMIGEN.after-publish=pinxtmigen-onboard-subtask
+
+jira.process.PINXT.gateways=Shared GW,Video GW
+jira.process.PINXT.after-submit=pinxt-main-story,pinxt-review-subtask
+jira.process.PINXT.after-publish=pinxt-onboard-subtask
+
+
+jira.template.parameter.pinxt-epic-key=PINXT-10714
+jira.template.parameter.pinxtss-portal=https://pinxt-selfservice.shared.dev-spectrum.net
+jira.template.parameter.service-onboarding-chalk-page=https://chalk.charter.com/pages/viewpage.action?pageId=2225700241
+
+
+jira.template.type.pinxt-main-story=STORY
+jira.template.pinxt-main-story.issue=classpath:templates/jiraIssueTemplate.json
+jira.template.pinxt-main-story.fields.summary=#{serviceName} #{version} onboarding request to #{gateway}
+jira.template.pinxt-main-story.fields.description=classpath:templates/jiraStoryDescTemplate.txt
+jira.template.pinxt-main-story.fields.customfield_13800=_
+jira.template.pinxt-main-story.fields.customfield_10300=${jira.template.parameter.pinxt-epic-key}
+
+jira.template.type.pinxt-review-subtask=REVIEW_SUB_TASK
+jira.template.pinxt-review-subtask.issue=classpath:templates/jiraSubtaskTemplate.json
+jira.template.pinxt-review-subtask.fields.summary=Review #{serviceName} #{version}
+jira.template.pinxt-review-subtask.fields.description=classpath:templates/jiraReviewSubtaskDescTemplate.txt
+
+jira.template.type.pinxt-onboard-subtask=ONBOARD_SUB_TASK
+jira.template.pinxt-onboard-subtask.issue=classpath:templates/jiraSubtaskTemplate.json
+jira.template.pinxt-onboard-subtask.fields.summary=Onboard #{serviceName} #{version} to #{gateway}
+jira.template.pinxt-onboard-subtask.fields.description=classpath:templates/jiraOnboardSubtaskDescTemplate.txt
+
+jira.template.service-update-description.fields.description=${jira.template.pinxt-onboard-subtask.fields.description}
+
+
+jira.template.type.pinxtmigen-epic=EPIC
+jira.template.pinxtmigen-epic.fields.summary=Onboard #{serviceName} #{version} to #{gateway}
+jira.template.pinxtmigen-epic.fields.customfield_10302=Onboard #{serviceName} #{version} to #{gateway}
+jira.template.pinxtmigen-epic.fields.description=classpath:templates/jiraEpicDescTemplate.txt
+jira.template.pinxtmigen-epic.fields.project.key=PINXTMIGEN
+jira.template.pinxtmigen-epic.fields.issuetype.id=6
+jira.template.pinxtmigen-epic.fields.priority.id=3
+jira.template.pinxtmigen-epic.fields.components=json:[]
+jira.template.pinxtmigen-epic.fields.reporter.name=#{@claimProvider.getCurrentUserIdOrThrow()}
+
+jira.template.type.pinxtmigen-main-story=STORY
+jira.template.pinxtmigen-main-story.fields.summary=Onboard #{serviceName} #{version} to #{gateway}
+jira.template.pinxtmigen-main-story.fields.description=classpath:templates/jiraStoryDescTemplate.txt
+jira.template.pinxtmigen-main-story.fields.project.key=PINXTMIGEN
+jira.template.pinxtmigen-main-story.fields.issuetype.id=7
+jira.template.pinxtmigen-main-story.fields.priority.id=3
+jira.template.pinxtmigen-main-story.fields.customfield_10300=#{epicKey}
+jira.template.pinxtmigen-main-story.fields.reporter.name=#{@claimProvider.getCurrentUserIdOrThrow()}
+
+jira.template.type.pinxtmigen-review-subtask=REVIEW_SUB_TASK
+jira.template.pinxtmigen-review-subtask.issue=classpath:templates/jiraSubtaskTemplate.json
+jira.template.pinxtmigen-review-subtask.fields.summary=Review #{serviceName} #{version}
+jira.template.pinxtmigen-review-subtask.fields.description=classpath:templates/jiraReviewSubtaskDescTemplate.txt
+jira.template.pinxtmigen-review-subtask.fields.project.key=PINXTMIGEN
+
+jira.template.type.pinxtmigen-onboard-subtask=ONBOARD_SUB_TASK
+jira.template.pinxtmigen-onboard-subtask.issue=classpath:templates/jiraSubtaskTemplate.json
+jira.template.pinxtmigen-onboard-subtask.fields.summary=Onboard #{serviceName} #{version} to #{gateway}
+jira.template.pinxtmigen-onboard-subtask.fields.description=classpath:templates/jiraOnboardSubtaskDescTemplate.txt
+jira.template.pinxtmigen-onboard-subtask.fields.project.key=PINXTMIGEN
+
+svc-jira-pinxtss.username=
+svc-jira-pinxtss.password=
+
+# API Information
+openapi.info.title=Dashboard Service API
+openapi.info.version=v1.0
+openapi.info.description=Dashboard Management Service for API Management Console (AMC) Portal\n\n\
+This service manages administrative dashboards and batch operations for APIs onboarded to the NGINX gateway, enabling efficient dashboard management and workflow automation.\n\n\
+Key Features:\n\
+* Create and manage administrative dashboards for API oversight\n\
+* Enable efficient batch operations for API management workflows\n\
+* Support API governance through JIRA integration and workflow automation\n\
+* Facilitate organized dashboard operations for NGINX gateway management\n\n\
+Available Endpoints:\n\
+* POST /pinxt-selfservice/v1/dashboard - Create new dashboard\n\
+* GET /pinxt-selfservice/v1/dashboard/{id} - Get dashboard by ID\n\
+* PATCH /pinxt-selfservice/v1/dashboard/{id} - Update dashboard\n\
+* DELETE /pinxt-selfservice/v1/dashboard/{id} - Delete dashboard\n\
+* POST /pinxt-selfservice/v1/appDashboard - Create app dashboard\n\
+* GET /pinxt-selfservice/v1/appDashboard/{dashboardId} - Get app dashboard by ID\n\
+* PATCH /pinxt-selfservice/v1/appDashboard/{dashboardId} - Update app dashboard\n\
+* GET /pinxt-selfservice/v1/appDashboard - Get app dashboards\n\
+* POST /pinxt-selfservice/v1/batch-update - Start batch update\n\
+* GET /pinxt-selfservice/v1/batch-update/{id} - Get batch update\n\
+* GET /pinxt-selfservice/v1/batch-update/{id}/status - Get batch update status\n\n\
+Authentication:\n\
+* JWT authentication required (X-JWT header)\n\
+* Administrative privileges required for dashboard management\n\
+* Comprehensive security validation\n\n\
+Use Cases:\n\
+* API administrators can create and manage operational dashboards\n\
+* Users can monitor API metrics and performance through dashboards\n\
+* Administrators can execute batch operations for API lifecycle management\n\
+* Support JIRA integration for workflow automation and tracking\n\n\
+Note: This service is a critical administrative component of the API Management Portal, designed to enhance operational efficiency and provide comprehensive dashboard management capabilities.
+
+openapi.servers.dev=https://pinxt-selfservice.shared.dev-spectrum.net
+openapi.servers.int=https://pinxt-selfservice-int.shared.dev-spectrum.net
+openapi.servers.stable=https://pinxt-selfservice-stable.shared.dev-spectrum.net
+openapi.servers.qa=https://pinxt-selfservice.shared.qa-spectrum.net
+openapi.servers.uat=https://pinxt-selfservice.shared.uat-spectrum.net
+
+
+-------------------------------------------------------------------------------------
+
+
+
+app.context.path=/apiCloud/v1/
+issuerString=https://localhost/auth/saml/v2/corporate/user/sso/auth
+
+bucket.name_zip=pinxt-chtr-publish-dev
+filemgmtServiceUrl=http://localhost:8080
+filemgmtDeleteApiUrl=${filemgmtServiceUrl}${app.context.path}fileManagement/buckets/${bucket.name_zip}/files/
+
+
+env.cluster-url=ss-dev-beta.svc.cluster.local:8080
+env.bucket-suffix=dev
+
+openSearchServicePath=http://apicloudopensearchutility.${env.cluster-url}/pinxt-selfservice/v1/opensearch
+
+#openSearchServicePath=http://localhost:8080/pinxt-selfservice/v1/opensearch
+
+logging.level.org.springframework.boot.autoconfigure=INFO
+logging.level.org.springframework=ERROR
+
+server.error.whitelabel.enabled=false
+server.port=8082
+#server.error.include-message=always
+
+spring.application.name=apicloud-service-api
+
+ 
+app.hostname=https://apis-internal-corp.shared.dev-spectrum.net
+specpath.urlPattern=${app.hostname}/pinxt-selfservice/v1/fileManagement/buckets/{bucket}/files/{file}
+sbspecBucketName=pinxt-chtr-sb-specs-dev
+nbspecBucketName=pinxt-chtr-nb-specs-dev
+
+
+
+#spring.sql.init.mode=always
+#spring.datasource.password=""
+#spring.sql.init.platform=postgres
+#spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+#spring.datasource.username=kong
+#
+#spring.jpa.hibernate.ddl-auto=none
+#spring.jpa.hibernate.naming.physical-strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+#spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect
+#spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
+
+spring.sql.init.mode=always
+#spring.datasource.password=""
+spring.sql.init.platform=postgres
+#spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+#spring.datasource.username=kong
+
+spring.datasource.url=jdbc:postgresql://localhost:5434/pinxtselfservicedevbetards
+spring.datasource.username=postgres
+spring.datasource.password=4baQ96ukPsmDK1LxJv1l
+
+svc-jira-pinxtss.username=
+svc-jira-pinxtss.password=
+
+spring.main.banner-mode=off
+spring.mvc.throw-exception-if-no-handler-found=true
+spring.web.resources.add-mappings=false
+
+springdoc.swagger-ui.path=/swagger-ui.html
+
+#Central Logging Framework
+#logging.file.name=./log/spring_app_log_file.log
+#logging.file.max-size=1MB
+httpprobes.isalive.endpoint=/isAlive
+httpprobes.isready.endpoint=/isReady
+httpprobes.healthinfo.endpoint=/healthInfo
+override.httpprobes.isalive.endpoint=false
+override.httpprobes.isready.endpoint=false
+override.httpprobes.healthinfo.endpoint=false
+management.endpoint.health.show-details=always
+management.health.defaults.enabled=false
+management.server.port=8083
+
+#connecting to charter database env
+#spring.datasource.initialization-mode=always
+#spring.datasource.platform=postgres
+#spring.datasource.url=jdbc:postgresql://localhost:8080/postgres
+#spring.datasource.username=postgres
+#spring.datasource.password=''
+intakeJiraUrl=https://jira.charter.com/browse
+server.error.include-message=always
+
+#Property for version-lock
+lockExpiryTimeIntervalInMinutes=
+
+cmdb.service.url=
+isCMDBInfoValidationEnabled=true
+
+# API Information
+openapi.info.title=API Cloud Service API
+openapi.info.version=v1.0
+openapi.info.description=API Management Service for API Management Console (AMC) Portal\n\n\
+This service manages comprehensive API lifecycle operations for APIs onboarded to the NGINX gateway, enabling efficient API management and organization.\n\n\
+Key Features:\n\
+* Create and manage APIs with full lifecycle support\n\
+* Enable efficient API discovery through comprehensive metadata management\n\
+* Support API governance through structured version control and ratings\n\
+* Facilitate organized API onboarding to NGINX gateway with client management\n\n\
+Available Endpoints:\n\
+* POST /apis - Create new API\n\
+* GET /apis/{apiId} - Get API by ID\n\
+* PATCH /apis/{apiId} - Update API\n\
+* DELETE /internal-api/apis/{apiId} - Delete API\n\
+* GET /apis - Get all APIs with filtering options\n\
+* GET /apis/availabilityCheck - Check API availability\n\
+* GET /apis/families/{apiFamilyId}/versions - Get API versions by family\n\
+* GET /apis/{apiId}/clients - Get clients by API ID\n\
+* GET /apis/{apiId}/rating - Get API rating\n\
+* PUT /apis/{apiId}/rating - Create or update API rating\n\
+* POST /apis/{apiId}/feedback - Create API feedback\n\
+* GET /apis/{apiId}/feedback - Get API feedback\n\
+* POST /apis/{apiId}/sdk - Create SDK for API\n\
+* GET /gateway - Get all gateway information\n\
+* GET /gateway/{gatewayId} - Get gateway by ID\n\
+* GET /apis/opensearch - OpenSearch API discovery\n\
+* POST /apis/internal-api/bulksync - Bulk sync APIs to OpenSearch\n\
+* POST /apis/internal-api/bulksync/ondemand - On-demand bulk sync\n\
+* POST /apis/version-locks - Create version locks\n\
+* DELETE /apis/version-locks/{apiId} - Delete version locks\n\
+* GET /app/validate - Validate CMDB application\n\n\
+Authentication:\n\
+* JWT authentication required (X-JWT header)\n\
+* Administrative privileges required for API management operations\n\
+* Comprehensive security validation\n\n\
+Use Cases:\n\
+* API teams can create and manage APIs during onboarding process\n\
+* Users can search and discover APIs using comprehensive filtering\n\
+* Administrators can manage API lifecycle and client access\n\
+* Support API rating, feedback, and SDK generation workflows\n\n\
+Note: This service is the core component of the API Management Portal, designed to provide comprehensive API lifecycle management and discovery capabilities.
+
+
+
+openapi.servers.dev=https://pinxt-selfservice.shared.dev-spectrum.net
+openapi.servers.int=https://pinxt-selfservice-int.shared.dev-spectrum.net
+openapi.servers.stable=https://pinxt-selfservice-stable.shared.dev-spectrum.net
+openapi.servers.qa=https://pinxt-selfservice.shared.qa-spectrum.net
+openapi.servers.uat=https://pinxt-selfservice.shared.uat-spectrum.net
+
+
+# SpringDoc Configuration
+springdoc.api-docs.path=/v3/api-docs
+springdoc.swagger-ui.enabled=false
+springdoc.writer-with-default-pretty-printer=true
+springdoc.api-docs.version=OPENAPI_3_0
+springdoc.default-flat-param-object=true
+springdoc.default-produces-media-type=application/json
+springdoc.default-consumes-media-type=application/json
+
+--------------------------------------------------------------------------------------------
+@RestController
+@RequestMapping(value = "${app.context.path}")
+@GetMapping("/apis/{apiId}")
+	public ResponseEntity getApiId(
+			@PathVariable("apiId") long id,
+			@RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+			@RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException, JsonMappingException, JsonProcessingException {
+		logger.info("Inside getApiId method :");
+
+---------------------------------------------------------------------
+
+@RestController
+//@RequestMapping(value = "${app.context.path}")
+@RequestMapping(value = "/pinxt-selfservice/v1")
+@Tag(name = "Admin Dashboard", description = "APIs for managing admin dashboards and API configurations")
+public class AdminDashboardController {
+
+@GetMapping(value = "/dashboard/{id}")
+	public ResponseEntity<DasboardMasterRequest> getDashboardId(
+	@PathVariable long id,
+	@RequestHeader(value = "X-JWT", required = false) String jwtToken,
+	@RequestHeader(value = "X-TRANSACTION-ID") String transactionID,
+	@RequestHeader(value = "x-trace-id") String xTraceId) throws Exception {
+		LOGGER.info("Inside getDashboardId method:");
