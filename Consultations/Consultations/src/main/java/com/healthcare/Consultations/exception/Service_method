@@ -46,3 +46,48 @@ public ResponseEntity getApisWithTeamName(long id, String transactionID, String 
                     "Exception occured in getApiWithId method:", e);
         }
     }
+----------------------------------------------------------------------------------------------------
+ApiController
+---------------------------------------------------------------------
+@GetMapping("/apis/{apiId}")
+	public ResponseEntity getApiId(
+			@PathVariable("apiId") long id,
+			@RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+			@RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException, JsonMappingException, JsonProcessingException {
+		logger.info("Inside getApiId method :");
+		try {
+            return apiService.getApisWithTeamName(id, transactionID, xTraceId);
+		} catch (Exception ex) {
+			logger.info("Exception occured in getApiId :", ex);
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception occured in getApiId", ex);
+		}
+	}
+
+//	Code for implementing PINXTSS-2730 start
+	@GetMapping(value = "/apis/families/{apiFamilyId}/versions",produces = "application/json")
+	public ResponseEntity getVersions(
+			@PathVariable("apiFamilyId") Integer apiFamilyId,
+			@RequestParam(value = "status", required = false, defaultValue = "*") String status,//Code for implementing PINXTSS-2891
+			@RequestHeader(value = "X-TRANSACTION-ID", required = false) String transactionID,
+			@RequestHeader(value = "x-trace-id") String xTraceId) throws RecordNotFoundException, IOException {
+		logger.info("Inside getVersions method :");
+		try {
+			return apiService.getVersions(apiFamilyId,status);//Code for implementing PINXTSS-2891. Added new paramenter status to getVersions().
+		}
+		catch(NullPointerException | NumberFormatException ex){
+			logger.error("Exception occurred in getVersions :", ex);
+            String message = "API Family Id information is missing or invalid";
+			return ResponseEntity.status(BAD_REQUEST).body(getVersionsErrorResponse(BAD_REQUEST.value(), BAD_REQUEST_ERROR, message, xTraceId));
+		}
+		catch (RecordNotFoundException ex){
+			logger.error("Exception occurred in getVersions :", ex);
+            String message = "No API versions found for the given apiFamilyId";
+			return ResponseEntity.status(NOT_FOUND).body(getVersionsErrorResponse(NOT_FOUND.value(), NOT_FOUND_ERROR, message, xTraceId));
+		}
+		catch (Exception ex) {
+			logger.error("Exception occurred in getVersions :", ex);
+			String error = "Internal Server Error";
+			String message = "An unexpected error occurred while trying to get versions of this API";
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(getVersionsErrorResponse(INTERNAL_SERVER_ERROR.value(),error, message, xTraceId));
+		}
+	}
