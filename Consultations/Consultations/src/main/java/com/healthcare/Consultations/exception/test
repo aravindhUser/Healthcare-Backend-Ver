@@ -1,0 +1,575 @@
+public ResponseEntity getApisWithTeamName(long id, String transactionID, String xTraceId) throws JsonMappingException, JsonProcessingException {
+        logger.info("Inside getApiWithId method : ");
+
+        logger.info("traceId={} transactionId={} - Fetching API details for apiId{}", xTraceId, transactionID, id);
+
+        try {
+            Optional<GetApiRequest> entity = apiRepository.getAllApiById(id);
+            if (entity.isPresent()) {
+                ApiResponse apientity = this.getEntityOpt(entity);
+                apientity.setContacts(getApiContactsWithTeamName(entity.get().getApiId()));
+
+                Integer apiFamilyId = entity.get().getApiFamilyId();
+                try {
+                    if (apiFamilyId!= null) {
+                        Optional<List<ApiResourceLinks>> OptionalLinks =
+                                Optional.ofNullable(
+                                        apiResourceLinksRepository.findApiResourceLinksByApiFamilyId(apiFamilyId));
+
+                        List<ApiResourceLinks> links = OptionalLinks
+                                .filter(list -> !list.isEmpty())
+                                .orElse(Collections.emptyList());
+
+                        List<ApiResourceLinksDTO> ApiResourcelinksDTOs = links.stream()
+                                .map(link -> modelMapper.map(link, ApiResourceLinksDTO.class))
+                                .collect(Collectors.toList());
+
+                        apientity.setApiResourceLinks(ApiResourcelinksDTOs);
+
+                        logger.info("traceId={} transactionId={} - Retrieved API {} with {} resource links",
+                                xTraceId, transactionID, id, ApiResourcelinksDTOs.size());
+
+                        List<Long> linkIds = ApiResourcelinksDTOs.stream()
+                                .map(ApiResourceLinksDTO::getLinkId)
+                                .collect(Collectors.toList());
+
+                        logger.debug("traceId={} transactionId={} - API resource linkIds: {}",
+                                xTraceId, transactionID, id, linkIds);
+                    }
+                    else{
+                        apientity.setApiResourceLinks(Collections.emptyList());
+                    }
+                }
+                catch (Exception ex) {
+                    logger.error("traceId={} transactionId={} - Failed to retrieve resource links for API {} : {}",
+                            xTraceId, transactionID, id, ex.getMessage(),ex);
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Failed to retrieve API Resource Links");
+                }
+                logger.info("traceId={} transactionId={} - Successfully built API response for apiId={}",
+                        xTraceId, transactionID, id);
+
+                logger.info("apientity object for response:{}", apientity);
+                return new ResponseEntity(apientity, HttpStatus.OK);
+
+            } else {
+                throw new RecordNotFoundException("No record exist for given id");
+            }
+        } catch(Exception e) {
+            logger.error("Exception occured in getApiWithId method:{}", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Exception occured in getApiWithId method:", e);
+        }
+    }
+---------------------------------------------------------------------------------------------
+private ApiResourceLinks createResourceLink(Long linkId,
+                                                Integer apiFamilyId,
+                                                int categoryId,
+                                                int subcategoryId,
+                                                String title,
+                                                String url) {
+        ApiResourceLinks link = new ApiResourceLinks();
+        link.setLinkId(linkId);
+        link.setApiFamilyId(apiFamilyId);
+        link.setCategoryId(categoryId);
+        link.setSubcategoryId(subcategoryId);
+        link.setTitle(title);
+        link.setUrl(url);
+        return link;
+    }
+
+    private ApiResourceLinksDTO createDto(ApiResourceLinks link) {
+        ApiResourceLinksDTO dto = new ApiResourceLinksDTO();
+        dto.setLinkId(link.getLinkId());
+        dto.setCategoryId(link.getCategoryId());
+        dto.setSubcategoryId(link.getSubcategoryId());
+        dto.setTitle(link.getTitle());
+        dto.setUrl(link.getUrl());
+        return dto;
+    }
+
+    @Test
+    void testGetApiResourceLinks_Success() throws Exception {
+
+        Long apiId = 1L;
+        Integer apiFamilyId = 100;
+
+        Optional<GetApiRequest> entity =
+                Optional.of(createGetApiRequest(apiId, apiFamilyId, true));
+
+        ApiResourceLinks link1 = createResourceLink(1L, apiFamilyId, 1, 1,
+                "Documentation", "https://example.com/docs");
+        ApiResourceLinks link2 = createResourceLink(2L, apiFamilyId, 1, 2,
+                "API Reference", "https://example.com/reference");
+
+        List<ApiResourceLinks> resourceLinks = Arrays.asList(link1, link2);
+
+        when(apiRepository.getAllApiById(apiId)).thenReturn(entity);
+        when(apiResourceLinksRepository.findApiResourceLinksByApiFamilyId(apiFamilyId))
+                .thenReturn(resourceLinks);
+
+        when(modelMapper.map(link1, ApiResourceLinksDTO.class)).thenReturn(createDto(link1));
+        when(modelMapper.map(link2, ApiResourceLinksDTO.class)).thenReturn(createDto(link2));
+
+
+        ResponseEntity<ApiResponse> responseEntity =
+                service.getApisWithTeamName(apiId, "txn1", "trace1");
+
+        ApiResponse response = responseEntity.getBody();
+
+        assertNotNull(response);
+        assertNotNull(response.getApiResourceLinks());
+        assertEquals(2, response.getApiResourceLinks().size());
+        assertEquals("Documentation", response.getApiResourceLinks().get(0).getTitle());
+    }
+
+    @Test
+    void testGetApiResourceLinks_EmptyList() throws Exception {
+
+        Long apiId = 1L;
+        Integer apiFamilyId = 100;
+
+        Optional<GetApiRequest> entity =
+                Optional.of(createGetApiRequest(apiId, apiFamilyId, true));
+
+        when(apiRepository.getAllApiById(apiId)).thenReturn(entity);
+        when(apiResourceLinksRepository.findApiResourceLinksByApiFamilyId(apiFamilyId))
+                .thenReturn(Collections.emptyList());
+
+        ResponseEntity<ApiResponse> responseEntity =
+                service.getApisWithTeamName(apiId, "txn1", "trace1");
+
+        ApiResponse response = responseEntity.getBody();
+
+        assertNotNull(response);
+        assertNotNull(response.getApiResourceLinks());
+        assertTrue(response.getApiResourceLinks().isEmpty());
+    }
+
+    @Test
+    void testGetApiResourceLinks_RepositoryException() throws Exception {
+
+        Long apiId = 1L;
+        Integer apiFamilyId = 100;
+
+        Optional<GetApiRequest> entity =
+                Optional.of(createGetApiRequest(apiId, apiFamilyId, true));
+
+        when(apiRepository.getAllApiById(apiId)).thenReturn(entity);
+        when(apiResourceLinksRepository.findApiResourceLinksByApiFamilyId(apiFamilyId))
+                .thenThrow(new RuntimeException("DB error"));
+
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class, () -> service.getApisWithTeamName(apiId,"txn","trace1")
+        );
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR,ex.getStatusCode());
+        assertTrue(ex.getReason().contains("failed to retrieve API Resource Links"));
+
+
+
+    }
+
+    @Test
+    void testGetApisWithTeamName_RecordNotFound() {
+
+        Long apiId = 1L;
+
+        when(apiRepository.getAllApiById(apiId)).thenReturn(Optional.empty());
+
+        assertThrows(RecordNotFoundException.class,
+                () -> service.getApisWithTeamName(apiId, "txn1", "trace1"));
+    }
+
+
+------------------------------------------------------------------------------------
+"C:\Program Files\Java\jdk-21\bin\java.exe" -javaagent:C:\Users\2440930\AppData\Local\JetBrains\IdeaIC2025.2\captureAgent\debugger-agent.jar=file:///C:/Users/2440930/AppData/Local/Temp/capture3790747817070446495.props -ea -Didea.test.cyclic.buffer.size=1048576 "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\lib\idea_rt.jar=58549" -Dkotlinx.coroutines.debug.enable.creation.stack.trace=false -Ddebugger.agent.enable.coroutines=true -Dkotlinx.coroutines.debug.enable.flows.stack.trace=true -Dkotlinx.coroutines.debug.enable.mutable.state.flows.stack.trace=true -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath "C:\Users\2440930\.m2\repository\org\junit\platform\junit-platform-launcher\1.12.2\junit-platform-launcher-1.12.2.jar;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\lib\idea_rt.jar;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\plugins\junit\lib\junit6-rt.jar;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\plugins\junit\lib\junit5-rt.jar;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\plugins\junit\lib\junit-rt.jar;C:\Users\2440930\Project\APIMC-4434\newwork\apicloud-service-api\target\test-classes;C:\Users\2440930\Project\APIMC-4434\newwork\apicloud-service-api\target\classes;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\3.5.3\spring-boot-starter-data-jpa-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter\3.5.3\spring-boot-starter-3.5.3.jar;C:\Users\2440930\.m2\repository\jakarta\annotation\jakarta.annotation-api\2.1.1\jakarta.annotation-api-2.1.1.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\3.5.3\spring-boot-starter-jdbc-3.5.3.jar;C:\Users\2440930\.m2\repository\com\zaxxer\HikariCP\6.3.0\HikariCP-6.3.0.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-jdbc\6.2.8\spring-jdbc-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\data\spring-data-jpa\3.5.1\spring-data-jpa-3.5.1.jar;C:\Users\2440930\.m2\repository\org\springframework\data\spring-data-commons\3.5.1\spring-data-commons-3.5.1.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-orm\6.2.8\spring-orm-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-tx\6.2.8\spring-tx-6.2.8.jar;C:\Users\2440930\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-aspects\6.2.8\spring-aspects-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-web\3.5.3\spring-boot-starter-web-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-json\3.5.3\spring-boot-starter-json-3.5.3.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.19.1\jackson-databind-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.19.1\jackson-annotations-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.19.1\jackson-core-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\datatype\jackson-datatype-jdk8\2.19.1\jackson-datatype-jdk8-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\datatype\jackson-datatype-jsr310\2.19.1\jackson-datatype-jsr310-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\module\jackson-module-parameter-names\2.19.1\jackson-module-parameter-names-2.19.1.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\3.5.3\spring-boot-starter-tomcat-3.5.3.jar;C:\Users\2440930\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\10.1.42\tomcat-embed-el-10.1.42.jar;C:\Users\2440930\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\10.1.42\tomcat-embed-websocket-10.1.42.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-web\6.2.8\spring-web-6.2.8.jar;C:\Users\2440930\.m2\repository\pi-nxt-self-service-common-lib\pi-nxt-self-service-common-lib\0.0.4-SNAPSHOT\pi-nxt-self-service-common-lib-0.0.4-20250923.184504-1.jar;C:\Users\2440930\.m2\repository\org\modelmapper\modelmapper\3.2.0\modelmapper-3.2.0.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-log4j2\3.5.3\spring-boot-starter-log4j2-3.5.3.jar;C:\Users\2440930\.m2\repository\org\apache\logging\log4j\log4j-slf4j2-impl\2.24.3\log4j-slf4j2-impl-2.24.3.jar;C:\Users\2440930\.m2\repository\org\apache\logging\log4j\log4j-api\2.24.3\log4j-api-2.24.3.jar;C:\Users\2440930\.m2\repository\org\apache\logging\log4j\log4j-core\2.24.3\log4j-core-2.24.3.jar;C:\Users\2440930\.m2\repository\org\apache\logging\log4j\log4j-jul\2.24.3\log4j-jul-2.24.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-devtools\3.5.3\spring-boot-devtools-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot\3.5.3\spring-boot-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\3.5.3\spring-boot-autoconfigure-3.5.3.jar;C:\Users\2440930\.m2\repository\org\opensearch\client\opensearch-rest-high-level-client\2.19.4\opensearch-rest-high-level-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch\2.19.4\opensearch-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-common\2.19.4\opensearch-common-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-core\2.19.4\opensearch-core-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-compress\2.19.4\opensearch-compress-2.19.4.jar;C:\Users\2440930\.m2\repository\com\github\luben\zstd-jni\1.5.5-5\zstd-jni-1.5.5-5.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-secure-sm\2.19.4\opensearch-secure-sm-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-x-content\2.19.4\opensearch-x-content-2.19.4.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-smile\2.19.1\jackson-dataformat-smile-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-yaml\2.19.1\jackson-dataformat-yaml-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-cbor\2.19.1\jackson-dataformat-cbor-2.19.1.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-geo\2.19.4\opensearch-geo-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-telemetry\2.19.4\opensearch-telemetry-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-task-commons\2.19.4\opensearch-task-commons-2.19.4.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-core\9.12.3\lucene-core-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-analysis-common\9.12.3\lucene-analysis-common-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-backward-codecs\9.12.3\lucene-backward-codecs-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-grouping\9.12.3\lucene-grouping-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-highlighter\9.12.3\lucene-highlighter-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-join\9.12.3\lucene-join-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-memory\9.12.3\lucene-memory-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-misc\9.12.3\lucene-misc-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-queries\9.12.3\lucene-queries-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-queryparser\9.12.3\lucene-queryparser-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-sandbox\9.12.3\lucene-sandbox-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-spatial-extras\9.12.3\lucene-spatial-extras-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-spatial3d\9.12.3\lucene-spatial3d-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-suggest\9.12.3\lucene-suggest-9.12.3.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-cli\2.19.4\opensearch-cli-2.19.4.jar;C:\Users\2440930\.m2\repository\net\sf\jopt-simple\jopt-simple\5.0.4\jopt-simple-5.0.4.jar;C:\Users\2440930\.m2\repository\joda-time\joda-time\2.12.7\joda-time-2.12.7.jar;C:\Users\2440930\.m2\repository\com\tdunning\t-digest\3.2\t-digest-3.2.jar;C:\Users\2440930\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\2440930\.m2\repository\net\java\dev\jna\jna\5.13.0\jna-5.13.0.jar;C:\Users\2440930\.m2\repository\com\jcraft\jzlib\1.1.3\jzlib-1.1.3.jar;C:\Users\2440930\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar;C:\Users\2440930\.m2\repository\io\projectreactor\reactor-core\3.7.7\reactor-core-3.7.7.jar;C:\Users\2440930\.m2\repository\org\roaringbitmap\RoaringBitmap\1.3.0\RoaringBitmap-1.3.0.jar;C:\Users\2440930\.m2\repository\org\opensearch\client\opensearch-rest-client\2.19.4\opensearch-rest-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\apache\httpcomponents\httpclient\4.5.14\httpclient-4.5.14.jar;C:\Users\2440930\.m2\repository\org\apache\httpcomponents\httpcore\4.4.16\httpcore-4.4.16.jar;C:\Users\2440930\.m2\repository\org\apache\httpcomponents\httpasyncclient\4.1.5\httpasyncclient-4.1.5.jar;C:\Users\2440930\.m2\repository\org\apache\httpcomponents\httpcore-nio\4.4.16\httpcore-nio-4.4.16.jar;C:\Users\2440930\.m2\repository\commons-codec\commons-codec\1.18.0\commons-codec-1.18.0.jar;C:\Users\2440930\.m2\repository\commons-logging\commons-logging\1.2\commons-logging-1.2.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\mapper-extras-client\2.19.4\mapper-extras-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\parent-join-client\2.19.4\parent-join-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\aggs-matrix-stats-client\2.19.4\aggs-matrix-stats-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\rank-eval-client\2.19.4\rank-eval-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\lang-mustache-client\2.19.4\lang-mustache-client-2.19.4.jar;C:\Users\2440930\.m2\repository\com\github\spullara\mustache\java\compiler\0.9.14\compiler-0.9.14.jar;C:\Users\2440930\.m2\repository\org\postgresql\postgresql\42.7.7\postgresql-42.7.7.jar;C:\Users\2440930\.m2\repository\org\checkerframework\checker-qual\3.49.3\checker-qual-3.49.3.jar;C:\Users\2440930\.m2\repository\org\apache\commons\commons-text\1.10.0\commons-text-1.10.0.jar;C:\Users\2440930\.m2\repository\com\mysql\mysql-connector-j\8.2.0\mysql-connector-j-8.2.0.jar;C:\Users\2440930\.m2\repository\org\projectlombok\lombok\1.18.38\lombok-1.18.38.jar;C:\Users\2440930\.m2\repository\io\hypersistence\hypersistence-utils-hibernate-62\3.5.3\hypersistence-utils-hibernate-62-3.5.3.jar;C:\Users\2440930\.m2\repository\javax\xml\bind\jaxb-api\2.3.0\jaxb-api-2.3.0.jar;C:\Users\2440930\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.2\jakarta.xml.bind-api-4.0.2.jar;C:\Users\2440930\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.3\jakarta.activation-api-2.1.3.jar;C:\Users\2440930\.m2\repository\io\hypersistence\hypersistence-tsid\2.1.1\hypersistence-tsid-2.1.1.jar;C:\Users\2440930\.m2\repository\org\sonarsource\scanner\maven\sonar-maven-plugin\3.2\sonar-maven-plugin-3.2.jar;C:\Users\2440930\.m2\repository\org\apache\maven\shared\maven-dependency-tree\2.2\maven-dependency-tree-2.2.jar;C:\Users\2440930\.m2\repository\org\codehaus\plexus\plexus-component-annotations\1.5.5\plexus-component-annotations-1.5.5.jar;C:\Users\2440930\.m2\repository\org\eclipse\aether\aether-util\0.9.0.M2\aether-util-0.9.0.M2.jar;C:\Users\2440930\.m2\repository\org\sonatype\plexus\plexus-sec-dispatcher\1.4\plexus-sec-dispatcher-1.4.jar;C:\Users\2440930\.m2\repository\org\sonatype\plexus\plexus-cipher\1.4\plexus-cipher-1.4.jar;C:\Users\2440930\.m2\repository\org\sonarsource\scanner\api\sonar-scanner-api\2.8\sonar-scanner-api-2.8.jar;C:\Users\2440930\.m2\repository\com\google\code\findbugs\jsr305\2.0.3\jsr305-2.0.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-test\3.5.3\spring-boot-starter-test-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-test\3.5.3\spring-boot-test-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\3.5.3\spring-boot-test-autoconfigure-3.5.3.jar;C:\Users\2440930\.m2\repository\com\jayway\jsonpath\json-path\2.9.0\json-path-2.9.0.jar;C:\Users\2440930\.m2\repository\net\minidev\json-smart\2.5.2\json-smart-2.5.2.jar;C:\Users\2440930\.m2\repository\net\minidev\accessors-smart\2.5.2\accessors-smart-2.5.2.jar;C:\Users\2440930\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\2440930\.m2\repository\org\assertj\assertj-core\3.27.3\assertj-core-3.27.3.jar;C:\Users\2440930\.m2\repository\org\awaitility\awaitility\4.2.2\awaitility-4.2.2.jar;C:\Users\2440930\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\2440930\.m2\repository\org\junit\jupiter\junit-jupiter\5.12.2\junit-jupiter-5.12.2.jar;C:\Users\2440930\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.12.2\junit-jupiter-api-5.12.2.jar;C:\Users\2440930\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\2440930\.m2\repository\org\junit\platform\junit-platform-commons\1.12.2\junit-platform-commons-1.12.2.jar;C:\Users\2440930\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\2440930\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.12.2\junit-jupiter-params-5.12.2.jar;C:\Users\2440930\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.12.2\junit-jupiter-engine-5.12.2.jar;C:\Users\2440930\.m2\repository\org\junit\platform\junit-platform-engine\1.12.2\junit-platform-engine-1.12.2.jar;C:\Users\2440930\.m2\repository\org\mockito\mockito-core\5.17.0\mockito-core-5.17.0.jar;C:\Users\2440930\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.6\byte-buddy-agent-1.17.6.jar;C:\Users\2440930\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\2440930\.m2\repository\org\mockito\mockito-junit-jupiter\5.17.0\mockito-junit-jupiter-5.17.0.jar;C:\Users\2440930\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\2440930\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-test\6.2.8\spring-test-6.2.8.jar;C:\Users\2440930\.m2\repository\org\xmlunit\xmlunit-core\2.10.2\xmlunit-core-2.10.2.jar;C:\Users\2440930\.m2\repository\org\json\json\20231013\json-20231013.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-aop\3.5.3\spring-boot-starter-aop-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-aop\6.2.8\spring-aop-6.2.8.jar;C:\Users\2440930\.m2\repository\org\aspectj\aspectjweaver\1.9.24\aspectjweaver-1.9.24.jar;C:\Users\2440930\.m2\repository\com\google\code\gson\gson\2.9.0\gson-2.9.0.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\3.5.3\spring-boot-starter-actuator-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\3.5.3\spring-boot-actuator-autoconfigure-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-actuator\3.5.3\spring-boot-actuator-3.5.3.jar;C:\Users\2440930\.m2\repository\io\micrometer\micrometer-observation\1.15.1\micrometer-observation-1.15.1.jar;C:\Users\2440930\.m2\repository\io\micrometer\micrometer-commons\1.15.1\micrometer-commons-1.15.1.jar;C:\Users\2440930\.m2\repository\io\micrometer\micrometer-jakarta9\1.15.1\micrometer-jakarta9-1.15.1.jar;C:\Users\2440930\.m2\repository\io\micrometer\micrometer-core\1.15.1\micrometer-core-1.15.1.jar;C:\Users\2440930\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\2440930\.m2\repository\io\hypersistence\hypersistence-utils-hibernate-63\3.9.4\hypersistence-utils-hibernate-63-3.9.4.jar;C:\Users\2440930\.m2\repository\com\vladmihalcea\hibernate-types-60\2.21.1\hibernate-types-60-2.21.1.jar;C:\Users\2440930\.m2\repository\org\snakeyaml\snakeyaml-engine\2.4\snakeyaml-engine-2.4.jar;C:\Users\2440930\.m2\repository\org\hibernate\orm\hibernate-core\6.2.9.Final\hibernate-core-6.2.9.Final.jar;C:\Users\2440930\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.1.0\jakarta.persistence-api-3.1.0.jar;C:\Users\2440930\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\2440930\.m2\repository\org\jboss\logging\jboss-logging\3.6.1.Final\jboss-logging-3.6.1.Final.jar;C:\Users\2440930\.m2\repository\org\hibernate\common\hibernate-commons-annotations\6.0.6.Final\hibernate-commons-annotations-6.0.6.Final.jar;C:\Users\2440930\.m2\repository\io\smallrye\jandex\3.0.5\jandex-3.0.5.jar;C:\Users\2440930\.m2\repository\com\fasterxml\classmate\1.7.0\classmate-1.7.0.jar;C:\Users\2440930\.m2\repository\net\bytebuddy\byte-buddy\1.17.6\byte-buddy-1.17.6.jar;C:\Users\2440930\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.5\jaxb-runtime-4.0.5.jar;C:\Users\2440930\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.5\jaxb-core-4.0.5.jar;C:\Users\2440930\.m2\repository\org\eclipse\angus\angus-activation\2.0.2\angus-activation-2.0.2.jar;C:\Users\2440930\.m2\repository\org\glassfish\jaxb\txw2\4.0.5\txw2-4.0.5.jar;C:\Users\2440930\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\2440930\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\2440930\.m2\repository\org\antlr\antlr4-runtime\4.10.1\antlr4-runtime-4.10.1.jar;C:\Users\2440930\.m2\repository\org\yaml\snakeyaml\2.4\snakeyaml-2.4.jar;C:\Users\2440930\.m2\repository\org\apache\commons\commons-lang3\3.18.0\commons-lang3-3.18.0.jar;C:\Users\2440930\.m2\repository\com\github\ulisesbocchio\jasypt-spring-boot-starter\3.0.3\jasypt-spring-boot-starter-3.0.3.jar;C:\Users\2440930\.m2\repository\com\github\ulisesbocchio\jasypt-spring-boot\3.0.3\jasypt-spring-boot-3.0.3.jar;C:\Users\2440930\.m2\repository\org\jasypt\jasypt\1.9.3\jasypt-1.9.3.jar;C:\Users\2440930\.m2\repository\org\codehaus\plexus\plexus-utils\3.0.24\plexus-utils-3.0.24.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-webmvc\6.2.10\spring-webmvc-6.2.10.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-beans\6.2.8\spring-beans-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-context\6.2.8\spring-context-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-expression\6.2.8\spring-expression-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-core\6.2.11\spring-core-6.2.11.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-jcl\6.2.8\spring-jcl-6.2.8.jar;C:\Users\2440930\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.11\tomcat-embed-core-11.0.11.jar;C:\Users\2440930\.m2\repository\org\apache\tomcat\tomcat-annotations-api\10.1.42\tomcat-annotations-api-10.1.42.jar;C:\Users\2440930\.m2\repository\org\springdoc\springdoc-openapi-starter-webmvc-ui\2.8.14\springdoc-openapi-starter-webmvc-ui-2.8.14.jar;C:\Users\2440930\.m2\repository\org\springdoc\springdoc-openapi-starter-webmvc-api\2.8.14\springdoc-openapi-starter-webmvc-api-2.8.14.jar;C:\Users\2440930\.m2\repository\org\springdoc\springdoc-openapi-starter-common\2.8.14\springdoc-openapi-starter-common-2.8.14.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-validation\3.5.3\spring-boot-starter-validation-3.5.3.jar;C:\Users\2440930\.m2\repository\org\hibernate\validator\hibernate-validator\8.0.2.Final\hibernate-validator-8.0.2.Final.jar;C:\Users\2440930\.m2\repository\io\swagger\core\v3\swagger-core-jakarta\2.2.38\swagger-core-jakarta-2.2.38.jar;C:\Users\2440930\.m2\repository\io\swagger\core\v3\swagger-annotations-jakarta\2.2.38\swagger-annotations-jakarta-2.2.38.jar;C:\Users\2440930\.m2\repository\io\swagger\core\v3\swagger-models-jakarta\2.2.38\swagger-models-jakarta-2.2.38.jar;C:\Users\2440930\.m2\repository\jakarta\validation\jakarta.validation-api\3.0.2\jakarta.validation-api-3.0.2.jar;C:\Users\2440930\.m2\repository\org\webjars\swagger-ui\5.30.1\swagger-ui-5.30.1.jar;C:\Users\2440930\.m2\repository\org\webjars\webjars-locator-lite\1.1.0\webjars-locator-lite-1.1.0.jar;C:\Users\2440930\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar" com.intellij.rt.junit.JUnitStarter -ideVersion5 -junit5 com.infy.api.cloud.service.ApiServiceTest,testGetApiResourceLinks_RepositoryException
+Jan 21, 2026 4:26:09 PM org.junit.jupiter.engine.discovery.MethodSelectorResolver resolve
+WARNING: Possible configuration error: method [void com.infy.api.cloud.service.ApiServiceTest.dynamicScopeManagementTest()] resulted in multiple TestDescriptors [org.junit.jupiter.engine.descriptor.TestTemplateTestDescriptor, org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor]. This is typically the result of annotating a method with multiple competing annotations such as @Test, @RepeatedTest, @ParameterizedTest, @TestFactory, etc.
+2026-01-21T10:56:10.897377500Z main INFO Starting configuration XmlConfiguration[location=jar:file:/C:/Users/2440930/.m2/repository/pi-nxt-self-service-common-lib/pi-nxt-self-service-common-lib/0.0.4-SNAPSHOT/pi-nxt-self-service-common-lib-0.0.4-20250923.184504-1.jar!/log4j2.xml, lastModified=2025-12-22T11:10:04.762Z]...
+2026-01-21T10:56:10.900384700Z main INFO Start watching for changes to jar:file:/C:/Users/2440930/.m2/repository/pi-nxt-self-service-common-lib/pi-nxt-self-service-common-lib/0.0.4-SNAPSHOT/pi-nxt-self-service-common-lib-0.0.4-20250923.184504-1.jar!/log4j2.xml every 0 seconds
+2026-01-21T10:56:10.900384700Z main INFO Configuration XmlConfiguration[location=jar:file:/C:/Users/2440930/.m2/repository/pi-nxt-self-service-common-lib/pi-nxt-self-service-common-lib/0.0.4-SNAPSHOT/pi-nxt-self-service-common-lib-0.0.4-20250923.184504-1.jar!/log4j2.xml, lastModified=2025-12-22T11:10:04.762Z] started.
+2026-01-21T10:56:10.902940500Z main INFO Stopping configuration org.apache.logging.log4j.core.config.DefaultConfiguration@460ebd80...
+2026-01-21T10:56:10.903926800Z main INFO Configuration org.apache.logging.log4j.core.config.DefaultConfiguration@460ebd80 stopped.
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\2440930\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.6\byte-buddy-agent-1.17.6.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+[2026-01-21 16:26:14,965] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Inside getApiWithId method : 
+[2026-01-21 16:26:14,985] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - traceId=trace1 transactionId=txn - Fetching API details for apiId1
+[2026-01-21 16:26:14,997] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Inside getEntityOpt method : 
+[2026-01-21 16:26:14,997] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Entity.getAPIFamilyId:100
+[2026-01-21 16:26:14,997] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Entity.getIsLatest:null
+[2026-01-21 16:26:15,005] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Inside constructAndSetSpecPath with input specPathFromDb :null
+[2026-01-21 16:26:15,007] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Inside constructAndSetSpecPath with input specPathFromDb :null
+[2026-01-21 16:26:15,008] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - apiId Value:1
+[2026-01-21 16:26:15,008] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - serviceClientTrackers:[]
+[2026-01-21 16:26:15,009] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - intakeJIRAsList:[]
+[2026-01-21 16:26:15,009] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - getIntakeJIRAs:[]
+[2026-01-21 16:26:15,011] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - DB call to fetch avgRating :
+[2026-01-21 16:26:15,012] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - DB call to fetch ratingCount :
+[2026-01-21 16:26:15,012] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - DB call to fetch feedbackCount :
+[2026-01-21 16:26:15,013] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - ApiPluginDataList :[]
+[2026-01-21 16:26:15,094] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - sdklist :[]
+[2026-01-21 16:26:15,095] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - apientity object logged for different fields:ApiResponse(apiId=1, apiName=null, apiDescription=null, apiAdditionalInfo=null, apiVersion=null, specPath=, status=null, requestedBy=null, nbSecurity=null, nbSecurityType=null, nbCORS=null, nbCSRF=null, nbXSS=null, sbSecurity=null, sbSecurityType=null, sbTarget=true, sbTargetType=null, sbSSL=null, sequenceNumber=0, trending=null, productId=0, requestedTimestamp=null, extension=Extension [avgRating=0, ratingCount=0, feedbackCount=0, adoptionCount=0], productName=null, tagAssignments=[], targetBasePath=null, overrides=[], apiGatewayId=0, targetMapping=[], cpAttachedPlugins=[], spAttachedPlugins=[], apiQuotaInterval=null, appQuotaInterval=null, appQuotaLimit=null, apiQuotaLimit=null, sdks=[], defaultPlanName=null, defaultPlanId=0, consumerType=null, specType=null, sbSpecType=null, sbSpecPath=, nbAuthUrl=null, nbTokenUrl=null, nbRefreshUrl=null, nbAuthScopes=null, sbAuthUrl=null, sbTokenUrl=null, sbRefreshUrl=null, sbAuthScopes=null, sbRoutingLocation=null, sbRoutingField=null, sbRoutingPath=null, payloadSizeLimit=null, payloadSizeUnit=null, basePath=null, nbAuthLocation=null, nbAuthField=null, nbAuthPath=null, sbAuthLocation=null, sbAuthField=null, sbAuthPath=null, responseCache=null, alternateName=null, additionalPluginRequirements=null, requestId=0, teamId=null, modality=null, capacity=null, contacts=null, deployedEnvironments=[], lifeCycleStage=null, lifeCycleComment=null, intakeJIRAs=[], apiFamilyId=100, isLatest=null, cmdbAppMapping=null, monitoringInfo=[], apiResourceLinks=null)
+[2026-01-21 16:26:15,194] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - apientity :ApiResponse(apiId=1, apiName=null, apiDescription=null, apiAdditionalInfo=null, apiVersion=null, specPath=, status=null, requestedBy=null, nbSecurity=null, nbSecurityType=null, nbCORS=null, nbCSRF=null, nbXSS=null, sbSecurity=null, sbSecurityType=null, sbTarget=true, sbTargetType=null, sbSSL=null, sequenceNumber=0, trending=null, productId=0, requestedTimestamp=null, extension=Extension [avgRating=0, ratingCount=0, feedbackCount=0, adoptionCount=0], productName=null, tagAssignments=[], targetBasePath=null, overrides=[], apiGatewayId=0, targetMapping=[], cpAttachedPlugins=[], spAttachedPlugins=[], apiQuotaInterval=null, appQuotaInterval=null, appQuotaLimit=null, apiQuotaLimit=null, sdks=[], defaultPlanName=null, defaultPlanId=0, consumerType=null, specType=null, sbSpecType=null, sbSpecPath=, nbAuthUrl=null, nbTokenUrl=null, nbRefreshUrl=null, nbAuthScopes=null, sbAuthUrl=null, sbTokenUrl=null, sbRefreshUrl=null, sbAuthScopes=null, sbRoutingLocation=null, sbRoutingField=null, sbRoutingPath=null, payloadSizeLimit=null, payloadSizeUnit=null, basePath=null, nbAuthLocation=null, nbAuthField=null, nbAuthPath=null, sbAuthLocation=null, sbAuthField=null, sbAuthPath=null, responseCache=null, alternateName=null, additionalPluginRequirements=null, requestId=0, teamId=null, modality=null, capacity=null, contacts=null, deployedEnvironments=[], lifeCycleStage=null, lifeCycleComment=null, intakeJIRAs=[], apiFamilyId=100, isLatest=null, cmdbAppMapping=null, monitoringInfo=[], apiResourceLinks=null)
+[2026-01-21 16:26:15,195] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Inside getApiContactsWithTeamName method:1
+[2026-01-21 16:26:15,196] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - listOfApiContacts from DB:[]
+[2026-01-21 16:26:15,196] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - listOfContacts:[]
+[2026-01-21 16:26:15,197] ERROR[main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - traceId=trace1 transactionId=txn - Failed to retrieve resource links for API 1 : DB error
+java.lang.RuntimeException: DB error
+	at com.infy.api.cloud.service.ApiService.getApisWithTeamName(ApiService.java:755) ~[classes/:?]
+	at com.infy.api.cloud.service.ApiService.getApisWithTeamName(ApiService.java:740) ~[classes/:?]
+	at com.infy.api.cloud.service.ApiServiceTest.lambda$testGetApiResourceLinks_RepositoryException$28(ApiServiceTest.java:4091) ~[test-classes/:?]
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53) ~[junit-jupiter-api-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35) ~[junit-jupiter-api-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3128) ~[junit-jupiter-api-5.12.2.jar:5.12.2]
+	at com.infy.api.cloud.service.ApiServiceTest.testGetApiResourceLinks_RepositoryException(ApiServiceTest.java:4090) ~[test-classes/:?]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?]
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:775) ~[junit-platform-commons-1.12.2.jar:1.12.2]
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:479) ~[junit-platform-commons-1.12.2.jar:1.12.2]
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:60) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:131) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:161) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:152) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:91) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:112) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:94) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:106) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:64) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:45) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:37) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:93) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:87) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$7(TestMethodTestDescriptor.java:216) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:212) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:137) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:69) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:156) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[?:?]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[?:?]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:35) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:57) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:54) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:201) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:170) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:94) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:59) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:142) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:58) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:103) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:85) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:47) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$1(InterceptingLauncher.java:39) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:38) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:47) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.SessionPerRequestLauncher.execute(SessionPerRequestLauncher.java:63) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at com.intellij.junit5.JUnit5IdeaTestRunner.startRunnerWithArgs(JUnit5IdeaTestRunner.java:66) [junit5-rt.jar:?]
+	at com.intellij.rt.junit.IdeaTestRunner$Repeater$1.execute(IdeaTestRunner.java:38) [junit-rt.jar:?]
+	at com.intellij.rt.execution.junit.TestsRepeater.repeat(TestsRepeater.java:11) [idea_rt.jar:?]
+	at com.intellij.rt.junit.IdeaTestRunner$Repeater.startRunnerWithArgs(IdeaTestRunner.java:35) [junit-rt.jar:?]
+	at com.intellij.rt.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:237) [junit-rt.jar:?]
+	at com.intellij.rt.junit.JUnitStarter.main(JUnitStarter.java:58) [junit-rt.jar:?]
+[2026-01-21 16:26:15,247] ERROR[main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Exception occured in getApiWithId method:{}
+org.springframework.web.server.ResponseStatusException: 500 INTERNAL_SERVER_ERROR "Failed to retrieve API Resource Links"
+	at com.infy.api.cloud.service.ApiService.getApisWithTeamName(ApiService.java:784) ~[classes/:?]
+	at java.base/java.lang.invoke.MethodHandle.invokeWithArguments(MethodHandle.java:733) ~[?:?]
+	at org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$8ik7Qweh.invokeWithArguments(Unknown Source) ~[?:?]
+	at org.mockito.internal.util.reflection.InstrumentationMemberAccessor.invoke(InstrumentationMemberAccessor.java:265) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.util.reflection.ModuleMemberAccessor.invoke(ModuleMemberAccessor.java:55) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.tryInvoke(MockMethodAdvice.java:316) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice$RealMethodCall.invoke(MockMethodAdvice.java:236) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.invocation.InterceptedInvocation.callRealMethod(InterceptedInvocation.java:142) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.stubbing.answers.CallsRealMethods.answer(CallsRealMethods.java:45) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.Answers.answer(Answers.java:90) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.handler.MockHandlerImpl.handle(MockHandlerImpl.java:111) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.handler.NullResultGuardian.handle(NullResultGuardian.java:29) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.handler.InvocationNotifierHandler.handle(InvocationNotifierHandler.java:34) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.creation.bytebuddy.access.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:84) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.handle(MockMethodAdvice.java:136) ~[mockito-core-5.17.0.jar:?]
+	at com.infy.api.cloud.service.ApiService.getApisWithTeamName(ApiService.java:740) ~[classes/:?]
+	at com.infy.api.cloud.service.ApiServiceTest.lambda$testGetApiResourceLinks_RepositoryException$28(ApiServiceTest.java:4091) ~[test-classes/:?]
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53) ~[junit-jupiter-api-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35) ~[junit-jupiter-api-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3128) ~[junit-jupiter-api-5.12.2.jar:5.12.2]
+	at com.infy.api.cloud.service.ApiServiceTest.testGetApiResourceLinks_RepositoryException(ApiServiceTest.java:4090) ~[test-classes/:?]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?]
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:775) ~[junit-platform-commons-1.12.2.jar:1.12.2]
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:479) ~[junit-platform-commons-1.12.2.jar:1.12.2]
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:60) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:131) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:161) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:152) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:91) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:112) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:94) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:106) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:64) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:45) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:37) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:93) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:87) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$7(TestMethodTestDescriptor.java:216) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:212) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:137) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:69) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:156) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[?:?]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[?:?]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:35) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:57) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:54) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:201) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:170) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:94) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:59) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:142) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:58) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:103) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:85) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:47) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$1(InterceptingLauncher.java:39) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:38) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:47) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.SessionPerRequestLauncher.execute(SessionPerRequestLauncher.java:63) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at com.intellij.junit5.JUnit5IdeaTestRunner.startRunnerWithArgs(JUnit5IdeaTestRunner.java:66) [junit5-rt.jar:?]
+	at com.intellij.rt.junit.IdeaTestRunner$Repeater$1.execute(IdeaTestRunner.java:38) [junit-rt.jar:?]
+	at com.intellij.rt.execution.junit.TestsRepeater.repeat(TestsRepeater.java:11) [idea_rt.jar:?]
+	at com.intellij.rt.junit.IdeaTestRunner$Repeater.startRunnerWithArgs(IdeaTestRunner.java:35) [junit-rt.jar:?]
+	at com.intellij.rt.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:237) [junit-rt.jar:?]
+	at com.intellij.rt.junit.JUnitStarter.main(JUnitStarter.java:58) [junit-rt.jar:?]
+
+org.opentest4j.AssertionFailedError: 
+Expected :true
+Actual   :false
+<Click to see difference>
+
+
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)
+	at com.infy.api.cloud.service.ApiServiceTest.testGetApiResourceLinks_RepositoryException(ApiServiceTest.java:4095)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+
+Process finished with exit code -1
+
+---------------------------------------------------------------------------------------------
+"C:\Program Files\Java\jdk-21\bin\java.exe" -javaagent:C:\Users\2440930\AppData\Local\JetBrains\IdeaIC2025.2\captureAgent\debugger-agent.jar=file:///C:/Users/2440930/AppData/Local/Temp/capture12002406094821509937.props -ea -Didea.test.cyclic.buffer.size=1048576 "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\lib\idea_rt.jar=51719" -Dkotlinx.coroutines.debug.enable.creation.stack.trace=false -Ddebugger.agent.enable.coroutines=true -Dkotlinx.coroutines.debug.enable.flows.stack.trace=true -Dkotlinx.coroutines.debug.enable.mutable.state.flows.stack.trace=true -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath "C:\Users\2440930\.m2\repository\org\junit\platform\junit-platform-launcher\1.12.2\junit-platform-launcher-1.12.2.jar;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\lib\idea_rt.jar;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\plugins\junit\lib\junit6-rt.jar;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\plugins\junit\lib\junit5-rt.jar;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.5\plugins\junit\lib\junit-rt.jar;C:\Users\2440930\Project\APIMC-4434\newwork\apicloud-service-api\target\test-classes;C:\Users\2440930\Project\APIMC-4434\newwork\apicloud-service-api\target\classes;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-data-jpa\3.5.3\spring-boot-starter-data-jpa-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter\3.5.3\spring-boot-starter-3.5.3.jar;C:\Users\2440930\.m2\repository\jakarta\annotation\jakarta.annotation-api\2.1.1\jakarta.annotation-api-2.1.1.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-jdbc\3.5.3\spring-boot-starter-jdbc-3.5.3.jar;C:\Users\2440930\.m2\repository\com\zaxxer\HikariCP\6.3.0\HikariCP-6.3.0.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-jdbc\6.2.8\spring-jdbc-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\data\spring-data-jpa\3.5.1\spring-data-jpa-3.5.1.jar;C:\Users\2440930\.m2\repository\org\springframework\data\spring-data-commons\3.5.1\spring-data-commons-3.5.1.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-orm\6.2.8\spring-orm-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-tx\6.2.8\spring-tx-6.2.8.jar;C:\Users\2440930\.m2\repository\org\slf4j\slf4j-api\2.0.17\slf4j-api-2.0.17.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-aspects\6.2.8\spring-aspects-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-web\3.5.3\spring-boot-starter-web-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-json\3.5.3\spring-boot-starter-json-3.5.3.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.19.1\jackson-databind-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.19.1\jackson-annotations-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.19.1\jackson-core-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\datatype\jackson-datatype-jdk8\2.19.1\jackson-datatype-jdk8-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\datatype\jackson-datatype-jsr310\2.19.1\jackson-datatype-jsr310-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\module\jackson-module-parameter-names\2.19.1\jackson-module-parameter-names-2.19.1.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-tomcat\3.5.3\spring-boot-starter-tomcat-3.5.3.jar;C:\Users\2440930\.m2\repository\org\apache\tomcat\embed\tomcat-embed-el\10.1.42\tomcat-embed-el-10.1.42.jar;C:\Users\2440930\.m2\repository\org\apache\tomcat\embed\tomcat-embed-websocket\10.1.42\tomcat-embed-websocket-10.1.42.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-web\6.2.8\spring-web-6.2.8.jar;C:\Users\2440930\.m2\repository\pi-nxt-self-service-common-lib\pi-nxt-self-service-common-lib\0.0.4-SNAPSHOT\pi-nxt-self-service-common-lib-0.0.4-20250923.184504-1.jar;C:\Users\2440930\.m2\repository\org\modelmapper\modelmapper\3.2.0\modelmapper-3.2.0.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-log4j2\3.5.3\spring-boot-starter-log4j2-3.5.3.jar;C:\Users\2440930\.m2\repository\org\apache\logging\log4j\log4j-slf4j2-impl\2.24.3\log4j-slf4j2-impl-2.24.3.jar;C:\Users\2440930\.m2\repository\org\apache\logging\log4j\log4j-api\2.24.3\log4j-api-2.24.3.jar;C:\Users\2440930\.m2\repository\org\apache\logging\log4j\log4j-core\2.24.3\log4j-core-2.24.3.jar;C:\Users\2440930\.m2\repository\org\apache\logging\log4j\log4j-jul\2.24.3\log4j-jul-2.24.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-devtools\3.5.3\spring-boot-devtools-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot\3.5.3\spring-boot-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-autoconfigure\3.5.3\spring-boot-autoconfigure-3.5.3.jar;C:\Users\2440930\.m2\repository\org\opensearch\client\opensearch-rest-high-level-client\2.19.4\opensearch-rest-high-level-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch\2.19.4\opensearch-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-common\2.19.4\opensearch-common-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-core\2.19.4\opensearch-core-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-compress\2.19.4\opensearch-compress-2.19.4.jar;C:\Users\2440930\.m2\repository\com\github\luben\zstd-jni\1.5.5-5\zstd-jni-1.5.5-5.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-secure-sm\2.19.4\opensearch-secure-sm-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-x-content\2.19.4\opensearch-x-content-2.19.4.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-smile\2.19.1\jackson-dataformat-smile-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-yaml\2.19.1\jackson-dataformat-yaml-2.19.1.jar;C:\Users\2440930\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-cbor\2.19.1\jackson-dataformat-cbor-2.19.1.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-geo\2.19.4\opensearch-geo-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-telemetry\2.19.4\opensearch-telemetry-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-task-commons\2.19.4\opensearch-task-commons-2.19.4.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-core\9.12.3\lucene-core-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-analysis-common\9.12.3\lucene-analysis-common-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-backward-codecs\9.12.3\lucene-backward-codecs-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-grouping\9.12.3\lucene-grouping-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-highlighter\9.12.3\lucene-highlighter-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-join\9.12.3\lucene-join-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-memory\9.12.3\lucene-memory-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-misc\9.12.3\lucene-misc-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-queries\9.12.3\lucene-queries-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-queryparser\9.12.3\lucene-queryparser-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-sandbox\9.12.3\lucene-sandbox-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-spatial-extras\9.12.3\lucene-spatial-extras-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-spatial3d\9.12.3\lucene-spatial3d-9.12.3.jar;C:\Users\2440930\.m2\repository\org\apache\lucene\lucene-suggest\9.12.3\lucene-suggest-9.12.3.jar;C:\Users\2440930\.m2\repository\org\opensearch\opensearch-cli\2.19.4\opensearch-cli-2.19.4.jar;C:\Users\2440930\.m2\repository\net\sf\jopt-simple\jopt-simple\5.0.4\jopt-simple-5.0.4.jar;C:\Users\2440930\.m2\repository\joda-time\joda-time\2.12.7\joda-time-2.12.7.jar;C:\Users\2440930\.m2\repository\com\tdunning\t-digest\3.2\t-digest-3.2.jar;C:\Users\2440930\.m2\repository\org\hdrhistogram\HdrHistogram\2.2.2\HdrHistogram-2.2.2.jar;C:\Users\2440930\.m2\repository\net\java\dev\jna\jna\5.13.0\jna-5.13.0.jar;C:\Users\2440930\.m2\repository\com\jcraft\jzlib\1.1.3\jzlib-1.1.3.jar;C:\Users\2440930\.m2\repository\org\reactivestreams\reactive-streams\1.0.4\reactive-streams-1.0.4.jar;C:\Users\2440930\.m2\repository\io\projectreactor\reactor-core\3.7.7\reactor-core-3.7.7.jar;C:\Users\2440930\.m2\repository\org\roaringbitmap\RoaringBitmap\1.3.0\RoaringBitmap-1.3.0.jar;C:\Users\2440930\.m2\repository\org\opensearch\client\opensearch-rest-client\2.19.4\opensearch-rest-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\apache\httpcomponents\httpclient\4.5.14\httpclient-4.5.14.jar;C:\Users\2440930\.m2\repository\org\apache\httpcomponents\httpcore\4.4.16\httpcore-4.4.16.jar;C:\Users\2440930\.m2\repository\org\apache\httpcomponents\httpasyncclient\4.1.5\httpasyncclient-4.1.5.jar;C:\Users\2440930\.m2\repository\org\apache\httpcomponents\httpcore-nio\4.4.16\httpcore-nio-4.4.16.jar;C:\Users\2440930\.m2\repository\commons-codec\commons-codec\1.18.0\commons-codec-1.18.0.jar;C:\Users\2440930\.m2\repository\commons-logging\commons-logging\1.2\commons-logging-1.2.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\mapper-extras-client\2.19.4\mapper-extras-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\parent-join-client\2.19.4\parent-join-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\aggs-matrix-stats-client\2.19.4\aggs-matrix-stats-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\rank-eval-client\2.19.4\rank-eval-client-2.19.4.jar;C:\Users\2440930\.m2\repository\org\opensearch\plugin\lang-mustache-client\2.19.4\lang-mustache-client-2.19.4.jar;C:\Users\2440930\.m2\repository\com\github\spullara\mustache\java\compiler\0.9.14\compiler-0.9.14.jar;C:\Users\2440930\.m2\repository\org\postgresql\postgresql\42.7.7\postgresql-42.7.7.jar;C:\Users\2440930\.m2\repository\org\checkerframework\checker-qual\3.49.3\checker-qual-3.49.3.jar;C:\Users\2440930\.m2\repository\org\apache\commons\commons-text\1.10.0\commons-text-1.10.0.jar;C:\Users\2440930\.m2\repository\com\mysql\mysql-connector-j\8.2.0\mysql-connector-j-8.2.0.jar;C:\Users\2440930\.m2\repository\org\projectlombok\lombok\1.18.38\lombok-1.18.38.jar;C:\Users\2440930\.m2\repository\io\hypersistence\hypersistence-utils-hibernate-62\3.5.3\hypersistence-utils-hibernate-62-3.5.3.jar;C:\Users\2440930\.m2\repository\javax\xml\bind\jaxb-api\2.3.0\jaxb-api-2.3.0.jar;C:\Users\2440930\.m2\repository\jakarta\xml\bind\jakarta.xml.bind-api\4.0.2\jakarta.xml.bind-api-4.0.2.jar;C:\Users\2440930\.m2\repository\jakarta\activation\jakarta.activation-api\2.1.3\jakarta.activation-api-2.1.3.jar;C:\Users\2440930\.m2\repository\io\hypersistence\hypersistence-tsid\2.1.1\hypersistence-tsid-2.1.1.jar;C:\Users\2440930\.m2\repository\org\sonarsource\scanner\maven\sonar-maven-plugin\3.2\sonar-maven-plugin-3.2.jar;C:\Users\2440930\.m2\repository\org\apache\maven\shared\maven-dependency-tree\2.2\maven-dependency-tree-2.2.jar;C:\Users\2440930\.m2\repository\org\codehaus\plexus\plexus-component-annotations\1.5.5\plexus-component-annotations-1.5.5.jar;C:\Users\2440930\.m2\repository\org\eclipse\aether\aether-util\0.9.0.M2\aether-util-0.9.0.M2.jar;C:\Users\2440930\.m2\repository\org\sonatype\plexus\plexus-sec-dispatcher\1.4\plexus-sec-dispatcher-1.4.jar;C:\Users\2440930\.m2\repository\org\sonatype\plexus\plexus-cipher\1.4\plexus-cipher-1.4.jar;C:\Users\2440930\.m2\repository\org\sonarsource\scanner\api\sonar-scanner-api\2.8\sonar-scanner-api-2.8.jar;C:\Users\2440930\.m2\repository\com\google\code\findbugs\jsr305\2.0.3\jsr305-2.0.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-test\3.5.3\spring-boot-starter-test-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-test\3.5.3\spring-boot-test-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-test-autoconfigure\3.5.3\spring-boot-test-autoconfigure-3.5.3.jar;C:\Users\2440930\.m2\repository\com\jayway\jsonpath\json-path\2.9.0\json-path-2.9.0.jar;C:\Users\2440930\.m2\repository\net\minidev\json-smart\2.5.2\json-smart-2.5.2.jar;C:\Users\2440930\.m2\repository\net\minidev\accessors-smart\2.5.2\accessors-smart-2.5.2.jar;C:\Users\2440930\.m2\repository\org\ow2\asm\asm\9.7.1\asm-9.7.1.jar;C:\Users\2440930\.m2\repository\org\assertj\assertj-core\3.27.3\assertj-core-3.27.3.jar;C:\Users\2440930\.m2\repository\org\awaitility\awaitility\4.2.2\awaitility-4.2.2.jar;C:\Users\2440930\.m2\repository\org\hamcrest\hamcrest\3.0\hamcrest-3.0.jar;C:\Users\2440930\.m2\repository\org\junit\jupiter\junit-jupiter\5.12.2\junit-jupiter-5.12.2.jar;C:\Users\2440930\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.12.2\junit-jupiter-api-5.12.2.jar;C:\Users\2440930\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\2440930\.m2\repository\org\junit\platform\junit-platform-commons\1.12.2\junit-platform-commons-1.12.2.jar;C:\Users\2440930\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\2440930\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.12.2\junit-jupiter-params-5.12.2.jar;C:\Users\2440930\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.12.2\junit-jupiter-engine-5.12.2.jar;C:\Users\2440930\.m2\repository\org\junit\platform\junit-platform-engine\1.12.2\junit-platform-engine-1.12.2.jar;C:\Users\2440930\.m2\repository\org\mockito\mockito-core\5.17.0\mockito-core-5.17.0.jar;C:\Users\2440930\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.6\byte-buddy-agent-1.17.6.jar;C:\Users\2440930\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;C:\Users\2440930\.m2\repository\org\mockito\mockito-junit-jupiter\5.17.0\mockito-junit-jupiter-5.17.0.jar;C:\Users\2440930\.m2\repository\org\skyscreamer\jsonassert\1.5.3\jsonassert-1.5.3.jar;C:\Users\2440930\.m2\repository\com\vaadin\external\google\android-json\0.0.20131108.vaadin1\android-json-0.0.20131108.vaadin1.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-test\6.2.8\spring-test-6.2.8.jar;C:\Users\2440930\.m2\repository\org\xmlunit\xmlunit-core\2.10.2\xmlunit-core-2.10.2.jar;C:\Users\2440930\.m2\repository\org\json\json\20231013\json-20231013.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-aop\3.5.3\spring-boot-starter-aop-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-aop\6.2.8\spring-aop-6.2.8.jar;C:\Users\2440930\.m2\repository\org\aspectj\aspectjweaver\1.9.24\aspectjweaver-1.9.24.jar;C:\Users\2440930\.m2\repository\com\google\code\gson\gson\2.9.0\gson-2.9.0.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-actuator\3.5.3\spring-boot-starter-actuator-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-actuator-autoconfigure\3.5.3\spring-boot-actuator-autoconfigure-3.5.3.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-actuator\3.5.3\spring-boot-actuator-3.5.3.jar;C:\Users\2440930\.m2\repository\io\micrometer\micrometer-observation\1.15.1\micrometer-observation-1.15.1.jar;C:\Users\2440930\.m2\repository\io\micrometer\micrometer-commons\1.15.1\micrometer-commons-1.15.1.jar;C:\Users\2440930\.m2\repository\io\micrometer\micrometer-jakarta9\1.15.1\micrometer-jakarta9-1.15.1.jar;C:\Users\2440930\.m2\repository\io\micrometer\micrometer-core\1.15.1\micrometer-core-1.15.1.jar;C:\Users\2440930\.m2\repository\org\latencyutils\LatencyUtils\2.0.3\LatencyUtils-2.0.3.jar;C:\Users\2440930\.m2\repository\io\hypersistence\hypersistence-utils-hibernate-63\3.9.4\hypersistence-utils-hibernate-63-3.9.4.jar;C:\Users\2440930\.m2\repository\com\vladmihalcea\hibernate-types-60\2.21.1\hibernate-types-60-2.21.1.jar;C:\Users\2440930\.m2\repository\org\snakeyaml\snakeyaml-engine\2.4\snakeyaml-engine-2.4.jar;C:\Users\2440930\.m2\repository\org\hibernate\orm\hibernate-core\6.2.9.Final\hibernate-core-6.2.9.Final.jar;C:\Users\2440930\.m2\repository\jakarta\persistence\jakarta.persistence-api\3.1.0\jakarta.persistence-api-3.1.0.jar;C:\Users\2440930\.m2\repository\jakarta\transaction\jakarta.transaction-api\2.0.1\jakarta.transaction-api-2.0.1.jar;C:\Users\2440930\.m2\repository\org\jboss\logging\jboss-logging\3.6.1.Final\jboss-logging-3.6.1.Final.jar;C:\Users\2440930\.m2\repository\org\hibernate\common\hibernate-commons-annotations\6.0.6.Final\hibernate-commons-annotations-6.0.6.Final.jar;C:\Users\2440930\.m2\repository\io\smallrye\jandex\3.0.5\jandex-3.0.5.jar;C:\Users\2440930\.m2\repository\com\fasterxml\classmate\1.7.0\classmate-1.7.0.jar;C:\Users\2440930\.m2\repository\net\bytebuddy\byte-buddy\1.17.6\byte-buddy-1.17.6.jar;C:\Users\2440930\.m2\repository\org\glassfish\jaxb\jaxb-runtime\4.0.5\jaxb-runtime-4.0.5.jar;C:\Users\2440930\.m2\repository\org\glassfish\jaxb\jaxb-core\4.0.5\jaxb-core-4.0.5.jar;C:\Users\2440930\.m2\repository\org\eclipse\angus\angus-activation\2.0.2\angus-activation-2.0.2.jar;C:\Users\2440930\.m2\repository\org\glassfish\jaxb\txw2\4.0.5\txw2-4.0.5.jar;C:\Users\2440930\.m2\repository\com\sun\istack\istack-commons-runtime\4.1.2\istack-commons-runtime-4.1.2.jar;C:\Users\2440930\.m2\repository\jakarta\inject\jakarta.inject-api\2.0.1\jakarta.inject-api-2.0.1.jar;C:\Users\2440930\.m2\repository\org\antlr\antlr4-runtime\4.10.1\antlr4-runtime-4.10.1.jar;C:\Users\2440930\.m2\repository\org\yaml\snakeyaml\2.4\snakeyaml-2.4.jar;C:\Users\2440930\.m2\repository\org\apache\commons\commons-lang3\3.18.0\commons-lang3-3.18.0.jar;C:\Users\2440930\.m2\repository\com\github\ulisesbocchio\jasypt-spring-boot-starter\3.0.3\jasypt-spring-boot-starter-3.0.3.jar;C:\Users\2440930\.m2\repository\com\github\ulisesbocchio\jasypt-spring-boot\3.0.3\jasypt-spring-boot-3.0.3.jar;C:\Users\2440930\.m2\repository\org\jasypt\jasypt\1.9.3\jasypt-1.9.3.jar;C:\Users\2440930\.m2\repository\org\codehaus\plexus\plexus-utils\3.0.24\plexus-utils-3.0.24.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-webmvc\6.2.10\spring-webmvc-6.2.10.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-beans\6.2.8\spring-beans-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-context\6.2.8\spring-context-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-expression\6.2.8\spring-expression-6.2.8.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-core\6.2.11\spring-core-6.2.11.jar;C:\Users\2440930\.m2\repository\org\springframework\spring-jcl\6.2.8\spring-jcl-6.2.8.jar;C:\Users\2440930\.m2\repository\org\apache\tomcat\embed\tomcat-embed-core\11.0.11\tomcat-embed-core-11.0.11.jar;C:\Users\2440930\.m2\repository\org\apache\tomcat\tomcat-annotations-api\10.1.42\tomcat-annotations-api-10.1.42.jar;C:\Users\2440930\.m2\repository\org\springdoc\springdoc-openapi-starter-webmvc-ui\2.8.14\springdoc-openapi-starter-webmvc-ui-2.8.14.jar;C:\Users\2440930\.m2\repository\org\springdoc\springdoc-openapi-starter-webmvc-api\2.8.14\springdoc-openapi-starter-webmvc-api-2.8.14.jar;C:\Users\2440930\.m2\repository\org\springdoc\springdoc-openapi-starter-common\2.8.14\springdoc-openapi-starter-common-2.8.14.jar;C:\Users\2440930\.m2\repository\org\springframework\boot\spring-boot-starter-validation\3.5.3\spring-boot-starter-validation-3.5.3.jar;C:\Users\2440930\.m2\repository\org\hibernate\validator\hibernate-validator\8.0.2.Final\hibernate-validator-8.0.2.Final.jar;C:\Users\2440930\.m2\repository\io\swagger\core\v3\swagger-core-jakarta\2.2.38\swagger-core-jakarta-2.2.38.jar;C:\Users\2440930\.m2\repository\io\swagger\core\v3\swagger-annotations-jakarta\2.2.38\swagger-annotations-jakarta-2.2.38.jar;C:\Users\2440930\.m2\repository\io\swagger\core\v3\swagger-models-jakarta\2.2.38\swagger-models-jakarta-2.2.38.jar;C:\Users\2440930\.m2\repository\jakarta\validation\jakarta.validation-api\3.0.2\jakarta.validation-api-3.0.2.jar;C:\Users\2440930\.m2\repository\org\webjars\swagger-ui\5.30.1\swagger-ui-5.30.1.jar;C:\Users\2440930\.m2\repository\org\webjars\webjars-locator-lite\1.1.0\webjars-locator-lite-1.1.0.jar;C:\Users\2440930\.m2\repository\org\jspecify\jspecify\1.0.0\jspecify-1.0.0.jar" com.intellij.rt.junit.JUnitStarter -ideVersion5 -junit5 com.infy.api.cloud.service.ApiServiceTest,testGetApisWithTeamName_RecordNotFound
+Jan 21, 2026 4:21:58 PM org.junit.jupiter.engine.discovery.MethodSelectorResolver resolve
+WARNING: Possible configuration error: method [void com.infy.api.cloud.service.ApiServiceTest.dynamicScopeManagementTest()] resulted in multiple TestDescriptors [org.junit.jupiter.engine.descriptor.TestTemplateTestDescriptor, org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor]. This is typically the result of annotating a method with multiple competing annotations such as @Test, @RepeatedTest, @ParameterizedTest, @TestFactory, etc.
+2026-01-21T10:51:59.850962Z main INFO Starting configuration XmlConfiguration[location=jar:file:/C:/Users/2440930/.m2/repository/pi-nxt-self-service-common-lib/pi-nxt-self-service-common-lib/0.0.4-SNAPSHOT/pi-nxt-self-service-common-lib-0.0.4-20250923.184504-1.jar!/log4j2.xml, lastModified=2025-12-22T11:10:04.762Z]...
+2026-01-21T10:51:59.855746600Z main INFO Start watching for changes to jar:file:/C:/Users/2440930/.m2/repository/pi-nxt-self-service-common-lib/pi-nxt-self-service-common-lib/0.0.4-SNAPSHOT/pi-nxt-self-service-common-lib-0.0.4-20250923.184504-1.jar!/log4j2.xml every 0 seconds
+2026-01-21T10:51:59.856298Z main INFO Configuration XmlConfiguration[location=jar:file:/C:/Users/2440930/.m2/repository/pi-nxt-self-service-common-lib/pi-nxt-self-service-common-lib/0.0.4-SNAPSHOT/pi-nxt-self-service-common-lib-0.0.4-20250923.184504-1.jar!/log4j2.xml, lastModified=2025-12-22T11:10:04.762Z] started.
+2026-01-21T10:51:59.858806200Z main INFO Stopping configuration org.apache.logging.log4j.core.config.DefaultConfiguration@460ebd80...
+2026-01-21T10:51:59.860414300Z main INFO Configuration org.apache.logging.log4j.core.config.DefaultConfiguration@460ebd80 stopped.
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\2440930\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.6\byte-buddy-agent-1.17.6.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+[2026-01-21 16:22:03,618] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Inside getApiWithId method : 
+[2026-01-21 16:22:03,630] INFO [main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - traceId=trace1 transactionId=txn1 - Fetching API details for apiId1
+[2026-01-21 16:22:03,641] ERROR[main] [trace_id=] [method_url=] [request_method=] com.infy.api.cloud.service.ApiService - Exception occured in getApiWithId method:{}
+com.infy.api.cloud.exception.RecordNotFoundException: No record exist for given id
+	at com.infy.api.cloud.service.ApiService.getApisWithTeamName(ApiService.java:793) ~[classes/:?]
+	at java.base/java.lang.invoke.MethodHandle.invokeWithArguments(MethodHandle.java:733) ~[?:?]
+	at org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$VuzKL7T3.invokeWithArguments(Unknown Source) ~[?:?]
+	at org.mockito.internal.util.reflection.InstrumentationMemberAccessor.invoke(InstrumentationMemberAccessor.java:265) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.util.reflection.ModuleMemberAccessor.invoke(ModuleMemberAccessor.java:55) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.tryInvoke(MockMethodAdvice.java:316) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice$RealMethodCall.invoke(MockMethodAdvice.java:236) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.invocation.InterceptedInvocation.callRealMethod(InterceptedInvocation.java:142) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.stubbing.answers.CallsRealMethods.answer(CallsRealMethods.java:45) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.Answers.answer(Answers.java:90) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.handler.MockHandlerImpl.handle(MockHandlerImpl.java:111) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.handler.NullResultGuardian.handle(NullResultGuardian.java:29) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.handler.InvocationNotifierHandler.handle(InvocationNotifierHandler.java:34) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.creation.bytebuddy.access.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:84) ~[mockito-core-5.17.0.jar:?]
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.handle(MockMethodAdvice.java:136) ~[mockito-core-5.17.0.jar:?]
+	at com.infy.api.cloud.service.ApiService.getApisWithTeamName(ApiService.java:740) ~[classes/:?]
+	at com.infy.api.cloud.service.ApiServiceTest.lambda$testGetApisWithTeamName_RecordNotFound$29(ApiServiceTest.java:4109) ~[test-classes/:?]
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53) ~[junit-jupiter-api-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35) ~[junit-jupiter-api-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3128) ~[junit-jupiter-api-5.12.2.jar:5.12.2]
+	at com.infy.api.cloud.service.ApiServiceTest.testGetApisWithTeamName_RecordNotFound(ApiServiceTest.java:4108) ~[test-classes/:?]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?]
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:775) ~[junit-platform-commons-1.12.2.jar:1.12.2]
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:479) ~[junit-platform-commons-1.12.2.jar:1.12.2]
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:60) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:131) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:161) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:152) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:91) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:112) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:94) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:106) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:64) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:45) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:37) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:93) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:87) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$7(TestMethodTestDescriptor.java:216) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:212) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:137) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:69) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:156) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[?:?]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[?:?]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:35) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:57) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:54) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:201) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:170) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:94) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:59) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:142) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:58) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:103) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:85) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:47) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$1(InterceptingLauncher.java:39) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:38) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:47) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.SessionPerRequestLauncher.execute(SessionPerRequestLauncher.java:63) [junit-platform-launcher-1.12.2.jar:1.12.2]
+	at com.intellij.junit5.JUnit5IdeaTestRunner.startRunnerWithArgs(JUnit5IdeaTestRunner.java:66) [junit5-rt.jar:?]
+	at com.intellij.rt.junit.IdeaTestRunner$Repeater$1.execute(IdeaTestRunner.java:38) [junit-rt.jar:?]
+	at com.intellij.rt.execution.junit.TestsRepeater.repeat(TestsRepeater.java:11) [idea_rt.jar:?]
+	at com.intellij.rt.junit.IdeaTestRunner$Repeater.startRunnerWithArgs(IdeaTestRunner.java:35) [junit-rt.jar:?]
+	at com.intellij.rt.junit.JUnitStarter.prepareStreamsAndStart(JUnitStarter.java:237) [junit-rt.jar:?]
+	at com.intellij.rt.junit.JUnitStarter.main(JUnitStarter.java:58) [junit-rt.jar:?]
+
+org.opentest4j.AssertionFailedError: Unexpected exception type thrown, 
+Expected :class com.infy.api.cloud.exception.RecordNotFoundException
+Actual   :class org.springframework.web.server.ResponseStatusException
+<Click to see difference>
+
+
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3128)
+	at com.infy.api.cloud.service.ApiServiceTest.testGetApisWithTeamName_RecordNotFound(ApiServiceTest.java:4108)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: org.springframework.web.server.ResponseStatusException: 500 INTERNAL_SERVER_ERROR "Exception occured in getApiWithId method:"
+	at com.infy.api.cloud.service.ApiService.getApisWithTeamName(ApiService.java:797)
+	at com.infy.api.cloud.service.ApiService.getApisWithTeamName(ApiService.java:740)
+	at com.infy.api.cloud.service.ApiServiceTest.lambda$testGetApisWithTeamName_RecordNotFound$29(ApiServiceTest.java:4109)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
+	... 6 more
+Caused by: com.infy.api.cloud.exception.RecordNotFoundException: No record exist for given id
+	at com.infy.api.cloud.service.ApiService.getApisWithTeamName(ApiService.java:793)
+	at java.base/java.lang.invoke.MethodHandle.invokeWithArguments(MethodHandle.java:733)
+	at org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$VuzKL7T3.invokeWithArguments(Unknown Source)
+	at org.mockito.internal.util.reflection.InstrumentationMemberAccessor.invoke(InstrumentationMemberAccessor.java:265)
+	at org.mockito.internal.util.reflection.ModuleMemberAccessor.invoke(ModuleMemberAccessor.java:55)
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.tryInvoke(MockMethodAdvice.java:316)
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice$RealMethodCall.invoke(MockMethodAdvice.java:236)
+	at org.mockito.internal.invocation.InterceptedInvocation.callRealMethod(InterceptedInvocation.java:142)
+	at org.mockito.internal.stubbing.answers.CallsRealMethods.answer(CallsRealMethods.java:45)
+	at org.mockito.Answers.answer(Answers.java:90)
+	at org.mockito.internal.handler.MockHandlerImpl.handle(MockHandlerImpl.java:111)
+	at org.mockito.internal.handler.NullResultGuardian.handle(NullResultGuardian.java:29)
+	at org.mockito.internal.handler.InvocationNotifierHandler.handle(InvocationNotifierHandler.java:34)
+	at org.mockito.internal.creation.bytebuddy.access.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:84)
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.handle(MockMethodAdvice.java:136)
+	... 9 more
+
+
+Process finished with exit code -1
+----------------------------------------------------------------------------------------------------------------------
