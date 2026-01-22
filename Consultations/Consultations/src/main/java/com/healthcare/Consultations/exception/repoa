@@ -1,0 +1,115 @@
+repo
+----------------------------
+package com.infy.api.cloud.repository;
+
+import com.infy.api.cloud.entity.ApiResourceLink;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface ApiResourceLinkRepository extends JpaRepository<ApiResourceLink, Long> {
+
+    List<ApiResourceLink> findByApiFamilyId(Long apiFamilyId);
+
+    @Modifying
+    @Query("DELETE FROM ApiResourceLink a WHERE a.apiFamilyId = :apiFamilyId")
+    void deleteAllByApiFamilyId(@Param("apiFamilyId") Long apiFamilyId);
+
+    @Query(value = """
+    SELECT COUNT(*) 
+    FROM UNNEST(CAST(:categoryIds AS INTEGER[]), CAST(:subcategoryIds AS INTEGER[])) 
+        AS t(category_id, subcategory_id)
+    WHERE EXISTS (
+        SELECT 1 
+        FROM apicloud.api_resource_categories c
+        INNER JOIN apicloud.api_resource_subcategories s 
+            ON c.category_id = s.category_id
+        WHERE c.category_id = t.category_id 
+            AND s.subcategory_id = t.subcategory_id
+    )
+    """, nativeQuery = true)
+    int countValidCategorySubcategoryPairs(
+            @Param("categoryIds") Integer[] categoryIds,
+            @Param("subcategoryIds") Integer[] subcategoryIds
+    );
+
+}
+----------------------------------------------------------------
+package com.infy.api.cloud.repository;
+
+import com.infy.api.cloud.entity.ApiResourceLink;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface ApiResourceLinkRepository extends JpaRepository<ApiResourceLink,Long> {
+
+    @Query("""
+            SELECT rl 
+            FROM ApiResourceLinks rl
+            WHERE rl.apiFamilyId = :apiFamilyId
+            ORDER BY rl.categoryId ASC, rl.subcategoryId ASC, rl.linkId ASC
+            """)
+    List<ApiResourceLink> findByApiFamilyId(@Param("apiFamilyId")Long apiFamilyId);
+}
+------------------------------------------------------------------------------------------------------------
+public ResponseEntity getApisWithTeamName(long id, String userId,String transactionID, String xTraceId) throws JsonMappingException, JsonProcessingException {
+
+        logger.info("Inside getApiWithId method : ");
+
+        logger.info("traceId={} transactionId={} - Fetching API details for apiId{}", xTraceId, transactionID, id);
+
+        try {
+            Optional<GetApiRequest> entity = apiRepository.getAllApiById(id);
+            if (entity.isPresent()) {
+                ApiResponse apientity = this.getEntityOpt(entity);
+                apientity.setContacts(getApiContactsWithTeamName(entity.get().getApiId()));
+
+                Long apiFamilyId = Long.valueOf(entity.get().getApiFamilyId());
+                try {
+                    if (apiFamilyId!= null) {
+                        Optional<List<ApiResourceLink>> OptionalLinks =
+                                Optional.ofNullable(
+                                        apiResourceLinkRepository.findByApiFamilyId(apiFamilyId));
+
+                        List<ApiResourceLink> links = OptionalLinks
+                                .filter(list -> !list.isEmpty())
+                                .orElse(Collections.emptyList());
+
+                        List<ApiResourceLinkDTO> ApiResourcelinksDTOs = links.stream()
+                                .map(link -> modelMapper.map(link, ApiResourceLinkDTO.class))
+                                .collect(Collectors.toList());
+
+                        apientity.setApiResourceLinks(ApiResourcelinksDTOs);
+
+                        logger.info("traceId={} transactionId={} - Retrieved API {} with {} resource links",
+                                xTraceId, transactionID, id, ApiResourcelinksDTOs.size());
+
+                        List<Long> linkIds = ApiResourcelinksDTOs.stream()
+                                .map(ApiResourceLinkDTO::getLinkId)
+                                .collect(Collectors.toList());
+
+                        logger.debug("traceId={} transactionId={} - API resource linkIds: {}",
+                                xTraceId, transactionID, id, linkIds);
+                    }
+                    else{
+                        apientity.setApiResourceLinks(Collections.emptyList());
+                    }
+                }
+                catch (Exception ex) {
+                    logger.error("traceId={} transactionId={} - Failed to retrieve resource links for API {} : {}",
+                            xTraceId, transactionID, id, ex.getMessage(),ex);
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Failed to retrieve API Resource Links");
+                }
+                logger.info("traceId={} transactionId={} - Successfully built API response for apiId={}",
+                        xTraceId, transactionID, id);
+
