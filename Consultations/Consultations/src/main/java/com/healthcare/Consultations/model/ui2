@@ -1,0 +1,1651 @@
+import { Component, OnInit, Input, EventEmitter, Output } from '@angular/core';
+import { BREADCRUMB } from 'src/app/shared/components/breadcrumbs/breadcrumb';
+import { ApiSubmissionService } from 'src/app/core/services/publish/api-submission.service';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import {
+  securityTypeOptionsSB,
+  targetTypeSB,
+  securitySB,
+  securityNB,
+  securityTypeOptionsNB,
+  truthyChoice,
+  COMPONENTS,
+  DashboardStorage
+} from 'src/assets/constants/app.constants';
+import { Router } from '@angular/router';
+import { Subject, throwError } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
+import { IDashboard, IActionHistoryEvent } from 'src/app/core/models/iDashboard';
+import { DashboardModes } from '../../../core/enum/DashboardModes.enum';
+import { Status } from '../../../core/enum/DashboardStatus.enum';
+import {
+  SwaggerValidation,
+  SwaggerValidationReport,
+} from 'src/app/core/models/publish/swaggerReport';
+import { SwaggerValidatorService } from 'src/app/core/services/publish/swagger-validator.service';
+import { FormBuilder, Validators } from '@angular/forms';
+import { AttachedPlugin } from 'src/app/core/models/IAttachedPlugin';
+import { IPlugin } from 'src/app/core/models/IPlugin';
+import { EnvironmentLoaderService } from 'src/app/core/config/environment-loader.service';
+import { MatTableDataSource } from '@angular/material/table';
+import { DataSource } from '@angular/cdk/table';
+import { SubmittedApiDialog } from '../dashboard-tool-spec/dashboard-tool-spec.component';
+import { Gateway } from 'src/app/core/models/api/iapi';
+import { HttpErrorResponse } from '@angular/common/http';
+import { DialogBoxActionEnum } from 'src/app/core/enum/DialogBoxActionEnum';
+import { DialogBoxComponent } from '../dialog-box/dialog-box.component';
+import { GatewayType } from 'src/app/core/enum/GatewayType.enum';
+import { support } from 'jquery';
+
+
+enum ActionEnum {
+  UPDATE,
+  DELETE,
+}
+
+@Component({
+  selector: 'app-dashboard-summary-new',
+  templateUrl: './dashboard-summary-new.component.html',
+  styleUrls: ['./dashboard-summary-new.component.scss'],
+
+})
+export class DashboardSummaryNewComponent implements OnInit {
+  @Output() togglePluginsPage = new EventEmitter<boolean>();//Code for implementing PINXTSS-2309
+  @Output() toggleIsValidated = new EventEmitter<boolean>();//Code for implementing PINXTSS-1907
+  @Input() mode: DashboardModes;
+  userData = JSON.parse(localStorage.getItem('currentUser'))
+
+  COMPONENTS = COMPONENTS;
+  breadcrumbArray = BREADCRUMB.PUBLISH.API_SUMMARY;
+  dashboardData: any;
+  rateLimitSummaryText: any;
+  multiPlexSummaryText: any
+  timeoutOverrideSummaryText: any;
+  additionalReqSummaryText: any;
+  productName: string;
+  action = ActionEnum;
+  dashboardId: string;
+  DashboardModes = DashboardModes;
+  GatewayType = GatewayType;//Code for implementing PINXTSS-2527
+  apiFamilyId:number;//Code for implementing PINXTSS-2723
+  readSnapshot: string;
+  sessionStorageOverviewSnapshot: string;
+  swaggerValidationReport: SwaggerValidationReport[]; //to store entire validation report object
+  showNextBtn: boolean = false; //to hide the next button at initial loading
+  errorMessage: string = null; //to show the error message below next button
+  showValidationResults: boolean = false;
+  unsubscribe$ = new Subject();
+  validatedOnce = false;
+  hideDataForAPI:boolean=false;//Code for implementing PINXTSS-2309
+  isValidated:boolean=false;//Code for implementing PINXTSS-1907
+  buttonLabel: string;
+  supportingResources: any[]=[];//Code for implementing PINXTSS-4430
+
+  swaggerSnapshotOnValidate;
+  hideValidate = true;
+  title: string;
+  message: string;
+  redirection: string;
+  showNext = false;
+  keyFeatures: string;
+  useCases: string;
+
+  isSwagger = true;
+  isRAML = false;
+
+  securityTypeOptionsSB = securityTypeOptionsSB;
+  targetTypeSB = targetTypeSB;
+  securitySB = securitySB;
+  securityNB = securityNB;
+  securityTypeOptionsNB = securityTypeOptionsNB;
+  truthyChoice = truthyChoice;
+  nextClickedOnce = false;
+
+  // properties for review mode
+  actionDone = true;
+  statusOptions = Status;
+  actionHistory: IActionHistoryEvent[] = [];
+  currentStatus: Status;
+
+  sessionStorageDataSnapshot: string;
+  selectedDashboardObj: IDashboard;
+
+  reqBy: string = '';   // for passing in requestedBy in the update call in approval
+  reqTS: string = '';   // for passing in requestedTs in the update call in approval
+  overViewData;
+  res: any;
+  pluginDataCp: any;
+  sessionStoragePluginSnapshot: string;
+  attachedPluginForm: AttachedPlugin[];
+  pluginDataSp: any;
+  sessionStorageSpPluginSnapshot: string;
+  pluginData: any;
+  plugin: IPlugin[];
+  spAttachedPluginData: any[];
+  //dashboardUrlOverrideData:any;
+  sessionStorageUrlOverrideSnapshot: string;
+  targetMapping: any[];
+  envName = [];
+  apiGatewayName: string;
+  displayedColumns: string[] = ['envName', 'envDesc', 'targetURL'];
+  dataSource: MatTableDataSource<any>;
+  commentText: any;
+  dashboardForm = this.fb.group({
+    requestId: [],
+    apiName: ['', Validators.required],
+    apiVersion: ['', Validators.required],
+    apiDescription: ['', Validators.required],
+    apiAdditionalInfo: null,
+    productName: ['Default Product', Validators.required],
+    basePath: ['', Validators.required],
+    capacity:['',[Validators.required,Validators.pattern(/^-?(0|[1-9]\d*)?$/),Validators.max(10000)]],//Code for implementing PINXTSS-2049
+    cmdbAppMapping:[],
+    consumerType: ['', Validators.required],
+    productId: [1, Validators.required],
+    northbound: this.fb.group({
+      nbSecurity: ['Basic Auth', Validators.required],
+      nbSecurityType: ['', Validators.required],
+      nbAuthLocation: ['', Validators.required],
+      nbAuthField: ['', Validators.required],
+      nbAuthPath: ['', Validators.required],
+      nbAuthUrl: [''],
+      nbTokenUrl: [''],
+      nbRefreshUrl: [''],
+      nbAuthScopes: [''],
+      nbCORS: [true, Validators.required],
+      nbCSRF: [false, Validators.required],
+      nbXSS: [false, Validators.required],
+    }),
+    southbound: this.fb.group({
+      sbSecurity: ['No Auth', Validators.required],
+      sbSecurityType: ['', Validators.required],
+      sbAuthLocation: ['', Validators.required],
+      sbAuthField: ['', Validators.required],
+      sbAuthPath: ['', Validators.required],
+      sbAuthUrl: [''],
+      sbTokenUrl: [''],
+      sbRefreshUrl: [''],
+      sbAuthScopes: [''],
+      sbSSL: [false, Validators.required],
+      sbTarget: [true, Validators.required],
+      sbTargetType: ['Single', Validators.required],
+      sbRoutingLocation: ['', Validators.required],
+      sbRoutingField: ['', Validators.required],
+      sbRoutingPath: ['', Validators.required],
+      sbSpecType: ['', Validators.required],
+      sbSpecPath: ['', Validators.required],
+    }),
+    apiQuotaLimit: [100],
+    apiQuotaInterval: ['Minute'],
+    appQuotaLimit: [10],
+    appQuotaInterval: ['Minute'],
+    payloadSizeLimit: [0],
+    payloadSizeUnit: ['KB'],
+    responseCache: [true, Validators.required],
+    specType: ['', Validators.required],
+    specPath: [''],
+    submissionType: ['Save & Publish', Validators.required],
+    tags: [[]],
+    tagsFunctional: [[]],
+    tagsTechnical: [[]],
+    tagsDomain: [],
+    tagsOthers: [[]],
+    comment: [''],
+    apiMgmt: [[], Validators.required],
+    test: [''],
+    stub: ['Wiremock'],
+    template: ['Pass Through'],
+    repository: ['GitLab'],
+    overrides: [],
+    cicd: ['GitLab'],
+    targetBasePath:[''],
+    apiGatewayId:[''],
+    modality:[''],
+    contacts:[],
+    lifeCycleStage:[''],
+    deployedEnvironments:[],
+    lifeCycleComment:[''],
+    intakeJIRAs:[],
+    apiFamilyId:[], //Code for implementing PINXTSS-2723
+    monitoringInfo:[],//Code for implementing PINXTSS-3722
+    supportingResources:[]
+  });
+  selectedGateway: Gateway;
+  serviceOwners:string='';
+  operations:string='';
+  jiraURL:string;
+  cmdbAppId:string='';
+  constructor(
+    public dialog: MatDialog,
+    private apiSubmissionService: ApiSubmissionService,
+    private swaggerValidatorService: SwaggerValidatorService,
+    private snackBar: MatSnackBar,
+    private router: Router,
+    private fb: FormBuilder,
+    public readonly envService: EnvironmentLoaderService
+
+  ) {
+    //This is intentional
+    this.jiraURL= envService.getEnvConfig().intakeJiraUrl;
+    //https://jira-uat.corp.chartercom.com/browse/PINXTSS-XXXX
+  }
+
+  // Code for implementing PINXTSS-3086 start
+  getTeamName(teamType:string,teamId):string{
+    let teamName = '';
+    if(teamType.toUpperCase() === 'PRODUCER'){
+      const producerTeams = sessionStorage.getItem('producerTeams')?JSON.parse(sessionStorage.getItem('producerTeams')):[];      
+      const producer = producerTeams.find(team=> Number(team.id) === Number(teamId));
+      teamName = producer?.name;
+    }
+    if(teamType.toUpperCase() === 'OPERATIONS'){
+      const operationsTeams = sessionStorage.getItem('operationsTeams')?JSON.parse(sessionStorage.getItem('operationsTeams')):[];
+      const operations = operationsTeams.find(team=> Number(team.id) === Number(teamId));
+      teamName = operations?.name;
+    }
+    console.log("Dashboard Data: ",this.dashboardData);
+    return teamName;
+  }
+  // Code for implementing PINXTSS-3086 end
+
+  ngOnInit(): void {
+    this.cmdbAppId = sessionStorage.getItem('cmdbAppId')
+    this.buttonLabel = sessionStorage.getItem('resubmitFlowInitiatedBy') === 'UPDATE_FLOW' ? 'Save' : 'Submit';
+    this.envName = this.envService.getEnvConfig().envName;
+    if (sessionStorage.getItem('specF') !== 'OAS (Swagger)' || sessionStorage.getItem('publishType') === 'Publish') {
+      this.isSwagger = false;
+      this.dashboardForm.get('apiMgmt').setValue('');
+    }
+
+    if (sessionStorage.getItem('specF') === 'RAML') {
+      this.isRAML = true;
+      if (sessionStorage.getItem('publishType') !== 'Publish')
+        this.dashboardForm.get('apiMgmt').setValue('MuleSoft');
+    }
+    this.configureByMode(this.mode);
+    console.log(this.mode);
+    if (this.mode === DashboardModes.PUBLISH) {
+
+      this.fetchFormDetails();
+      this.readSnapshot = DashboardStorage.dashboardStateSnapshotPublish;   // string for browser storage
+      this.dashboardData = JSON.parse(sessionStorage.getItem(this.readSnapshot));  
+      
+      const sr = JSON.parse(sessionStorage.getItem('supportingResources') || '[]');//Code for implementing PINXTSS-4430
+      this.supportingResources = sr;
+      this.dashboardData.supportingResources = sr;
+      this.dashboardForm.patchValue({ 
+        supportingResources: sr
+      });
+      this.sessionStorageOverviewSnapshot = DashboardStorage.dashboardOverviewPublish;
+      this.overViewData = JSON.parse(sessionStorage.getItem(this.sessionStorageOverviewSnapshot));
+
+      //for plugins
+      this.sessionStoragePluginSnapshot = DashboardStorage.dashboardCpPluginData;
+      this.pluginDataCp = JSON.parse(sessionStorage.getItem(this.sessionStoragePluginSnapshot));
+      this.sessionStorageSpPluginSnapshot = DashboardStorage.dashboardSpPluginData;
+      this.pluginDataSp = JSON.parse(sessionStorage.getItem(this.sessionStorageSpPluginSnapshot));
+      this.targetMapping = JSON.parse(sessionStorage.getItem('targetMapping'));
+      let gatewayMap = {};
+
+
+      let gateway = JSON.parse(sessionStorage.getItem('gateways'));
+      let selectedGtwyEnvs = gateway.find(gtwy => gtwy.gatewayId === this.dashboardData.apiGatewayId).environments;
+
+      gateway.forEach(gw => {
+        gatewayMap[gw["gatewayId"]] = gw;
+      });
+      console.log(gatewayMap)
+      this.apiGatewayName = gatewayMap[this.dashboardData.apiGatewayId].gatewayName;
+      console.log(selectedGtwyEnvs)
+      let envMap = {};
+      selectedGtwyEnvs.forEach(env => {
+
+        envMap[env["envId"]] = env;
+      });
+      console.log(envMap);
+      // this.targetMapping.forEach(target => {
+      //   target.envName = envMap[target.envId].env;
+      //   target.gateway = this.apiGatewayName;
+      // })
+      console.log("targetMap", this.targetMapping)
+      this.targetMapping.forEach(target => {
+        const envDetails = envMap[target.envId];
+        if (envDetails) {
+          target.envName = envDetails.env;
+          target.gateway = this.apiGatewayName;
+        } else {
+          console.warn(`Environment details not found for envId: ${target.envId}`);
+          target.envName = 'Unknown Environment'; // Fallback value
+          target.gateway = this.apiGatewayName;
+        }
+      });
+
+      this.dataSource = new MatTableDataSource(this.targetMapping)
+      sessionStorage.setItem('mappedGatewayValues', JSON.stringify(this.dataSource.filteredData))
+      //for Overrides
+      this.selectedGateway = gateway.find(gtwy => gtwy.gatewayId === this.dashboardData.apiGatewayId);
+
+     let contacts = this.dashboardData.contacts;
+     if(contacts !== null && contacts.length > 0){
+      contacts.forEach(element => {
+        console.log("Element: ",element);
+        if(element.contactType === 'PRODUCER'){//Changed OWNER to PRODUCER to implement PINXTSS-3234
+          // Below code commented to implement PINXTSS-3086
+          // if(element.email.length > 0)
+          // {
+          //   this.serviceOwners = element.email.toString();
+          // }
+          // Above code commented to implement PINXTSS-3086
+          // Code for implementing PINXTSS-3086 start
+          console.log("Element: ",element);
+          this.serviceOwners = this.getTeamName("PRODUCER",element.teamId);
+          // Code for implementing PINXTSS-3086 end
+        }
+          
+        if(element.contactType === 'OPERATIONS'){
+          // Below code commented to implement PINXTSS-3086
+          // if(element.email.length > 0)
+          //   {
+          //     this.operations = element.email.toString();
+          //   }
+          // Above code commented to implement PINXTSS-3086
+          this.operations = this.getTeamName("OPERATIONS",element.teamId);;// Code for implementing PINXTSS-3086
+        }
+
+         // this.operations = element.email;
+      });
+     }
+
+    //  console.log("this.targetMapping", this.targetMapping, "dataSource", this.dataSource)
+
+      // this.environments = 
+      // for keeping updated form while switching between screens
+      // }
+    }
+    if (this.mode === DashboardModes.REVIEW) {
+
+      // Below code commented to implement PINXTSS-3140
+      // if (sessionStorage.getItem('specF') === 'OAS (Swagger)') {
+      //   this.validateSwagger();
+      // }
+      // Above code commented to implement PINXTSS-3140
+      this.readSnapshot = DashboardStorage.dashboardStateSnapshotReview;
+      this.sessionStorageOverviewSnapshot = DashboardStorage.dashboardOverviewReview;
+      // assining it here for use througout the code
+      // string for browser storage
+      this.dashboardData = JSON.parse(sessionStorage.getItem(this.readSnapshot));
+
+      const sr = JSON.parse(sessionStorage.getItem('supportingResources') || '[]');//Code for implementing PINXTSS-4430
+      this.supportingResources = sr;
+      this.dashboardData.supportingResources = sr;
+      this.dashboardForm.patchValue({ 
+        supportingResources: sr
+      });
+
+      //for plugins
+      this.sessionStoragePluginSnapshot = DashboardStorage.dashboardCpPluginData;
+      this.pluginDataCp = JSON.parse(sessionStorage.getItem(this.sessionStoragePluginSnapshot));
+      this.sessionStorageSpPluginSnapshot = DashboardStorage.dashboardSpPluginData;
+      this.pluginDataSp = JSON.parse(sessionStorage.getItem(this.sessionStorageSpPluginSnapshot));
+     
+      this.targetMapping = JSON.parse(sessionStorage.getItem('targetMapping'));
+      let gatewayMap = {};
+
+
+      let gateway = JSON.parse(sessionStorage.getItem('gateways'));
+      let selectedGtwyEnvs = gateway.find(gtwy => gtwy.gatewayId === this.dashboardData.apiGatewayId).environments;
+
+      gateway.forEach(gw => {
+        gatewayMap[gw["gatewayId"]] = gw;
+      });
+      this.apiGatewayName = gatewayMap[this.dashboardData.apiGatewayId].gatewayName;
+
+      let envMap = {};
+      selectedGtwyEnvs.forEach(env => {
+
+        envMap[env["envId"]] = env;
+      });
+      console.log(envMap);
+
+      // this.targetMapping.forEach(target => {
+      //   target.envName = envMap[target.envId].env;
+      //   target.gateway = this.apiGatewayName;
+      // })
+      this.targetMapping.forEach(target => {
+        const envDetails = envMap[target.envId];
+        if (envDetails) {
+          target.envName = envDetails.env;
+          target.gateway = this.apiGatewayName;
+        } else {
+          console.warn(`Environment details not found for envId: ${target.envId}`);
+          target.envName = 'Unknown Environment'; // Fallback value
+          target.gateway = this.apiGatewayName;
+        }
+      });
+      this.dataSource = new MatTableDataSource(this.targetMapping)
+      //for Overrides
+      this.selectedGateway = gateway.find(gtwy => gtwy.gatewayId === this.dashboardData.apiGatewayId);
+
+      // assining it here for use througout the code
+      // for keeping updated form while switching between screens
+      let dashboardObj: IDashboard = JSON.parse(sessionStorage.getItem(DashboardStorage.selectedDashboardObjAdmin));
+      this.apiFamilyId = dashboardObj.apiDetails.apiFamilyId;
+      console.log("this.apiFamilyId",this.apiFamilyId)
+      // fetch the record selected in admin inbox api table for below two variables
+      this.overViewData = JSON.parse(sessionStorage.getItem(this.sessionStorageOverviewSnapshot));
+      this.actionHistory = dashboardObj.actionHistory;
+      this.setcurrentStatus(dashboardObj.status);
+      this.reqBy = dashboardObj.apiDetails.requestedBy;
+      this.reqTS = dashboardObj.apiDetails.requestedTimestamp;
+      this.selectedDashboardObj = JSON.parse(
+        sessionStorage.getItem(DashboardStorage.selectedDashboardObjAdmin));
+     // let dashboardObj: IDashboard = JSON.parse(sessionStorage.getItem(DashboardStorage.selectedDashboardObjAdmin));
+     // this.setcurrentStatus(dashboardObj.status);
+     // this.actionHistory = dashboardObj.actionHistory;
+     // this.reqBy = dashboardObj.apiDetails.requestedBy;
+     // this.reqTS = dashboardObj.apiDetails.requestedTimestamp;
+     let contacts = this.dashboardData.contacts;
+     if(contacts !== null && contacts.length > 0){
+      contacts.forEach(element => {
+        if(element.contactType === 'PRODUCER'){//Changed OWNER to PRODUCER to implement PINXTSS-3086
+          // Below code commented to implement PINXTSS-3086
+          // if(element.email.length > 0)
+          // {
+          //   this.serviceOwners = element.email.toString();
+          // }
+          // Above code commented to implement PINXTSS-3086
+          this.serviceOwners = this.getTeamName("PRODUCER",element.teamId);;// Code for implementing PINXTSS-3086
+        }
+          
+        if(element.contactType === 'OPERATIONS'){
+          // Below code commented to implement PINXTSS-3086
+          // if(element.email.length > 0)
+          //   {
+          //     this.operations = element.email.toString();
+          //   }
+          // Above code commented to implement PINXTSS-3086
+          this.operations = this.getTeamName("OPERATIONS",element.teamId);;// Code for implementing PINXTSS-3086
+        }
+
+         // this.operations = element.email;
+      });
+     }
+
+      this.updateFormForReview();
+
+    }
+
+    if (this.mode === DashboardModes.RESUBMIT) {
+      // Below code commented to implement PINXTSS-3140
+      // if (sessionStorage.getItem('specF') === 'OAS (Swagger)') {
+      //   this.validateSwagger();
+      // }
+      // Above code commented to implement PINXTSS-3140
+      this.readSnapshot = DashboardStorage.dashboardStateSnapshotResubmit;
+      this.sessionStorageOverviewSnapshot = DashboardStorage.dashboardOverviewResubmit;
+      // assining it here for use througout the code
+      // string for browser storage
+      this.dashboardData = JSON.parse(sessionStorage.getItem(this.readSnapshot));
+      const sr = JSON.parse(sessionStorage.getItem('supportingResources') || '[]');//Code for implementing PINXTSS-4430
+      this.supportingResources = sr;
+      this.dashboardData.supportingResources = sr;
+      this.dashboardForm.patchValue({ 
+        supportingResources: sr
+      });
+
+
+      //for plugins
+      this.sessionStoragePluginSnapshot = DashboardStorage.dashboardCpPluginData;
+      this.pluginDataCp = JSON.parse(sessionStorage.getItem(this.sessionStoragePluginSnapshot));
+      this.sessionStorageSpPluginSnapshot = DashboardStorage.dashboardSpPluginData;
+      this.pluginDataSp = JSON.parse(sessionStorage.getItem(this.sessionStorageSpPluginSnapshot));
+
+     
+
+      this.targetMapping = JSON.parse(sessionStorage.getItem('targetMapping'));
+      let gatewayMap = {};
+      let envMap = {};
+      let gateway = JSON.parse(sessionStorage.getItem('gateways'));
+      let selectedGtwyEnvs = gateway.find(gtwy => gtwy.gatewayId === this.dashboardData.apiGatewayId).environments;
+      gateway.forEach(gw => {
+        gatewayMap[gw["gatewayId"]] = gw;
+      });
+      selectedGtwyEnvs.forEach(env => {
+
+        envMap[env["envId"]] = env;
+      });
+      this.apiGatewayName = gatewayMap[this.dashboardData.apiGatewayId].gatewayName;
+
+      // this.targetMapping.forEach(target => {
+      //   target.envName = envMap[target.envId].env;
+      //   target.gateway = this.apiGatewayName;
+      // })
+
+      this.targetMapping.forEach(target => {
+        const envDetails = envMap[target.envId];
+        if (envDetails) {
+          target.envName = envDetails.env;
+          target.gateway = this.apiGatewayName;
+        } else {
+          console.warn(`Environment details not found for envId: ${target.envId}`);
+          target.envName = 'Unknown Environment'; // Fallback value
+          target.gateway = this.apiGatewayName;
+        }
+      });
+      this.dataSource = new MatTableDataSource(this.targetMapping)
+
+      //for Overrides
+      this.selectedGateway = gateway.find(gtwy => gtwy.gatewayId === this.dashboardData.apiGatewayId);
+
+      // assining it here for use througout the code
+      // for keeping updated form while switching between screens
+      let dashboardObj: IDashboard = JSON.parse(sessionStorage.getItem(DashboardStorage.selectedDashboardObjProfile));
+      this.apiFamilyId = dashboardObj.apiDetails.apiFamilyId;
+      console.log("this.apiFamilyId",this.apiFamilyId)
+      // fetch the record selected in admin inbox api table for below two variables
+      this.overViewData = JSON.parse(sessionStorage.getItem(this.sessionStorageOverviewSnapshot));
+      this.actionHistory = dashboardObj.actionHistory;
+      this.setcurrentStatus(dashboardObj.status);
+      this.reqBy = dashboardObj.apiDetails.requestedBy;
+      this.reqTS = dashboardObj.apiDetails.requestedTimestamp;
+
+      this.selectedDashboardObj = JSON.parse(
+        sessionStorage.getItem(DashboardStorage.selectedDashboardObjProfile));
+
+        let contacts = this.dashboardData.contacts;
+     if(contacts !== null && contacts.length > 0){
+      contacts.forEach(element => {
+        if(element.contactType === 'PRODUCER'){//Changed OWNER to PRODUCER to implement PINXTSS-3086
+          // Below code commented to implement PINXTSS-3086
+          // if(element.email.length > 0)
+          // {
+          //   this.serviceOwners = element.email.toString();
+          // }
+          // Above code commented to implement PINXTSS-3086          
+          this.serviceOwners = this.getTeamName("PRODUCER",element.teamId);;// Code for implementing PINXTSS-3086
+        }
+          
+        if(element.contactType === 'OPERATIONS'){
+          // Below code commented to implement PINXTSS-3086
+          // if(element.email.length > 0)
+          //   {
+          //     this.operations = element.email.toString();
+          //   }
+          // Above code commented to implement PINXTSS-3086
+          this.operations = this.getTeamName("OPERATIONS",element.teamId);// Code for implementing PINXTSS-3086          
+        }
+
+         // this.operations = element.email;         
+      });
+     }
+      
+      this.updateFormForResubmit();
+    }
+
+    if (!this.isSwagger) {
+      this.showNext = true;
+    }
+    // Code for implementing PINXTSS-2309 start
+    // if(this.dashboardForm.value.consumerType.toLowerCase()==="private"||this.dashboardForm.value.apiGatewayId===99||this.dashboardForm.value.apiGatewayId===88 || this.dashboardForm.value.apiGatewayId>=100)//Code commented to implement PINXTSS-2527
+    console.log("this.dashboardForm.value ",this.dashboardForm.value);
+    if(this.dashboardForm.value.consumerType.toLowerCase()==="private"||this.dashboardForm.value.apiGatewayId===GatewayType.PRIVATE||this.dashboardForm.value.apiGatewayId===GatewayType.NONE || this.dashboardForm.value.apiGatewayId>=GatewayType.OTHERGW)//Code for implementing PINXTSS-2527
+      {
+        this.hideDataForAPI = true;
+        this.togglePluginsPage.emit(this.hideDataForAPI);
+        // alert(this.hideDataForAPI);
+      }
+      // Code for implementing PINXTSS-2309 end
+      // Code for implementing PINXTSS-3722 start
+      const monitoringInfo = JSON.parse(sessionStorage.getItem('monitoringInfo') || '[]');
+      this.dashboardData.monitoringInfo = monitoringInfo;
+      this.dashboardForm.get('monitoringInfo').setValue(monitoringInfo);
+      // Code for implementing PINXTSS-3722 end
+
+     
+      const supportingResources = JSON.parse(sessionStorage.getItem('supportingResources') || '[]');//Code for implementing PINXTSS-4430
+      this.supportingResources = supportingResources;
+      if(this.dashboardData){
+        this.dashboardData.supportingResources = supportingResources;
+      }
+      // this.dashboardForm.get('supportingResources').setValue(supportingResources);
+      this.dashboardForm.patchValue({
+        supportingResources: supportingResources
+      });
+  }
+
+  isLastElement(element: any, array: any[]): boolean {
+    return array.indexOf(element) === array.length - 1;
+  }
+
+  getSupportingLink(category: string, subCategory: string): string | null{
+    if(!this.supportingResources || this.supportingResources.length ===0){
+      return null;
+    }
+    const resource = this.supportingResources.find(res => res.categoryName === category && res.subCategoryName === subCategory && res.resourceLink && res.resourceLink.trim().length > 0);
+    return resource ? resource.resourceLink : null;
+  }
+
+  // for various buttons on summary page in approval wokflow
+  setcurrentStatus(dashboardStatus): void {
+    if (dashboardStatus === Status.Submitted) {
+      this.currentStatus = this.statusOptions.Submitted;
+    }
+    else if (dashboardStatus === Status.Approved) {
+      this.currentStatus = this.statusOptions.Approved;
+    }
+    else if (dashboardStatus === Status.Pending) {
+      this.currentStatus = this.statusOptions.Pending;
+    }
+    else if (dashboardStatus === Status.Rejected) {
+      this.currentStatus = this.statusOptions.Rejected;
+    }
+
+  }
+
+
+
+
+  next() {
+
+
+    if (this.mode === DashboardModes.REVIEW) {
+      this.router.navigateByUrl('/admin/viewapitoolspec');
+    }
+    else if (this.mode === DashboardModes.RESUBMIT) {
+      this.router.navigateByUrl('resubmitapi/apitoolspecification');
+    }
+    else {
+      this.router.navigateByUrl('/publishapi/apitoolspecification');
+    }
+  }
+
+  back() {
+    if (this.mode === DashboardModes.REVIEW) {
+      // Code for implementing PINXTSS-2309 start
+      console.log("consumerType: ",this.dashboardForm.value.consumerType);
+      // if (this.dashboardForm.value.consumerType.toLowerCase()==="private"||this.dashboardForm.value.apiGatewayId===99||this.dashboardForm.value.apiGatewayId===88 || this.dashboardForm.value.apiGatewayId>=100){//Code commented for implementing PINXTSS-2527
+      if (this.dashboardForm.value.consumerType.toLowerCase()==="private"||this.dashboardForm.value.apiGatewayId===GatewayType.PRIVATE||this.dashboardForm.value.apiGatewayId===GatewayType.NONE || this.dashboardForm.value.apiGatewayId>=GatewayType.OTHERGW){//Code for implementing PINXTSS-2527
+       this.router.navigateByUrl('/admin/viewapiform');
+     }
+     else{
+       this.router.navigateByUrl('/admin/viewapiplugins');
+     }
+     // Code for implementing PINXTss-2309 end
+      // this.router.navigateByUrl('/admin/viewapiplugins');
+    }
+    else if (this.mode === DashboardModes.RESUBMIT) {
+      // Code for implementing PINXTSS-2309 start
+      console.log("consumerType: ",this.dashboardForm.value.consumerType);
+      // if (this.dashboardForm.value.consumerType.toLowerCase()==="private"||this.dashboardForm.value.apiGatewayId===99||this.dashboardForm.value.apiGatewayId===88 || this.dashboardForm.value.apiGatewayId>=100){//Code commented for implementing PINXTSS-2527
+      if (this.dashboardForm.value.consumerType.toLowerCase()==="private"||this.dashboardForm.value.apiGatewayId===GatewayType.PRIVATE||this.dashboardForm.value.apiGatewayId===GatewayType.NONE || this.dashboardForm.value.apiGatewayId>=GatewayType.OTHERGW){//Code for implementing PINXTSS-2527
+       this.router.navigateByUrl('/resubmitapi/apidetailsform');
+     }
+     else{
+       this.router.navigateByUrl('resubmitapi/reattachplugin');
+     }
+     // Code for implementing PINXTss-2309 end
+      // this.router.navigateByUrl('resubmitapi/reattachplugin');
+    }
+    else {
+      // Code for implementing PINXTSS-2309 start
+      console.log("consumerType: ",this.dashboardForm.value.consumerType);
+      // if (this.dashboardForm.value.consumerType.toLowerCase()==="private"||this.dashboardForm.value.apiGatewayId===99||this.dashboardForm.value.apiGatewayId===88 || this.dashboardForm.value.apiGatewayId>=100){//Code commented to implement PINXTSS-2527
+      if (this.dashboardForm.value.consumerType.toLowerCase()==="private"||this.dashboardForm.value.apiGatewayId===GatewayType.PRIVATE||this.dashboardForm.value.apiGatewayId===GatewayType.NONE || this.dashboardForm.value.apiGatewayId>=GatewayType.OTHERGW){//Code for implementing PINXTSS-2527
+       this.router.navigateByUrl('/publishapi/apidetailsform');
+     }
+     else{
+       this.router.navigateByUrl('/publishapi/apiattachplugins');
+     }
+     // Code for implementing PINXTss-2309 end
+     // this.router.navigateByUrl('publishapi/apiattachplugins');
+    }
+  }
+  // method for review mode
+
+
+  validateSwagger() {
+    this.nextClickedOnce = true;
+
+    this.validatedOnce = true;
+    this.errorMessage = undefined;
+    // const yamlFile = localStorage.getItem('swagger-editor-content');//Code commented to implement PINXTSS-3891.
+    const yamlFile = sessionStorage.getItem('swagger-editor-content');//Code for implementing PINXTSS-3891.
+    this.swaggerSnapshotOnValidate = yamlFile;
+
+    this.swaggerValidatorService
+        .validateSwagger(yamlFile)
+        .pipe(
+            takeUntil(this.unsubscribe$)
+        )
+        .subscribe((data: SwaggerValidation) => {
+            console.log("Data: ", data);
+            if (data.report[0].error !== undefined && data.report[0].error.length > 0) { // Code to handle error when status code is 200.
+                console.log("Swagger has errors!!!");
+                let errorList = data.report[0].error.map(err => err.message); // Extract error messages
+                const dialogData = { action: DialogBoxActionEnum.SWAGGERERRORS, errors: { errorList } };
+                console.log("Data: ", dialogData);
+                // Code for implementing PINXTSS-1907 start
+                this.isValidated=false;                
+                this.toggleIsValidated.emit(this.isValidated);
+                // Code for impleemnting PINXTSS-1907 end
+                const dialogRef = this.dialog.open(DialogBoxComponent, {
+                    width: '750px',
+                    data: dialogData,
+                });
+                dialogRef.afterClosed().subscribe((result: { event; data?: any }) => {
+                    let event = result.event;
+                    if (event === 'Cancel')
+                        console.log('ErrorMessage: ', errorList);
+                });
+            } else {
+                console.log("Swagger doesn't have error");
+                console.log("Swagger Validated!");
+                this.swaggerValidationReport = data.report; // extract the validation report object.
+                this.showValidationResults = true;
+                console.log("Swagger Validated!!");
+                // Code for implementing PINXTSS-1907 start
+                this.isValidated=true;
+                this.toggleIsValidated.emit(this.isValidated);
+                console.log("Swagger Validated!!!");
+                // Code for impleemnting PINXTSS-1907 end
+                if (this.mode === DashboardModes.PUBLISH) {
+                    setTimeout(() => {
+                        window.scrollBy(0, 500);
+                    }, 500);
+                }
+            }
+        },
+        err => {
+            // Extract error message from backend response
+            let errorMessage = err?.message || "Swagger Validator has technical issue, please try again later.";
+            console.log("Error Code: ", err.status); // Test purpose
+            let errorList = [];
+            errorList.push("Swagger Validator has technical issue, please try again later.");
+            errorList.push("Please contact the administrator if the issue persists.");
+            errorList.push("Caused by: " + err.status + "(" + this.getErrorFromCode(err.status) + ")");
+            const dialogData = { action: DialogBoxActionEnum.SWAGGERERRORS, errors: { errorList } };
+            console.log("Data: ", dialogData);
+            const dialogRef = this.dialog.open(DialogBoxComponent, {
+                width: '750px',
+                data: dialogData,
+            });
+            dialogRef.afterClosed().subscribe((result: { event; data?: any }) => {
+                let event = result.event;
+                if (event === 'Cancel')
+                    console.log('ErrorMessage: ', errorMessage);
+            });
+        });
+}
+
+  // Helper method to format error messages
+  private formatErrorMessage(errorMessage: string): string {
+    const maxLineLength = 80;
+    let formattedMessage = '';
+    let currentLine = '';
+
+    errorMessage.split(' ').forEach(word => {
+      if ((currentLine + word).length > maxLineLength) {
+        formattedMessage += currentLine + '\n';
+        currentLine = word + ' ';
+      } else {
+        currentLine += word + ' ';
+      }
+    });
+
+    formattedMessage += currentLine.trim();
+    return formattedMessage;
+  }
+
+  // Code for implementing PINXTSS-2183 Start
+  private getErrorFromCode(errorCode) {
+    let errorResponseMessage = '';
+    switch (errorCode) {
+      case 400:
+        errorResponseMessage = 'Bad Request';
+        break;
+      case 401:
+        errorResponseMessage = 'Unauthorized';
+        break;
+      case 403:
+        errorResponseMessage = 'Forbidden';
+        break;
+      case 404:
+        errorResponseMessage = 'Not Found';
+        break;
+      case 500:
+        errorResponseMessage = 'Internal Server Error';
+        break;
+      case 502:
+        errorResponseMessage = 'Bad Gateway';
+        break;
+      case 503:
+        errorResponseMessage = 'Service Unavailable';
+        break;
+      default:
+        errorResponseMessage = `Unexpected Error: ${errorCode}`;
+    }
+    return errorResponseMessage;
+  }
+  // Code for implementing PINXTSS-2183 End
+  handleComment($event) {
+    this.commentText = $event;
+  }
+  saveSnapshot() {
+    console.log(this.dashboardForm);
+    const stringJson = JSON.stringify(this.dashboardForm.value);
+    console.log("saveSnapshot stringJson", stringJson);
+    sessionStorage.setItem(this.sessionStorageDataSnapshot, stringJson);
+    this.dashboardData = JSON.parse(sessionStorage.getItem(this.sessionStorageDataSnapshot));
+
+      const sr = JSON.parse(sessionStorage.getItem('supportingResources') || '[]');//Code for implementing PINXTSS-4430
+      this.supportingResources = sr;
+      this.dashboardData.supportingResources = sr;
+      this.dashboardForm.patchValue({ 
+        supportingResources: sr
+      });
+
+    const supportingResources = JSON.parse(sessionStorage.getItem('supportingResources') || '[]');
+    this.supportingResources = supportingResources;
+    this.dashboardData.supportingResources = supportingResources;
+    // this.dashboardForm.get('supportingResources').setValue(supportingResources);
+          this.dashboardForm.patchValue({
+        supportingResources: supportingResources
+      });
+    
+
+    // Code for implementing PINXTSS-3722 start
+    const monitoringInfo = JSON.parse(sessionStorage.getItem('monitoringInfo') || '[]');
+    this.dashboardData.monitoringInfo = monitoringInfo;
+    this.dashboardForm.get('monitoringInfo').setValue(monitoringInfo);
+    // Code for implementing PINXTSS-3722 end
+
+    // // Code for implementing PINXTSS-4430 start
+    // const supportingResources = JSON.parse(sessionStorage.getItem('supportingResources') || '[]');
+    // this.dashboardData.supportingResources = supportingResources;
+    // this.dashboardForm.get('supportingResources').setValue(supportingResources);
+    // // Code for implementing PINXTSS-4430 end
+
+    console.log("saveSnapshot dashboardData", this.dashboardData);
+    // Code for implementing PINXTSS-2614 start
+    if(this.dashboardData.apiGatewayId === GatewayType.NONE || this.dashboardData.apiGatewayId === GatewayType.PRIVATE || this.dashboardData.apiGatewayId >= GatewayType.OTHERGW){
+      this.dashboardData.cpAttachedPlugins = [];
+      this.dashboardData.spAttachedPlugins = [];
+    }
+    else{
+      this.dashboardData.cpAttachedPlugins = JSON.parse(sessionStorage.getItem('cpAttachedPlugins'));
+      this.dashboardData.spAttachedPlugins = JSON.parse(sessionStorage.getItem('spAttachedPlugins'));      
+    }
+    // Code for implementing PINXTSS-2614 end
+    // Below code commented to implement PINXTSS-2614
+    // this.dashboardData.cpAttachedPlugins = JSON.parse(sessionStorage.getItem('cpAttachedPlugins'))
+    // this.dashboardData.spAttachedPlugins = JSON.parse(sessionStorage.getItem('spAttachedPlugins'))
+    // Above code commented to implement PINXTSS-2614
+    //this.dashboardData.overrides = JSON.parse(sessionStorage.getItem('overrides'))
+    this.dashboardData.targetMapping = JSON.parse(sessionStorage.getItem('targetMapping'));
+    if (this.commentText) {
+      this.dashboardData.comment = this.commentText
+    }
+  }
+  configureByMode(mode) {
+    if (mode === DashboardModes.PUBLISH) {
+      this.sessionStorageDataSnapshot = DashboardStorage.dashboardStateSnapshotPublish;
+      this.sessionStorageOverviewSnapshot = DashboardStorage.dashboardOverviewPublish;
+    }
+    if (mode === DashboardModes.REVIEW) {
+      this.sessionStorageDataSnapshot = DashboardStorage.dashboardStateSnapshotReview;
+      this.sessionStorageOverviewSnapshot = DashboardStorage.dashboardOverviewReview;
+    }
+    if (mode === DashboardModes.RESUBMIT) {
+      this.sessionStorageDataSnapshot = DashboardStorage.dashboardStateSnapshotResubmit;
+      this.sessionStorageOverviewSnapshot = DashboardStorage.dashboardOverviewResubmit;
+    }
+  }
+  getJiraRef(submissionServiceResp) {
+    let clientTrackingInfo = submissionServiceResp['clientTrackingInfo'];
+    if (!clientTrackingInfo) {
+      return undefined;
+    }
+    let pinxt = clientTrackingInfo['pinxt'];
+    if (!pinxt) {
+      return undefined;
+    }
+    return {
+      jiraTicket: pinxt,
+      link: this.envService.getEnvConfig().jiraTicket + pinxt
+    }
+  }
+
+  submit() {
+    console.log("submit fn", this.dashboardData)
+    this.nextClickedOnce = true;
+    this.saveSnapshot();
+    console.log("Dashboard Data for payload: ", this.dashboardData);
+    this.nextClickedOnce = false;
+    this.apiSubmissionService
+      .submitApiToAdmin(this.dashboardData, this.apiFamilyId)
+      .then((x) => {
+        x.subscribe({
+
+          next: (res) => {
+            this.title = 'Success';
+            this.message = 'API submitted successfully for approval.';
+      
+            // if(!(this.dashboardData.apiGatewayId === 99 || this.dashboardData.apiGatewayId === 88 || this.dashboardData.apiGatewayId >= 100)){//Code commented for implementing PINXTSS-2527
+            if(!(this.dashboardData.apiGatewayId === GatewayType.PRIVATE || this.dashboardData.apiGatewayId === GatewayType.NONE || this.dashboardData.apiGatewayId >= GatewayType.OTHERGW)){//Code for implementing PINXTSS-2527
+              let jiraData = this.getJiraRef(res);
+              if (jiraData) {
+                let jiraHtml = "<br/> PiNxt JIRA #: <a href= " + jiraData.link + " target='_blank' >" + jiraData.jiraTicket + "</a>";
+                this.message = this.message + jiraHtml;
+  
+              } else {
+                this.message += "<br> JIRA is not responsive. Please contact the PiNxt admins at DL-SE-PINXT-DEVELOPMENT@charter.com to get a tracking number."
+              }
+            }  
+
+            this.redirection = '/profile';
+
+            sessionStorage.removeItem(this.readSnapshot);
+            localStorage.removeItem(DashboardStorage.swaggerEditorData);
+            localStorage.removeItem(DashboardStorage.swaggerEditorUpdatedData);
+            sessionStorage.removeItem('basePath');
+            sessionStorage.removeItem(this.sessionStorageOverviewSnapshot);
+            sessionStorage.removeItem('swaggerInfo');
+            sessionStorage.removeItem('apiName');
+            sessionStorage.removeItem('securityData');
+            sessionStorage.removeItem('wsdlContent');
+            sessionStorage.removeItem('gQLEndpoint');
+            sessionStorage.removeItem('cpAttachedPlugins');
+            sessionStorage.removeItem('spAttachedPlugins');
+            sessionStorage.removeItem('overrides');
+            sessionStorage.removeItem('targetBasePath');
+            sessionStorage.removeItem('targetMapping');
+            sessionStorage.removeItem('lifeCycleStage');
+            sessionStorage.removeItem('lifeCycleComment');
+            localStorage.removeItem('raml-content');
+            sessionStorage.removeItem('overrideData');
+            sessionStorage.removeItem('monitoringInfo');//Code for implementing PINXTSS-3722
+            sessionStorage.removeItem('supportingResources');//Code for implementing PINXTSS-4430
+            sessionStorage.removeItem('nextClicked');
+            sessionStorage.removeItem('initialResourcePaths');
+            if (sessionStorage.getItem('specF') === 'RAML') {
+              let ramlFileName = JSON.parse(localStorage.getItem('config.currentFile')).name;
+              let fileContentName = 'localStorageFilePersistence./' + ramlFileName
+              localStorage.removeItem(fileContentName);
+              localStorage.removeItem('config.currentFile');
+            }
+            sessionStorage.removeItem('specF');
+            this.openDialog();
+          },
+          error: (err) => {
+            this.title = 'Failed';
+            this.message = 'Submission failed. Please try again later.';
+            this.redirection = '/profile';
+
+            this.openDialog();
+          }
+        });
+      })
+      .catch((y) => {
+        console.log('CATCH', y)
+
+        this.title = 'Failed';
+        this.message = 'API submission failed. Please try again later.';
+        this.redirection = '/profile';
+
+        this.openDialog();
+      });
+
+  }
+
+  updateApi(status: Status) {
+    let OldStatus = status;
+    this.nextClickedOnce = true;
+    this.actionDone = false;
+    this.saveSnapshot();
+    if (this.mode === DashboardModes.RESUBMIT) {
+      if (status === Status.Approved || status === Status.ReSubmitted || status === Status.Pending || status === Status.Rejected) {
+        status = Status.ReSubmitted
+      }
+      else if (status !== Status.Submitted) {
+        status = Status.Submitted
+      }
+    }
+
+    console.log(this.dashboardData);
+    // Code for implementing PINXTSS-2309 start
+    if(this.hideDataForAPI===true){
+      this.dashboardData.cpAttachedPlugins=[];
+      this.dashboardData.spAttachedPlugins=[];
+    }
+    // Code for implementing PINXTSS-2309 end
+    //Code for implementing PINXTSS-2733 start 
+    if(this.mode===DashboardModes.RESUBMIT){
+      // Code to fix POST/PATCH issue for Update start
+      if(sessionStorage.getItem("resubmitFlowInitiatedBy")==="UPDATE_FLOW"){
+        this.updateAPIProfilePage();
+      }
+      else{
+        this.addVersion();
+      }
+      // Code to fix POST/PATCH issue for Update end
+      // this.addVersion();//Code commented to fix POST/PATCH issue for Update
+    }
+    else if(this.mode === DashboardModes.REVIEW){
+      console.log("Dashboard Data review: ",this.dashboardData);      
+      this.apiSubmissionService
+      .approveAPI(this.dashboardData, status, this.reqBy, this.reqTS)
+      .then((data) => {
+        data.subscribe({
+          next: (x) => {
+            this.actionDone = true;
+            this.title = 'Success';
+            if (this.mode === DashboardModes.REVIEW) {
+              this.redirection = '/admin';
+            }
+            else if (this.mode === DashboardModes.RESUBMIT) {
+              this.redirection = '/profile';
+            }
+
+            if (this.mode === DashboardModes.RESUBMIT) {
+              this.message = 'API has been resubmitted successfully.';
+              // if(!(this.dashboardData.apiGatewayId === 99 || this.dashboardData.apiGatewayId === 88 || this.dashboardData.apiGatewayId >= 100)){//Code commented for implementing PINXTSS-2527
+              if(!(this.dashboardData.apiGatewayId === GatewayType.PRIVATE || this.dashboardData.apiGatewayId === GatewayType.NONE || this.dashboardData.apiGatewayId >= GatewayType.OTHERGW)){//Code for implementing PINXTSS-2527
+                let jiraData = this.getJiraRef(x);
+                if (jiraData) {
+                  // let jiraHtml = "<br/> PiNxt JIRA #: <a href= " + jiraData.link + ">" + jiraData.jiraTicket + "</a>";
+                  let jiraHtml = "<br/> PiNxt JIRA #: <a href= " + jiraData.link + " target='_blank' >" + jiraData.jiraTicket + "</a>";
+                  this.message = this.message + jiraHtml;
+  
+                } else {
+                  this.message += "<br> JIRA is not responsive. Please contact the PiNxt admins at DL-SE-PINXT-DEVELOPMENT@charter.com to get a tracking number."
+                }
+              }
+            } else if (status === Status.Pending) {
+              this.message = 'API has been moved to pending status.';
+            } else if (status === Status.Rejected) {
+              this.message = 'API has been rejected successfully.';
+            } else if (status === Status.Approved) {
+              this.message = 'API has been approved successfully.';
+            } else {
+              this.message =
+                'Backend responded with dashboard status as ' + status + '.';
+            }
+            sessionStorage.removeItem(DashboardStorage.selectedDashboardObjAdmin);
+            sessionStorage.removeItem(this.readSnapshot);
+            localStorage.removeItem(DashboardStorage.swaggerEditorData);
+            localStorage.removeItem(DashboardStorage.swaggerEditorUpdatedData);
+            sessionStorage.removeItem('basePath');
+            sessionStorage.removeItem(this.sessionStorageOverviewSnapshot);
+            sessionStorage.removeItem('swaggerInfo');
+            sessionStorage.removeItem('securityData');
+            sessionStorage.removeItem('apiName');
+            sessionStorage.removeItem('wsdlContent');
+            sessionStorage.removeItem('overrideData');
+            sessionStorage.removeItem('monitoringInfo');//Code for implementing PINXTSS-3722
+            sessionStorage.removeItem('supportingResources');//Code for implementing PINXTSS-4430
+            sessionStorage.removeItem('gQLEndpoint');
+            localStorage.removeItem('raml-content');
+
+
+            if (sessionStorage.getItem('specF') === 'RAML') {
+              let ramlFileName = JSON.parse(localStorage.getItem('config.currentFile')).name;
+              let fileContentName = 'localStorageFilePersistence./' + ramlFileName
+              localStorage.removeItem(fileContentName);
+              localStorage.removeItem('config.currentFile');
+            }
+            sessionStorage.removeItem('specF');
+            this.openDialog();
+          },
+          error: (err) => {
+
+            this.title = 'Approval flow failed';
+            this.message = 'Check the data parameters or reach out to a Self Service admin.';
+            this.openDialog();
+            this.actionDone = true;
+            // TODO: when enhancing this after backend gives us more detailed messaging, we will revisit if the redirect is ever needed
+            if (this.mode === DashboardModes.REVIEW) {
+              // this.redirection = '/admin';
+            }
+            else if (this.mode === DashboardModes.RESUBMIT) {
+              status = OldStatus;
+              // this.redirection = '/profile';
+            }
+
+          }
+        }
+        );
+      })
+      .catch((err) => {
+        this.title = 'Failed';
+
+        this.message = 'Submission failed. Please try again later.';
+        if (this.mode === DashboardModes.REVIEW) {
+          this.redirection = '/admin';
+        }
+        else if (this.mode === DashboardModes.RESUBMIT) {
+          status = OldStatus;
+          this.redirection = '/profile';
+        }
+        this.openDialog();
+      });      
+    }
+    // Code for implementing PINXTSS-2733 end
+    // Below code commented to implement PINXTSS-2733
+    // this.apiSubmissionService
+    //   .approveAPI(this.dashboardData, status, this.reqBy, this.reqTS)
+    //   .then((data) => {
+    //     data.subscribe({
+    //       next: (x) => {
+    //         this.actionDone = true;
+    //         this.title = 'Success';
+    //         if (this.mode === DashboardModes.REVIEW) {
+    //           this.redirection = '/admin';
+    //         }
+    //         else if (this.mode === DashboardModes.RESUBMIT) {
+    //           this.redirection = '/profile';
+    //         }
+
+    //         if (this.mode === DashboardModes.RESUBMIT) {
+    //           this.message = 'API has been resubmitted successfully.';
+    //           // if(!(this.dashboardData.apiGatewayId === 99 || this.dashboardData.apiGatewayId === 88 || this.dashboardData.apiGatewayId >= 100)){//Code commented for implementing PINXTSS-2527
+    //           if(!(this.dashboardData.apiGatewayId === GatewayType.PRIVATE || this.dashboardData.apiGatewayId === GatewayType.NONE || this.dashboardData.apiGatewayId >= GatewayType.OTHERGW)){//Code for implementing PINXTSS-2527
+    //             let jiraData = this.getJiraRef(x);
+    //             if (jiraData) {
+    //               // let jiraHtml = "<br/> PiNxt JIRA #: <a href= " + jiraData.link + ">" + jiraData.jiraTicket + "</a>";
+    //               let jiraHtml = "<br/> PiNxt JIRA #: <a href= " + jiraData.link + " target='_blank' >" + jiraData.jiraTicket + "</a>";
+    //               this.message = this.message + jiraHtml;
+  
+    //             } else {
+    //               this.message += "<br> JIRA is not responsive. Please contact the PiNxt admins at DL-SE-PINXT-DEVELOPMENT@charter.com to get a tracking number."
+    //             }
+    //           }
+    //         } else if (status === Status.Pending) {
+    //           this.message = 'API has been moved to pending status.';
+    //         } else if (status === Status.Rejected) {
+    //           this.message = 'API has been rejected successfully.';
+    //         } else if (status === Status.Approved) {
+    //           this.message = 'API has been approved successfully.';
+    //         } else {
+    //           this.message =
+    //             'Backend responded with dashboard status as ' + status + '.';
+    //         }
+    //         sessionStorage.removeItem(DashboardStorage.selectedDashboardObjAdmin);
+    //         sessionStorage.removeItem(this.readSnapshot);
+    //         localStorage.removeItem(DashboardStorage.swaggerEditorData);
+    //         localStorage.removeItem(DashboardStorage.swaggerEditorUpdatedData);
+    //         sessionStorage.removeItem('basePath');
+    //         sessionStorage.removeItem(this.sessionStorageOverviewSnapshot);
+    //         sessionStorage.removeItem('swaggerInfo');
+    //         sessionStorage.removeItem('securityData');
+    //         sessionStorage.removeItem('apiName');
+    //         sessionStorage.removeItem('wsdlContent');
+    //         sessionStorage.removeItem('overrideData');
+    //         sessionStorage.removeItem('gQLEndpoint');
+    //         localStorage.removeItem('raml-content');
+
+
+    //         if (sessionStorage.getItem('specF') === 'RAML') {
+    //           let ramlFileName = JSON.parse(localStorage.getItem('config.currentFile')).name;
+    //           let fileContentName = 'localStorageFilePersistence./' + ramlFileName
+    //           localStorage.removeItem(fileContentName);
+    //           localStorage.removeItem('config.currentFile');
+    //         }
+    //         sessionStorage.removeItem('specF');
+    //         this.openDialog();
+    //       },
+    //       error: (err) => {
+
+    //         this.title = 'Approval flow failed';
+    //         this.message = 'Check the data parameters or reach out to a Self Service admin.';
+    //         this.openDialog();
+    //         this.actionDone = true;
+    //         // TODO: when enhancing this after backend gives us more detailed messaging, we will revisit if the redirect is ever needed
+    //         if (this.mode === DashboardModes.REVIEW) {
+    //           // this.redirection = '/admin';
+    //         }
+    //         else if (this.mode === DashboardModes.RESUBMIT) {
+    //           status = OldStatus;
+    //           // this.redirection = '/profile';
+    //         }
+
+    //       }
+    //     }
+    //     );
+    //   })
+    //   .catch((err) => {
+    //     this.title = 'Failed';
+
+    //     this.message = 'Submission failed. Please try again later.';
+    //     if (this.mode === DashboardModes.REVIEW) {
+    //       this.redirection = '/admin';
+    //     }
+    //     else if (this.mode === DashboardModes.RESUBMIT) {
+    //       status = OldStatus;
+    //       this.redirection = '/profile';
+    //     }
+    //     this.openDialog();
+    //   });
+      // Above code commented to implement PINXTSS-2733
+  }
+
+  // Test code for PINXTSS-2733 start
+  addVersion(){    
+    console.log("Dashboard Data: ", this.dashboardData, "\nDashboard Form: ",this.dashboardForm);
+    this.dashboardForm.removeControl('apiId');
+    this.dashboardForm.removeControl('requestId');
+    console.log("Updated Dashboard Form Data: ", this.dashboardForm);
+    if(this.dashboardData){
+      delete this.dashboardData['requestId'];
+      delete this.dashboardData['apiId'];
+    }    
+    console.log("Dashboard Data with apiFamilyId and requestId set to blank/empty: ",this.dashboardData);
+    console.log("Mode: ",this.mode);
+    this.apiSubmissionService
+      .submitApiToAdmin(this.dashboardData, this.apiFamilyId)
+      .then((x) => {
+        x.subscribe({
+
+          next: (res) => {
+            this.title = 'Success';
+            this.message = 'API submitted successfully for approval.';
+      
+            // if(!(this.dashboardData.apiGatewayId === 99 || this.dashboardData.apiGatewayId === 88 || this.dashboardData.apiGatewayId >= 100)){//Code commented for implementing PINXTSS-2527
+            if(!(this.dashboardData.apiGatewayId === GatewayType.PRIVATE || this.dashboardData.apiGatewayId === GatewayType.NONE || this.dashboardData.apiGatewayId >= GatewayType.OTHERGW)){//Code for implementing PINXTSS-2527
+              let jiraData = this.getJiraRef(res);
+              if (jiraData) {
+                let jiraHtml = "<br/> PiNxt JIRA #: <a href= " + jiraData.link + " target='_blank' >" + jiraData.jiraTicket + "</a>";
+                this.message = this.message + jiraHtml;
+  
+              } else {
+                this.message += "<br> JIRA is not responsive. Please contact the PiNxt admins at DL-SE-PINXT-DEVELOPMENT@charter.com to get a tracking number."
+              }
+            }  
+
+            this.redirection = '/profile';
+
+            sessionStorage.removeItem(this.readSnapshot);
+            localStorage.removeItem(DashboardStorage.swaggerEditorData);
+            localStorage.removeItem(DashboardStorage.swaggerEditorUpdatedData);
+            sessionStorage.removeItem('basePath');
+            sessionStorage.removeItem(this.sessionStorageOverviewSnapshot);
+            sessionStorage.removeItem('swaggerInfo');
+            sessionStorage.removeItem('apiName');
+            sessionStorage.removeItem('securityData');
+            sessionStorage.removeItem('wsdlContent');
+            sessionStorage.removeItem('gQLEndpoint');
+            sessionStorage.removeItem('cpAttachedPlugins');
+            sessionStorage.removeItem('spAttachedPlugins');
+            sessionStorage.removeItem('overrides');
+            sessionStorage.removeItem('targetBasePath');
+            sessionStorage.removeItem('targetMapping');
+            sessionStorage.removeItem('lifeCycleStage');
+            sessionStorage.removeItem('lifeCycleComment');
+            localStorage.removeItem('raml-content');
+            sessionStorage.removeItem('overrideData');
+            sessionStorage.removeItem('monitoringInfo');//Code for implementing PINXTSS-3722
+            sessionStorage.removeItem('supportingResources');//Code for implementing PINXTSS-4430
+
+
+            if (sessionStorage.getItem('specF') === 'RAML') {
+              let ramlFileName = JSON.parse(localStorage.getItem('config.currentFile')).name;
+              let fileContentName = 'localStorageFilePersistence./' + ramlFileName
+              localStorage.removeItem(fileContentName);
+              localStorage.removeItem('config.currentFile');
+            }
+            sessionStorage.removeItem('specF');
+            this.openDialog();
+          },
+          error: (err) => {
+            this.title = 'Failed';
+            this.message = 'Submission failed. Please try again later.';
+            this.redirection = '/profile';
+
+            this.openDialog();
+          }
+        });
+      })
+      .catch((y) => {
+        console.log('CATCH', y)
+
+        this.title = 'Failed';
+        this.message = 'API submission failed. Please try again later.';
+        this.redirection = '/profile';
+
+        this.openDialog();
+      });
+  }
+  // Test code for PINXTSS-2733 end
+
+  // Test code for Update issue start
+  updateAPIProfilePage(){  
+    console.log("Dashboard Data with apiFamilyId and requestId set to blank/empty: ",this.dashboardData);
+    console.log("Mode: ",this.mode);
+    this.apiSubmissionService
+      .submitApiToAdmin(this.dashboardData, this.apiFamilyId)
+      .then((x) => {
+        x.subscribe({
+
+          next: (res) => {
+            this.title = 'Success';
+            this.message = 'API submitted successfully for approval.';
+      
+            // if(!(this.dashboardData.apiGatewayId === 99 || this.dashboardData.apiGatewayId === 88 || this.dashboardData.apiGatewayId >= 100)){//Code commented for implementing PINXTSS-2527
+            if(!(this.dashboardData.apiGatewayId === GatewayType.PRIVATE || this.dashboardData.apiGatewayId === GatewayType.NONE || this.dashboardData.apiGatewayId >= GatewayType.OTHERGW)){//Code for implementing PINXTSS-2527
+              let jiraData = this.getJiraRef(res);
+              if (jiraData) {
+                let jiraHtml = "<br/> PiNxt JIRA #: <a href= " + jiraData.link + " target='_blank' >" + jiraData.jiraTicket + "</a>";
+                this.message = this.message + jiraHtml;
+  
+              } else {
+                this.message += "<br> JIRA is not responsive. Please contact the PiNxt admins at DL-SE-PINXT-DEVELOPMENT@charter.com to get a tracking number."
+              }
+            }  
+
+            this.redirection = '/profile';
+
+            sessionStorage.removeItem(this.readSnapshot);
+            localStorage.removeItem(DashboardStorage.swaggerEditorData);
+            localStorage.removeItem(DashboardStorage.swaggerEditorUpdatedData);
+            sessionStorage.removeItem('basePath');
+            sessionStorage.removeItem(this.sessionStorageOverviewSnapshot);
+            sessionStorage.removeItem('swaggerInfo');
+            sessionStorage.removeItem('apiName');
+            sessionStorage.removeItem('securityData');
+            sessionStorage.removeItem('wsdlContent');
+            sessionStorage.removeItem('gQLEndpoint');
+            sessionStorage.removeItem('cpAttachedPlugins');
+            sessionStorage.removeItem('spAttachedPlugins');
+            sessionStorage.removeItem('overrides');
+            sessionStorage.removeItem('targetBasePath');
+            sessionStorage.removeItem('targetMapping');
+            sessionStorage.removeItem('lifeCycleStage');
+            sessionStorage.removeItem('lifeCycleComment');
+            localStorage.removeItem('raml-content');
+            sessionStorage.removeItem('overrideData');
+            sessionStorage.removeItem('monitoringInfo');//Code for implementing PINXTSS-3722
+            sessionStorage.removeItem('supportingResources');//Code for implementing PINXTSS-4430
+
+
+            if (sessionStorage.getItem('specF') === 'RAML') {
+              let ramlFileName = JSON.parse(localStorage.getItem('config.currentFile')).name;
+              let fileContentName = 'localStorageFilePersistence./' + ramlFileName
+              localStorage.removeItem(fileContentName);
+              localStorage.removeItem('config.currentFile');
+            }
+            sessionStorage.removeItem('specF');
+            this.openDialog();
+          },
+          error: (err) => {
+            this.title = 'Failed';
+            this.message = 'Submission failed. Please try again later.';
+            this.redirection = '/profile';
+
+            this.openDialog();
+          }
+        });
+      })
+      .catch((y) => {
+        console.log('CATCH', y)
+
+        this.title = 'Failed';
+        this.message = 'API submission failed. Please try again later.';
+        this.redirection = '/profile';
+
+        this.openDialog();
+      });
+  }
+  // Test code for Update issue end
+
+  openDialog(): void {
+    this.dialog.open(SubmittedApiDialog, {
+      width: '400px',
+      data: { title: this.title, message: this.message, redirection: this.redirection },
+      disableClose: true
+    });
+  }
+  updateFormForReview() {
+    this.readSnapshot = DashboardStorage.dashboardStateSnapshotReview;
+    let formData = JSON.parse(sessionStorage.getItem(this.sessionStorageDataSnapshot))
+    //let overViewData = JSON.parse(sessionStorage.getItem(this.sessionStorageOverviewSnapshot));
+    console.log(formData)
+    if (formData) {
+      this.dashboardForm.patchValue({
+        requestId: this.selectedDashboardObj.requestId,
+        apiName: formData.apiName,
+        apiVersion: formData.apiVersion,
+        apiDescription: formData.apiDescription,
+        apiAdditionalInfo: formData.apiAdditionalInfo,
+        basePath: formData.basePath,
+        capacity: formData.capacity,//Code for implementing PINXTSS-2049
+        cmdbAppMapping:formData.cmdbAppMapping,
+        consumerType: formData.consumerType,
+        productName: formData.productName,
+        productId: formData.productId,
+        northbound: {
+          nbSecurity: formData.northbound.nbSecurity,
+          nbSecurityType: formData.northbound.nbSecurityType,
+          nbAuthLocation: formData.northbound.nbAuthLocation,
+          nbAuthField: formData.northbound.nbAuthField,
+          nbAuthUrl: formData.northbound.nbAuthUrl,
+          nbTokenUrl: formData.northbound.nbTokenUrl,
+          nbRefreshUrl: formData.northbound.nbRefreshUrl,
+          nbAuthScopes: formData.northbound.nbAuthScopes,
+          nbCORS: formData.northbound.nbCORS,
+          nbCSRF: formData.northbound.nbCSRF,
+          nbXSS: formData.northbound.nbXSS,
+        },
+        southbound: {
+          sbSecurity: formData.southbound.sbSecurity,
+          sbSecurityType: formData.southbound.sbSecurityType,
+          sbAuthLocation: formData.southbound.sbAuthLocation,
+          sbAuthField: formData.southbound.sbAuthField,
+          sbAuthUrl: formData.southbound.sbAuthUrl,
+          sbTokenUrl: formData.southbound.sbTokenUrl,
+          sbRefreshUrl: formData.southbound.sbRefreshUrl,
+          sbAuthScopes: formData.southbound.sbAuthScopes,
+          sbSSL: formData.southbound.sbSSL,
+          sbTarget: formData.southbound.sbTarget,
+          sbTargetType: formData.southbound.sbTargetType,
+          sbRoutingLocation: formData.southbound.sbRoutingLocation,
+          sbRoutingField: formData.southbound.sbRoutingField,
+          sbRoutingPath: formData.southbound.sbRoutingPath,
+          sbSpecType: formData.southbound.sbSpecType
+        },
+        apiQuotaLimit: formData.apiQuotaLimit,
+        apiQuotaInterval: formData.apiQuotaInterval,
+        appQuotaLimit: formData.appQuotaLimit,
+        appQuotaInterval: formData.appQuotaInterval,
+        payloadSizeLimit: formData.payloadSizeLimit,
+        payloadSizeUnit: formData.payloadSizeUnit,
+        responseCache: formData.responseCache,
+        specType: formData.specType,
+        specPath: formData.specPath,
+        submissionType: formData.submissionType,
+        tags: formData.tags,
+        tagsFunctional: formData.tagsFunctional,
+        tagsTechnical: formData.tagsTechnical,
+        tagsDomain: formData.tagsDomain,
+        tagsOthers: formData.tagsOthers,
+        template: 'Pass Through',
+        apiMgmt: [],
+        test: this.selectedDashboardObj.extension.test,
+        stub: this.selectedDashboardObj.extension.stub,
+        repository: this.selectedDashboardObj.extension.repository,
+        cicd: this.selectedDashboardObj.extension.cicd,
+        targetBasePath: formData.targetBasePath,
+        apiGatewayId:formData.apiGatewayId,
+        modality:formData.modality,
+        overrides: formData.overrides,
+        contacts: formData.contacts,
+        lifeCycleStage:formData.lifeCycleStage,
+        deployedEnvironments:formData.deployedEnvironments,
+        lifeCycleComment:formData.lifeCycleComment,
+        intakeJIRAs:formData.intakeJIRAs,
+        apiFamilyId:this.apiFamilyId,    //Code for PINXTSS-2723
+        supportingResources: formData.supportingResources    //Code for PINXTSS-2723
+      })
+    }
+    console.log(this.dashboardForm)
+  }
+  updateFormForResubmit() {
+    this.readSnapshot = DashboardStorage.dashboardStateSnapshotResubmit;
+    let formData = JSON.parse(sessionStorage.getItem(this.sessionStorageDataSnapshot))
+    let overViewData = JSON.parse(sessionStorage.getItem(this.sessionStorageOverviewSnapshot));
+    if (formData) {
+      this.dashboardForm.patchValue({
+        requestId: this.selectedDashboardObj.requestId,
+        apiName: formData.apiName,
+        apiVersion: formData.apiVersion,
+        apiDescription: formData.apiDescription,
+        apiAdditionalInfo: formData.apiAdditionalInfo,
+        basePath: formData.basePath,
+        capacity:formData.capacity,//Code for implementing PINXTSS-2049
+        cmdbAppMapping:formData.cmdbAppMapping,
+        consumerType: formData.consumerType,
+        productName: formData.productName,
+        productId: formData.productId,
+        northbound: {
+          nbSecurity: formData.northbound.nbSecurity,
+          nbSecurityType: formData.northbound.nbSecurityType,
+          nbAuthLocation: formData.northbound.nbAuthLocation,
+          nbAuthField: formData.northbound.nbAuthField,
+          nbAuthUrl: formData.northbound.nbAuthUrl,
+          nbTokenUrl: formData.northbound.nbTokenUrl,
+          nbRefreshUrl: formData.northbound.nbRefreshUrl,
+          nbAuthScopes: formData.northbound.nbAuthScopes,
+          nbCORS: formData.northbound.nbCORS,
+          nbCSRF: formData.northbound.nbCSRF,
+          nbXSS: formData.northbound.nbXSS,
+        },
+        southbound: {
+          sbSecurity: formData.southbound.sbSecurity,
+          sbSecurityType: formData.southbound.sbSecurityType,
+          sbAuthLocation: formData.southbound.sbAuthLocation,
+          sbAuthField: formData.southbound.sbAuthField,
+          sbAuthUrl: formData.southbound.sbAuthUrl,
+          sbTokenUrl: formData.southbound.sbTokenUrl,
+          sbRefreshUrl: formData.southbound.sbRefreshUrl,
+          sbAuthScopes: formData.southbound.sbAuthScopes,
+          sbSSL: formData.southbound.sbSSL,
+          sbTarget: formData.southbound.sbTarget,
+          sbTargetType: formData.southbound.sbTargetType,
+          sbRoutingLocation: formData.southbound.sbRoutingLocation,
+          sbRoutingField: formData.southbound.sbRoutingField,
+          sbRoutingPath: formData.southbound.sbRoutingPath,
+          sbSpecType: formData.southbound.sbSpecType
+        },
+        apiQuotaLimit: formData.apiQuotaLimit,
+        apiQuotaInterval: formData.apiQuotaInterval,
+        appQuotaLimit: formData.appQuotaLimit,
+        appQuotaInterval: formData.appQuotaInterval,
+        payloadSizeLimit: formData.payloadSizeLimit,
+        payloadSizeUnit: formData.payloadSizeUnit,
+        responseCache: formData.responseCache,
+        specType: formData.specType,
+        specPath: formData.specPath,
+        submissionType: formData.submissionType,
+        tags: formData.tags,
+        tagsFunctional: formData.tagsFunctional,
+        tagsTechnical: formData.tagsTechnical,
+        tagsDomain: formData.tagsDomain,
+        tagsOthers: formData.tagsOthers,
+        template: 'Pass Through',
+        apiMgmt: [],
+        test: this.selectedDashboardObj.extension.test,
+        stub: this.selectedDashboardObj.extension.stub,
+        repository: this.selectedDashboardObj.extension.repository,
+        cicd: this.selectedDashboardObj.extension.cicd,
+        targetBasePath: formData.targetBasePath,
+        apiGatewayId:formData.apiGatewayId,
+        modality:formData.modality,
+        overrides: formData.overrides,
+        contacts: formData.contacts,
+        lifeCycleStage:formData.lifeCycleStage,
+        deployedEnvironments:formData.deployedEnvironments,
+        lifeCycleComment:formData.lifeCycleComment ,
+        intakeJIRAs:formData.intakeJIRAs ,
+        apiFamilyId:this.apiFamilyId,
+        supportingResources: formData.supportingResources    //Code for PINXTSS-2723
+      })
+    }
+  }
+  fetchFormDetails() {
+    this.readSnapshot = DashboardStorage.dashboardStateSnapshotPublish;   // string for browser storage
+    let formData = JSON.parse(sessionStorage.getItem(this.readSnapshot));
+    console.log(formData);
+    //let overViewData = JSON.parse(sessionStorage.getItem(this.sessionStorageOverviewSnapshot));
+    if (formData) {
+      this.dashboardForm.patchValue({
+        apiName: formData.apiName,
+        apiVersion: formData.apiVersion,
+        apiDescription: formData.apiDescription,
+        apiAdditionalInfo: formData.apiAdditionalInfo,
+        basePath: formData.basePath,
+        capacity: formData.capacity,//Code for implementing PINXTSS-2049
+        cmdbAppMapping:formData.cmdbAppMapping,
+        consumerType: formData.consumerType,
+        productName: formData.productName,
+        productId: formData.productId,
+        northbound: {
+          nbSecurity: formData.northbound.nbSecurity,
+          nbSecurityType: formData.northbound.nbSecurityType,
+          nbAuthLocation: formData.northbound.nbAuthLocation,
+          nbAuthField: formData.northbound.nbAuthField,
+          nbAuthUrl: formData.northbound.nbAuthUrl,
+          nbTokenUrl: formData.northbound.nbTokenUrl,
+          nbRefreshUrl: formData.northbound.nbRefreshUrl,
+          nbAuthScopes: formData.northbound.nbAuthScopes,
+          nbCORS: formData.northbound.nbCORS,
+          nbCSRF: formData.northbound.nbCSRF,
+          nbXSS: formData.northbound.nbXSS,
+        },
+        southbound: {
+          sbSecurity: formData.southbound.sbSecurity,
+          sbSecurityType: formData.southbound.sbSecurityType,
+          sbAuthLocation: formData.southbound.sbAuthLocation,
+          sbAuthField: formData.southbound.sbAuthField,
+          sbAuthUrl: formData.southbound.sbAuthUrl,
+          sbTokenUrl: formData.southbound.sbTokenUrl,
+          sbRefreshUrl: formData.southbound.sbRefreshUrl,
+          sbAuthScopes: formData.southbound.sbAuthScopes,
+          sbSSL: formData.southbound.sbSSL,
+          sbTarget: formData.southbound.sbTarget,
+          sbTargetType: formData.southbound.sbTargetType,
+          sbRoutingLocation: formData.southbound.sbRoutingLocation,
+          sbRoutingField: formData.southbound.sbRoutingField,
+          sbRoutingPath: formData.southbound.sbRoutingPath,
+          sbSpecType: formData.southbound.sbSpecType,
+        },
+        apiQuotaLimit: formData.apiQuotaLimit,
+        apiQuotaInterval: formData.apiQuotaInterval,
+        appQuotaLimit: formData.appQuotaLimit,
+        appQuotaInterval: formData.appQuotaInterval,
+        payloadSizeLimit: formData.payloadSizeLimit,
+        payloadSizeUnit: formData.payloadSizeUnit,
+        responseCache: formData.responseCache,
+        specType: formData.specType,
+        submissionType: formData.submissionType,
+        tags: formData.tags,
+        tagsFunctional: formData.tagsFunctional,
+        tagsTechnical: formData.tagsTechnical,
+        tagsDomain: formData.tagsDomain,
+        tagsOthers: formData.tagsOthers,
+        template: "Pass Through",
+        targetBasePath:formData.targetBasePath,
+        apiGatewayId:formData.apiGatewayId,
+        modality:formData.modality,
+        overrides:formData.overrides,
+        contacts: formData.contacts,
+        lifeCycleStage: formData.lifeCycleStage,
+        deployedEnvironments:formData.deployedEnvironments,
+        lifeCycleComment:formData.lifeCycleComment,
+        intakeJIRAs: formData.intakeJIRAs,
+        monitoringInfo: formData.monitoringInfo,//Code for implementing PINXTSS-3722
+        supportingResources: formData.supportingResources  //Code for implementing PINXTSS-4430
+      })
+    }
+    console.log(this.dashboardForm.value)
+  }
+}
+
