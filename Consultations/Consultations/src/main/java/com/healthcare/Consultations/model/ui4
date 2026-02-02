@@ -1,0 +1,79 @@
+<div *ngIf="supportingResources?.length">
+ 
+  <!-- Section Header -->
+  <div class="row mt-5 pl-0">
+    <div class="col pl-0">
+      <span class="sub-heading">Supporting Resources</span>
+      <hr />
+    </div>
+  </div>
+ 
+  <!-- Category Rows -->
+  <div *ngFor="let cat of supportingResources" class="row mb-4">
+ 
+    <!-- LEFT : CATEGORY NAME -->
+    <div class="col-md-3 font-weight-bold">
+ 
+      <ng-container [ngSwitch]="cat.categoryName">
+ 
+        <span *ngSwitchCase="'documentation'">
+          Official Chalk Documentation
+        </span>
+ 
+        <span *ngSwitchCase="'source-control'">
+          GitHub Repository
+        </span>
+ 
+        <span *ngSwitchCase="'reference'">
+          API References
+        </span>
+ 
+        <span *ngSwitchCase="'testing'">
+          Testing References
+        </span>
+ 
+        <!-- fallback -->
+        <span *ngSwitchDefault>
+          {{ cat.categoryName }}
+        </span>
+ 
+      </ng-container>
+ 
+    </div>
+ 
+    <!-- RIGHT : SUBCATEGORIES + LINKS -->
+    <div class="col-md-9">
+ 
+      <div *ngFor="let item of cat.items" class="row mb-1">
+ 
+        <!-- Subcategory Name -->
+        <div class="col-md-4">
+          {{ formatLabel(item.label) }}
+        </div>
+ 
+        <!-- Link / Unavailable -->
+        <div class="col-md-8">
+ 
+          <a *ngIf="item.url"
+             [href]="item.url"
+             target="_blank"
+             class="resource-link">
+            {{ item.url }}
+          </a>
+ 
+          <span *ngIf="!item.url" class="unavailable-link">
+            Unavailable
+          </span>
+ 
+        </div>
+ 
+      </div>
+ 
+    </div>
+ 
+  </div>
+ 
+</div>
+ 
+
+ 
