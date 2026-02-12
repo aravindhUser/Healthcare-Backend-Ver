@@ -462,3 +462,84 @@ export class AllApisComponent implements OnInit {
   // Code to implement APIMC-4419 end
 
 }
+
+------------------------------------------------------------------------
+
+all-apis.component.scss
+------------------------------------
+//This is intentional
+
+.capsule-button {
+    background: rgb(221, 221, 221) 0% 0% no-repeat padding-box;
+    border-radius: 100px;
+    // font: normal normal 600 12px/16px Open Sans,Helvetica, Arial, sans serif;
+    font: normal normal 500 14px Open Sans,Helvetica, Arial, sans serif;// Code for implementing PINXTSS-2605
+    color: rgb(109, 109, 109);
+    display: inline-block;
+    padding-left: 10px;
+    padding-right: 14px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    margin-left: 5px;
+    margin-right: 5px;
+  
+    cursor: pointer;
+    &.active {
+      background: #333333 0% 0% no-repeat padding-box;
+      color: white;
+    }
+  }
+  th {
+    text-align: left;
+    font: normal normal 600 14px/16px Open Sans,Helvetica, Arial, sans serif;
+    letter-spacing: 0px;
+    color: #000000;
+    opacity: 1;
+  }
+  .iconRight {
+    padding-right: 40px;
+    // background: url("/assets/_images/search.svg") no-repeat right;//Code commented to implement PINXTSS-2605
+    // background: url("/assets/_images/search.svg") no-repeat right 10px center;//Code commented for implementing PINXTSS-2605
+    background-size: 20px;
+    background-color: #ffffff;    
+    outline: none;//Code for implementing PINXTSS-2605
+  }
+
+  th.mat-header-cell,
+td.mat-cell {
+  text-align: left;
+  padding: 0px 8px;
+}
+table {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  
+}
+tr[mat-row]:hover {
+  background: #B7CEE5 0% 0% no-repeat padding-box;
+}
+a { color: #004366; }
+
+// Code to implement APIMC-4419 start.
+.favorite-star {
+  fill: #d59200; /* Golden color for filled stars */
+  pointer-events: none;
+  
+  &:hover {
+    pointer-events: auto;
+  }
+}
+
+.favorite-star use {
+  fill: inherit;
+  pointer-events: none;
+}
+
+// Fixed width for favorite column to ensure consistent spacing
+.favorite-column {
+  width: 60px;
+  min-width: 60px;
+  text-align: center;
+}
+// Code to implement APIMC-4419 end
