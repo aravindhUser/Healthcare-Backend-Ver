@@ -1,0 +1,493 @@
+api-requests-table.component.html
+----------------------------------------------------
+
+<div class="p-3 px-md-5 py-md-4">
+    <div [hidden]="!(apis && apis.length > 0)">
+        <table mat-table [dataSource]="dataSource" matSort matSortActive="actionTs" matSortDirection="desc" matSortDisableClear>
+            <caption style="display: none;">API Request Table</caption>
+            <ng-container matColumnDef="apiDetails.apiName">
+                <th id="apiName" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>API Name</th>
+                <div *ngIf="tab!=='approved'">
+                    <td class='table-link' mat-cell *matCellDef="let api"> <div (click)="viewApi(api)">{{ api.apiDetails.apiName }}</div></td>
+                </div>
+                <div *ngIf="tab==='approved'">
+                    <td mat-cell *matCellDef="let api"><a [routerLink]="['/apidescription', api.requestId]">{{ api.apiDetails.apiName }}</a></td>
+                </div>
+            </ng-container>
+            <ng-container matColumnDef="apiDetails.apiVersion">
+                <th id="apiVersion" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>Version</th>
+                <td mat-cell *matCellDef="let api">{{ api.apiDetails.apiVersion }}</td>
+            </ng-container>
+            <!-- <ng-container matColumnDef="apiDetails.productName">
+        <th id="productName" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>Product</th>
+        <td mat-cell *matCellDef="let api">{{ api.apiDetails.productName }}</td>
+      </ng-container> -->
+
+            <ng-container matColumnDef="apiDetails.apiGatewayName">
+                <th id="apiGatewayName" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>Gateway Name</th>
+                <td mat-cell *matCellDef="let api">{{ api.apiDetails.apiGatewayName }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="apiDetails.basePath">
+                <th id="basePath" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>Client Base Path</th>
+                <td mat-cell *matCellDef="let api">{{ api.apiDetails.basePath }}</td>
+            </ng-container>
+
+            <!-- <ng-container matColumnDef="api.clientTrackingInfo.pinxt">
+                <th id="pinxt" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>JIRA #</th>
+                <td mat-cell *matCellDef="let api">{{ api.clientTrackingInfo.pinxt }}</td>
+            </ng-container> -->
+
+            <ng-container matColumnDef="api.clientTrackingInfo.pinxt">
+                <th id="pinxt" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>JIRA #</th>
+                <td mat-cell *matCellDef="let api">
+                    <div *ngIf = 'api.clientTrackingInfo.pinxt !== ""'>
+                    <a href="{{ jiraBasePath + api.clientTrackingInfo.pinxt }}" target="_blank" > {{ api.clientTrackingInfo.pinxt }} </a>
+                </div>
+                <div style = "text-align: center;" *ngIf = 'api.clientTrackingInfo.pinxt === null || api.clientTrackingInfo.pinxt === ""'>
+                   -
+                </div>
+                </td>
+            </ng-container>
+
+
+            <ng-container matColumnDef="apiDetails.requestedBy">
+                <th id="requestedBy" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>Submitted By</th>
+                <td mat-cell *matCellDef="let api">{{ api.apiDetails.requestedBy }}</td>
+            </ng-container>
+            <ng-container matColumnDef="actionBy">
+                <th id="actionBy" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>Action By</th>
+                <td mat-cell *matCellDef="let api">{{ api.actionBy }}</td>
+            </ng-container>
+            <ng-container matColumnDef="apiDetails.requestedTimestamp">
+                <th id="apiDetails.requestedTimestamp" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+                <td mat-cell *matCellDef="let api">{{ api.apiDetails.requestedTimestamp | date:"MMM dd, yyyy hh:mm a" }}</td>
+            </ng-container>
+            <ng-container matColumnDef="actionTs">
+                <th id="actionTs" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>Last Updated</th>
+                <td mat-cell *matCellDef="let api">{{ api.actionTs | date:"MMM dd, yyyy hh:mm a" }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+                <th id="status" class="table-header" mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+                <td mat-cell *matCellDef="let api">{{ api.status }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="action">
+                <th id="action" mat-header-cell *matHeaderCellDef [hidden]="tab ==='approved'">Action</th>
+                <td mat-cell *matCellDef="let api" [hidden]="tab === 'approved'">
+                    <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="vert_menu icon-button with a menu">
+            <img
+              src="assets/_images/vert-menu.svg"
+              alt="menu"
+              width="18px"
+              height="18px"
+              aria-hidden="false"
+              aria-label="more options"
+            />
+          </button>
+                    <mat-menu #menu="matMenu" xPosition="before">
+                        <!-- Renew API Key Section -->
+                        <button mat-menu-item (click)="viewApi(api)">
+              <img
+                src="assets/_images/visibility.svg"
+                alt="renew_ico"
+                width="16px"
+                height="16px"
+              />
+              <span class="ml-2">Review</span>
+            </button>
+                        <!-- <div class="dropdown-divider"  *ngIf="tab!=='rejected'"></div> -->
+                        <!-- <button
+              mat-menu-item
+              (click)="viewApi(api)"
+              *ngIf="tab!=='rejected'"
+            >
+              <img
+                src="assets/_images/Rejected.svg"
+                alt="check_ico"
+                width="16px"
+                height="16px"
+              />
+              <span class="reject_option ml-2"
+                >Reject</span
+              >
+            </button> -->
+                        <!-- <div class="dropdown-divider"  *ngIf="tab!=='pending'"></div> -->
+                        <!-- Delete user section -->
+                        <!-- <button mat-menu-item (click)="viewApi(api)" *ngIf="tab!=='pending'">
+              <img
+                src="assets/_images/Inprogress.svg"
+                alt="delete_ico"
+                width="16px"
+                height="16px"
+              />
+              <span class="pending_option ml-2">Pending</span>
+            </button> -->
+                        <!-- End of delete user section -->
+                    </mat-menu>
+                </td>
+            </ng-container>
+
+
+
+
+
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[10, 20]" [length]="totalCount" [pageSize]="10" showFirstLastButtons></mat-paginator>
+    </div>
+</div>
+
+
+<div *ngIf="apis && apis.length == 0">
+    <p class="text-center">No API's available</p>
+</div>
+
+--------------------------------------------------------------------------------
+api-requests-table.component.ts
+----------------------------------------
+----------------------------------------
+
+import {
+  AfterViewInit,
+  Component,
+  Input,
+  OnInit,
+  OnChanges,
+  ViewChild,
+  Inject,
+  Output,
+  EventEmitter
+} from '@angular/core';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
+import { IDashboard } from '../../../../core/models/iDashboard';
+import { Router } from '@angular/router';
+
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { ApiSubmissionService } from 'src/app/core/services/publish/api-submission.service';
+import { PageTitleFilterService } from 'src/app/core/services/ui-util/page-title-filter/page-title-filter.service';
+import { StateVariablesService } from 'src/app/core/services/ui-util/state-variables/state-variables.service';
+import { DashboardStorage } from '../../../../../assets/constants/app.constants';
+import { Status } from 'src/app/core/enum/DashboardStatus.enum';
+import { EnvironmentLoaderService } from 'src/app/core/config/environment-loader.service';
+import { DialogBoxComponent } from 'src/app/shared/components/dialog-box/dialog-box.component';
+import { DialogBoxActionEnum } from 'src/app/core/enum/DialogBoxActionEnum';
+
+
+enum Tab{
+  inbox = 'inbox',
+  approved = 'approved',
+  pending = 'pending',
+  rejected = 'rejected'
+}
+
+interface DialogData {
+  title: string;
+  message: string;
+  redirection: string;
+}
+
+@Component({
+  selector: 'app-api-requests-table',
+  templateUrl: './api-requests-table.component.html',
+  styleUrls: ['./api-requests-table.component.scss'],
+})
+export class ApiRequestsTableComponent implements OnInit, OnChanges, AfterViewInit {
+  @Input() apis: IDashboard[];
+  @Input() tab: string;
+  @Input() totalCount: number = 0;
+  @Input() pageNum: number = 1;
+  @Output() pageChange = new EventEmitter<{pageSize: number, pageNum: number}>();
+  @Output() sortChange = new EventEmitter<{sortField: string, sortOrder: string}>();
+  dataSource: MatTableDataSource<IDashboard>;
+  displayedColumns: string[] = ['apiDetails.apiName', 'apiDetails.apiVersion','apiDetails.apiGatewayName', 'apiDetails.basePath', 'api.clientTrackingInfo.pinxt','apiDetails.requestedBy', 'actionBy', 'apiDetails.requestedTimestamp','actionTs','status', 'action'];
+  selectedTab = 'inbox';
+
+  title: string;
+  message: string;
+  redirection: string;
+
+  statusOptions = Status;
+  filter1='';
+  filter2='';
+  filter3='';
+  globalMatch=true;
+  firstMatch=true;
+  secondMatch=true;
+  thirdMatch= true;
+
+  actionHistory:any;//Code for implementing PINXTSS-2604
+
+  reqBy: string = '';   // for passing in requestedBy in the update call in approval
+  reqTS: string = '';
+  private paginator: MatPaginator;
+  private sort: MatSort;
+  private paginatorSubscribed = false;
+  private sortSubscribed = false;
+  jiraBasePath: string;
+  constructor(private router: Router,
+    private pageTitlefilterService: PageTitleFilterService,
+    private stateVariablesService:StateVariablesService,
+    public dialog: MatDialog,
+    private apiSubmissionService: ApiSubmissionService,
+    public readonly envService: EnvironmentLoaderService
+    ) {
+      //This is intentional
+    }
+
+  ngOnInit(): void {
+    this.jiraBasePath = this.envService.getEnvConfig().jiraTicket;
+    this.dataSource = new MatTableDataSource<IDashboard>(this.apis);
+  }
+
+  ngOnChanges() {
+    if (this.dataSource) {
+      this.dataSource.data = this.apis;
+    }
+    if (this.paginator) {
+      this.paginator.length = this.totalCount;
+      this.paginator.pageIndex = (this.pageNum || 1) - 1;
+    }
+  }
+
+  @ViewChild(MatSort) set matSort(ms: MatSort) {
+    this.sort = ms;
+    if (this.sort && !this.sortSubscribed) {
+      this.sortSubscribed = true;
+      this.sort.sortChange.subscribe(() => {
+        const sortField = this.mapSortField(this.sort.active);
+        const sortOrder = this.sort.direction || 'desc';
+        this.sortChange.emit({ sortField, sortOrder });
+      });
+    }
+  }
+
+  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
+    this.paginator = mp;
+    if (this.paginator) {
+      this.paginator.length = this.totalCount;
+      this.paginator.pageIndex = (this.pageNum || 1) - 1;
+      if (!this.paginatorSubscribed) {
+        this.paginatorSubscribed = true;
+        this.paginator.page.subscribe(() => {
+          this.pageNum = this.paginator.pageIndex + 1;
+          this.pageChange.emit({
+            pageSize: this.paginator.pageSize,
+            pageNum: this.pageNum
+          });
+        });
+      }
+    }
+  }
+
+
+
+  mapSortField(columnName: string): string {
+    const fieldMap = {
+      'apiDetails.apiName': 'apiName',
+      'apiDetails.apiVersion': 'apiVersion',
+      'apiDetails.apiGatewayName': 'apiGatewayName',
+      'apiDetails.basePath': 'basePath',
+      'api.clientTrackingInfo.pinxt': 'pinxt',
+      'apiDetails.requestedBy': 'requestedBy',
+      'actionBy': 'actionBy',
+      'apiDetails.requestedTimestamp': 'requestedTimestamp',
+      'actionTs': 'lastUpdated',
+      'status': 'status'
+    };
+    return fieldMap[columnName] || columnName;
+  }
+  ngAfterViewInit() {
+    this.stateVariablesService.adminApiViewerSelectedTab.subscribe(
+      x => {
+        this.selectedTab = x;
+        // Reset sort and paginator visual indicators when tab changes
+        if (this.tab === x) {
+          if (this.sort) {
+            this.sort.active = 'actionTs';
+            this.sort.direction = 'desc';
+          }
+          if (this.paginator) {
+            this.paginator.pageSize = 10;
+            this.paginator.pageIndex = 0;
+          }
+        }
+      }
+    );
+  }
+
+  viewApi(api) {
+    sessionStorage.removeItem(DashboardStorage.selectedDashboardObjAdmin);
+    localStorage.removeItem(DashboardStorage.swaggerEditorData);
+    localStorage.removeItem(DashboardStorage.swaggerEditorUpdatedData)
+    sessionStorage.removeItem('basePath');
+    sessionStorage.removeItem(DashboardStorage.dashboardOverviewReview);
+    sessionStorage.removeItem('swaggerInfo');
+    sessionStorage.removeItem('securityData');
+    sessionStorage.removeItem('overrideData');
+    sessionStorage.removeItem(DashboardStorage.dashboardStateSnapshotReview);
+    sessionStorage.removeItem(DashboardStorage.selectedDashboardObjProfile);
+    sessionStorage.removeItem('pluginChangedFromCI');
+    sessionStorage.removeItem('resourceChangedFromSwagger');
+    sessionStorage.removeItem('resubmitFlowInitiatedBy');
+    sessionStorage.removeItem('cmdbAppId');
+    sessionStorage.removeItem('producerTeamId');//Code for implementing PINXTSS-3086
+    sessionStorage.removeItem('operationsTeamId');//Code for implementing PINXTSS-3086
+    sessionStorage.removeItem('nextClicked');
+    sessionStorage.removeItem('initialResourcePaths');
+    sessionStorage.removeItem('originalTargetBasePath');
+    sessionStorage.removeItem('monitoringInfo');//Code for implementing PINXTSS-3722
+    let id= api.requestId;
+    this.apiSubmissionService.getDashboardEntryById(id).subscribe((data) => {
+      // Code for implementing PINXTSS-2604 start
+      this.actionHistory = data["actionHistory"];
+      // this.actionHistory.sort((a,b)=>new Date(b.actionTimestamp).getTime()-new Date(a.actionTimestamp).getTime());
+      let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if(currentUser.userId===this.actionHistory[this.actionHistory.length-1].actionBy && this.envService.getEnvConfig().isAdminSelfApprovalEnabled===false){
+        const popupData = { action: DialogBoxActionEnum.COMMON_ALERT_BOX, commonAlertBox:{title:'Invalid Request', message:"Admin can't review self-submitted APIs."} };
+        this.dialog.open(DialogBoxComponent, {width: '750px', data: popupData, });
+      }
+      else{
+      // Code for implementing PINXTSS-2604 end
+      sessionStorage.setItem(DashboardStorage.selectedDashboardObjAdmin, JSON.stringify(data));
+      sessionStorage.setItem('specF','OAS (Swagger)');
+      // sessionStorage.setItem('apiName','');//Commeneted for test purpose
+      sessionStorage.setItem('apiName',data["apiDetails"].apiName);//Code for implementing PINXTSS-2218
+      sessionStorage.setItem('publishType','Save & Publish');
+      let cpAttachedPlugins = data["apiDetails"]["cpAttachedPlugins"] || []
+      sessionStorage.setItem("cpAttachedPlugins", JSON.stringify(cpAttachedPlugins))
+      let spAttachedPlugins = data["apiDetails"]["spAttachedPlugins"] || []
+      sessionStorage.setItem("spAttachedPlugins", JSON.stringify(spAttachedPlugins))
+      //let overrides = data["apiDetails"]["overrides"] || []
+      //sessionStorage.setItem("overrides", JSON.stringify(overrides))
+      let targetMapping = data["apiDetails"]["targetMapping"] || []
+      sessionStorage.setItem("targetMapping", JSON.stringify(targetMapping))
+      sessionStorage.setItem("initialTargetMapping", JSON.stringify(targetMapping));
+      // sessionStorage.setItem('apiName','');//Commenetd for test purpose
+      sessionStorage.setItem('originalTargetBasePath', data["apiDetails"]["targetBasePath"]);
+      this.router.navigate(['/admin/viewapi']);
+    }//Code for implementing PINXTSS-2604
+    },
+    (err) => {
+      console.log(err)
+    }
+    )
+  }
+
+  updateApi(api, status: Status){
+   this.reqBy = api.apiDetails.requestedBy;
+   this.reqTS = api.apiDetails.requestedTimestamp;
+
+
+   this.apiSubmissionService
+      .approveAPIDirectly(api.apiDetails, api.requestId, status, this.reqBy, this.reqTS)
+      .then((data) => {
+        data.subscribe(
+          (x) => {
+            this.title = 'Success';
+            this.redirection = '/admin';
+
+            if (status === Status.Pending) {
+              this.message = 'API has been moved to pending status.';
+            } else if (status === Status.Rejected) {
+              this.message = 'API has been rejected successfully.';
+            } else if (status === Status.Approved) {
+              this.message = 'API has been approved successfully.';
+            } else {
+              this.message =
+                'Backend responded with dashboard status as ' + status + '.';
+            }
+            sessionStorage.removeItem(DashboardStorage.selectedDashboardObjAdmin);
+            localStorage.removeItem(DashboardStorage.swaggerEditorData);
+            sessionStorage.removeItem('basePath');
+            sessionStorage.removeItem(DashboardStorage.dashboardOverviewReview);
+            sessionStorage.removeItem('swaggerInfo');
+            sessionStorage.removeItem('securityData');
+            this.openDialog();
+          },
+          (err) => {
+            this.title = 'Request failed';
+            this.message = 'Request failed, please try again later.';
+            this.redirection = '/admin';
+          }
+        );
+      })
+      .catch((err) => {
+        this.title = 'Failed';
+        this.message = 'Submission failed. Please try again later.';
+        this.redirection = '/admin';
+        this.openDialog();
+      });
+  }
+
+
+  openDialog(): void {
+     this.dialog.open(SubmittedApiDialog, {
+      width: '400px',
+      data: { title: this.title, message: this.message, redirection: this.redirection },
+    });
+  }
+}
+
+
+@Component({
+  selector: 'app-submit-api-dialog',
+  templateUrl: 'submit-api.dialog.html',
+})
+export class SubmittedApiDialog {
+  constructor(
+    public dialogRef: MatDialogRef<SubmittedApiDialog>,
+    @Inject(MAT_DIALOG_DATA) public data: DialogData
+  ) {
+  //This is intentional
+  }
+
+  onClose(): void {
+    this.dialogRef.close();
+    window.location.reload();
+  }
+}
+
+--------------------------------------------------------------------------------
+api-requests-table.component.scss
+----------------------------------------
+----------------------------------------
+
+table {
+  width: 100%;
+}
+
+.table-header{
+  color: #000000;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.table-link{
+  color:#004366;
+  cursor: pointer;
+}
+
+//Vert-Menu
+.mat-menu-item {
+  text-align: left;
+  font: normal normal normal 14px;
+  letter-spacing: 0px;
+  color: #141414;
+  opacity: 1;
+  line-height: 16px;
+  height: 30px;
+  .reject_option {
+    color: #c93b3b;
+  }
+
+  .pending_option{
+    color: #D97800;
+  }
+}
+
