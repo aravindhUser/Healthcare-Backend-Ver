@@ -1,0 +1,611 @@
+admin.component.html
+----------------------------------------------
+<app-page-title
+[Title]="dashboardTitle"
+  [Component]="COMPONENT.ADMIN_MAIN"
+  [BreadcrumbArray]="breadcrumbArray"
+  [isRadioButtonRequired] = true
+  [radioButtonValues] = "dashboards"
+(radioSelection)="onRadioSelectionChanged($event)"
+></app-page-title>
+<div class="container-fluid p-2 px-md-5" *ngIf="selectedDashboard === 'Service'">
+  <div class="DSA_wb_customTab DSA_navTab DSA_wb_Primary mb-5">
+    <mat-tab-group disableRipple class="bg-white"  animationDuration="0ms" (selectedTabChange)='tabChange($event)'>
+      <mat-tab label="Inbox">
+        <div class="row pt-5 pb-2 px-4">
+          <div class="col-8">
+            <div class="capsule-button" (click)="toggleByAction(tab.inbox , selection.viewAll)" [ngClass]="{'active':viewAllInbox===true}">VIEW ALL</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.inbox , selection.myActions)" [ngClass]="{'active':myActionsInbox===true}">MY ACTIONS</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.inbox , selection.others)" [ngClass]="{'active':othersInbox===true}">OTHERS</div>
+          </div>
+          <div class="col-4">
+            <!-- <div class="text-success count-text" *ngIf="submittedAndResubmittedApis">{{submittedAndResubmittedApis.length}} Submitted APIs</div> -->
+            <div class="text-success count-text" *ngIf="submittedApis">{{submittedTotalCount}} Submitted APIs</div>
+          </div>
+        </div>
+        <!-- Inbox Request Table -->
+        <app-api-requests-table
+          [apis]="submittedApis"
+          *ngIf="submittedApis"
+          [tab]='tab.inbox'
+          [totalCount]="submittedTotalCount"
+          [pageNum]="pageNum"
+          (pageChange)="onInboxPageChange($event)"
+          (sortChange)="onSortChange($event.sortField, $event.sortOrder)"
+        ></app-api-requests-table>
+
+
+      </mat-tab>
+
+      <mat-tab label="Approved">
+        <div class="row pt-5 pb-2 px-4">
+          <div class="col-8">
+            <div class="capsule-button" (click)="toggleByAction(tab.approved , selection.viewAll)" [ngClass]="{'active':viewAllApproved===true}">VIEW ALL</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.approved , selection.myActions)" [ngClass]="{'active':myActionsApproved===true}">MY ACTIONS</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.approved , selection.others)" [ngClass]="{'active':othersApproved===true}">OTHERS</div>
+          </div>
+          <div class="col-4">
+            <div class="text-success count-text" *ngIf="approvedApis">{{approvedTotalCount}} Approved APIs</div>
+          </div>
+        </div>
+        <!-- Approved Request Table -->
+        <app-api-requests-table [apis]="approvedApis"
+        *ngIf="approvedApis"
+        [tab]='tab.approved'
+        [totalCount]="approvedTotalCount"
+        [pageNum]="pageNum"
+        (pageChange)="onApprovedPageChange($event)"
+        (sortChange)="onSortChange($event.sortField, $event.sortOrder)"
+        ></app-api-requests-table>
+      </mat-tab>
+      <mat-tab label="Pending">
+        <div class="row pt-5 pb-2 px-4">
+          <div class="col-8">
+            <div class="capsule-button" (click)="toggleByAction(tab.pending , selection.viewAll)" [ngClass]="{'active':viewAllPending===true}">VIEW ALL</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.pending , selection.myActions)" [ngClass]="{'active':myActionsPending===true}">MY ACTIONS</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.pending , selection.others)" [ngClass]="{'active':othersPending===true}">OTHERS</div>
+          </div>
+          <div class="col-4">
+            <div class="text-success count-text" *ngIf="pendingApis">{{pendingTotalCount}} Pending APIs</div>
+          </div>
+        </div>
+        <!-- Pending Request Table -->
+        <app-api-requests-table [apis]="pendingApis"
+          [tab]='tab.pending'
+          [totalCount]="pendingTotalCount"
+          [pageNum]="pageNum"
+          *ngIf="pendingApis"
+          (pageChange)="onPendingPageChange($event)"
+          (sortChange)="onSortChange($event.sortField, $event.sortOrder)"
+        ></app-api-requests-table>
+      </mat-tab>
+      <mat-tab label="Rejected">
+        <div class="row pt-5 pb-2 px-4">
+          <div class="col-8">
+            <div class="capsule-button" (click)="toggleByAction(tab.rejected , selection.viewAll)" [ngClass]="{'active':viewAllRejected===true}">VIEW ALL</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.rejected , selection.myActions)" [ngClass]="{'active':myActionsRejected===true}">MY ACTIONS</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.rejected , selection.others)" [ngClass]="{'active':othersRejected===true}">OTHERS</div>
+          </div>
+          <div class="col-4">
+            <div class="text-success count-text" *ngIf="rejectedApis">{{rejectedTotalCount}} Rejected APIs</div>
+          </div>
+        </div>
+        <!-- Rejected Request Table -->
+        <app-api-requests-table [apis]="rejectedApis"
+          [tab]='tab.rejected'
+          [totalCount]="rejectedTotalCount"
+          [pageNum]="pageNum"
+          *ngIf="rejectedApis"
+          (pageChange)="onRejectedPageChange($event)"
+          (sortChange)="onSortChange($event.sortField, $event.sortOrder)"
+        ></app-api-requests-table>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>
+<!-- App Dashboard -->
+<div class="container-fluid p-2 px-md-5" *ngIf="selectedDashboard === 'Subscription'">
+  <div class="DSA_wb_customTab DSA_navTab DSA_wb_Primary mb-5">
+    <mat-tab-group disableRipple class="bg-white" animationDuration="0ms" (selectedTabChange)='tabChange($event)'>
+      <!-- Inbox Table -->
+      <mat-tab label="Inbox">
+        <div class="row pt-5 pb-2 px-4">
+          <div class="col-8">
+            <div class="capsule-button" (click)="toggleByAction(tab.inbox , selection.viewAll)" [ngClass]="{'active':viewAllInbox===true}">VIEW ALL</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.inbox , selection.myActions)" [ngClass]="{'active':myActionsInbox===true}">MY ACTIONS</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.inbox , selection.others)" [ngClass]="{'active':othersInbox===true}">OTHERS</div>
+          </div>
+          <div class="col-4">
+            <div class="text-success count-text" *ngIf="submittedApps">{{submittedTotalCount}} Submitted APPs</div>
+          </div>
+        </div>
+        <app-plan-inbox [apps]="submittedApps" [tab]='tab.inbox' *ngIf="submittedApps"></app-plan-inbox>
+      </mat-tab>
+       <!-- Approved Request Table -->
+      <mat-tab label="Approved">
+        <div class="row pt-5 pb-2 px-4">
+          <div class="col-8">
+            <div class="capsule-button" (click)="toggleByAction(tab.approved , selection.viewAll)" [ngClass]="{'active':viewAllApproved===true}">VIEW ALL</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.approved , selection.myActions)" [ngClass]="{'active':myActionsApproved===true}">MY ACTIONS</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.approved , selection.others)" [ngClass]="{'active':othersApproved===true}">OTHERS</div>
+          </div>
+          <div class="col-4">
+            <div class="text-success count-text" *ngIf="approvedApps">{{approvedTotalCount}} Approved APIs</div>
+          </div>
+        </div>
+        <app-plan-inbox [apps]="approvedApps" [tab]='tab.approved' *ngIf="approvedApps"></app-plan-inbox>
+      </mat-tab>
+      <!-- Rejected APP Table -->
+      <mat-tab label="Rejected">
+        <div class="row pt-5 pb-2 px-4">
+          <div class="col-8">
+            <div class="capsule-button" (click)="toggleByAction(tab.rejected , selection.viewAll)" [ngClass]="{'active':viewAllRejected===true}">VIEW ALL</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.rejected , selection.myActions)" [ngClass]="{'active':myActionsRejected===true}">MY ACTIONS</div>
+            <div class="capsule-button" (click)="toggleByAction(tab.rejected , selection.others)" [ngClass]="{'active':othersRejected===true}">OTHERS</div>
+          </div>
+          <div class="col-4">
+            <div class="text-success count-text" *ngIf="rejectedApps">{{rejectedTotalCount}} Rejected APIs</div>
+          </div>
+        </div>
+        <app-plan-inbox [apps]="rejectedApps" *ngIf="rejectedApps" [tab]='tab.rejected'></app-plan-inbox>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>
+----------------------------------------------
+----------------------------------------------
+admin.component.ts
+----------------------------------------------
+import { Component, HostListener, OnInit } from '@angular/core';
+import { Observable, ReplaySubject, Subject } from 'rxjs';
+import { IApi, Gateway } from 'src/app/core/models/api/iapi';
+import { ApiSubmissionService } from 'src/app/core/services/publish/api-submission.service';
+import { COMPONENTS } from 'src/assets/constants/app.constants';
+import { BREADCRUMB } from '../../../../shared/components/breadcrumbs/breadcrumb';
+import { IDashboard } from '../../../../core/models/iDashboard';
+import { takeUntil, debounceTime, distinctUntilChanged, skip } from 'rxjs/operators';
+import { PageTitleFilterService } from '../../../../core/services/ui-util/page-title-filter/page-title-filter.service';
+import { AuthService } from 'src/app/core/services/auth/auth.service';
+import { StateVariablesService } from 'src/app/core/services/ui-util/state-variables/state-variables.service';
+import { Role } from 'src/app/core/models/auth/roles';
+import { IUser } from 'src/app/core/models/auth/iuser';
+import { AdditionalRoles } from 'src/app/core/models/auth/additionalRoles';
+import { IAppDashboard } from 'src/app/core/models/IApp';
+import { AppSubmissionService } from 'src/app/core/services/publish/app-submission.service';
+import { UserService } from 'src/app/core/services/auth/user.service'; // Import UserService
+import { ApiService } from 'src/app/core/services/api/api.service';
+import { number } from 'prop-types';
+
+enum Selection {
+  myActions = 'myActions',
+  others = 'others',
+  viewAll = 'viewAll'
+}
+
+enum Tab {
+  inbox = 'inbox',
+  approved = 'approved',
+  pending = 'pending',
+  rejected = 'rejected'
+}
+
+const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_NUM = 1;
+const DEFAULT_SORT_FIELD = 'lastUpdated';
+const DEFAULT_SORT_ORDER = 'DESC';
+
+@Component({
+  selector: 'app-admin',
+  templateUrl: './admin.component.html',
+  styleUrls: ['./admin.component.scss'],
+})
+export class AdminComponent implements OnInit {
+  private destroyed$: ReplaySubject<boolean> = new ReplaySubject(1);
+
+  COMPONENT = COMPONENTS;
+  pendingAPIs: IApi[];
+  approvedAPIs$: Observable<IApi[]>;
+  breadcrumbArray = BREADCRUMB.ADMIN.MAIN;
+  submittedApis: IDashboard[];
+  rejectedApis: IDashboard[];
+  approvedApis: IDashboard[];
+  pendingApis: IDashboard[];
+
+  submittedTotalCount: number = 0;
+  approvedTotalCount: number = 0;
+  pendingTotalCount: number = 0;
+  rejectedTotalCount: number = 0;
+
+  pageSize: number = 10;
+  pageNum: number = 1;
+  apiName: string = '';
+  submittedBy: string = '';
+  sortField: string = 'lastUpdated';
+  sortOrder: string = 'DESC';
+  actionBy: string = '';
+
+  private apiNameSubject$ = new Subject<string>();
+  private submittedBySubject$ = new Subject<string>();
+  private currentStatus: string = 'Submitted';
+
+  tab = Tab;
+  selection = Selection;
+
+  viewAllInbox: boolean = true;
+  myActionsInbox: boolean = false;
+  othersInbox: boolean = false;
+
+  viewAllPending: boolean = true;
+  myActionsPending: boolean = false;
+  othersPending: boolean = false;
+
+  viewAllApproved: boolean = true;
+  myActionsApproved: boolean = false;
+  othersApproved: boolean = false;
+
+  viewAllRejected: boolean = true;
+  myActionsRejected: boolean = false;
+  othersRejected: boolean = false;
+
+  userId = String(this.authService.currentUserValue?.userId);
+  currentUser: IUser;
+  selectedDashboard: string;
+  dashboardTitle: string = "Dashboard";
+  submittedApps: IAppDashboard[];
+  rejectedApps: IAppDashboard[];
+  approvedApps: IAppDashboard[];
+  pendingApps: IAppDashboard[];
+
+  dashboards = ['Service', 'Subscriptions']
+
+  gatewayMap: Map<number, Gateway>;
+  constructor(
+    private apiSubmissionService: ApiSubmissionService,
+    private authService: AuthService,
+    private pageTitleFilterService: PageTitleFilterService,
+    private stateVariablesService: StateVariablesService,
+    private userService: UserService,
+    public apiService: ApiService,
+
+    private appSubmissionService: AppSubmissionService
+
+  ) {
+    //This is intentional
+  }
+
+
+
+
+  ngOnInit(): void {
+    sessionStorage.setItem("selectedScopes","");//Code for implementing PINXTSS-2253
+    sessionStorage.setItem("removedScopes","");//Code for implementing PINXTSS-2253
+    let gatewayValues = JSON.parse(sessionStorage.getItem('gateways'))
+
+    // this.apiService.getGateways()
+    // .subscribe((data: Gateway[])=> {
+
+
+    this.gatewayMap = new Map<number, Gateway>();
+    gatewayValues.forEach(g => {
+      this.gatewayMap.set(g.gatewayId, g)
+    })
+    console.log("Admin -- this.gatewayMap", this.gatewayMap)
+    // });
+    this.selectedDashboard = "Service";
+    // this.currentUser = this.authService.currentUserValue;
+
+    this.userService.currentUser$.subscribe((user) => {
+      this.userId = user.userId;
+      this.currentUser = user
+    });
+    
+    this.setupSearchDebouncing();
+    this.subscribeToFilters();
+    
+    // Only fetch submitted APIs on page load
+    this.fetchApisByStatus('Submitted', this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  injectApiGatewayName(apis) {
+    apis.forEach(api => {
+
+      let gateway = this.gatewayMap.get(api.apiDetails.apiGatewayId);
+      let apiGatewayName = gateway ? gateway.gatewayName : '';
+      api.apiDetails['apiGatewayName'] = apiGatewayName;
+
+    })
+  }
+
+  toggleByAction(tab, selection) {
+    if (tab === this.tab.inbox) {
+      this.inboxToggle(selection);
+    }
+    else if (tab === this.tab.pending) {
+      this.pendingToggle(selection);
+    }
+    else if (tab === this.tab.approved) {
+      this.approvedToggle(selection);
+    }
+    else if (tab === this.tab.rejected) {
+      this.rejectedToggle(selection);
+    }
+  }
+
+  inboxToggle(selection) {
+    if (selection === 'viewAll') {
+      this.myActionsInbox = false;
+      this.othersInbox = false;
+      this.viewAllInbox = true;
+      this.actionBy = '';
+    }
+    else if (selection === 'others') {
+      this.myActionsInbox = false;
+      this.viewAllInbox = false;
+      this.othersInbox = true;
+      this.actionBy = `!${this.userId}`;
+    }
+    else {
+      this.viewAllInbox = false;
+      this.othersInbox = false;
+      this.myActionsInbox = true;
+      this.actionBy = this.userId;
+    }
+    this.pageNum = 1;
+    this.fetchApisByStatus(this.currentStatus, this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  pendingToggle(selection) {
+    if (selection === 'viewAll') {
+      this.myActionsPending = false;
+      this.othersPending = false;
+      this.viewAllPending = true;
+      this.actionBy = '';
+    }
+    else if (selection === 'others') {
+      this.myActionsPending = false;
+      this.viewAllPending = false;
+      this.othersPending = true;
+      this.actionBy = `!${this.userId}`;
+    }
+    else {
+      this.viewAllPending = false;
+      this.othersPending = false;
+      this.myActionsPending = true;
+      this.actionBy = this.userId;
+    }
+    this.pageNum = 1;
+    this.fetchApisByStatus(this.currentStatus, this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  approvedToggle(selection) {
+    if (selection === 'viewAll') {
+      this.myActionsApproved = false;
+      this.othersApproved = false;
+      this.viewAllApproved = true;
+      this.actionBy = '';
+    }
+    else if (selection === 'others') {
+      this.myActionsApproved = false;
+      this.viewAllApproved = false;
+      this.othersApproved = true;
+      this.actionBy = `!${this.userId}`;
+    }
+    else {
+      this.viewAllApproved = false;
+      this.othersApproved = false;
+      this.myActionsApproved = true;
+      this.actionBy = this.userId;
+    }
+    this.pageNum = 1;
+    this.fetchApisByStatus(this.currentStatus, this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  rejectedToggle(selection) {
+    if (selection === 'viewAll') {
+      this.myActionsRejected = false;
+      this.othersRejected = false;
+      this.viewAllRejected = true;
+      this.actionBy = '';
+    }
+    else if (selection === 'others') {
+      this.myActionsRejected = false;
+      this.viewAllRejected = false;
+      this.othersRejected = true;
+      this.actionBy = `!${this.userId}`;
+    }
+    else {
+      this.viewAllRejected = false;
+      this.othersRejected = false;
+      this.myActionsRejected = true;
+      this.actionBy = this.userId;
+    }
+    this.pageNum = 1;
+    this.fetchApisByStatus(this.currentStatus, this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+
+  tabChange($event) {
+    const tabIndex = [this.tab.inbox, this.tab.approved, this.tab.pending, this.tab.rejected];
+    const selectedTab = tabIndex[$event.index];
+    this.stateVariablesService.adminApiViewerSelectedTab.next(selectedTab);
+    
+    const statusMap = {
+      [this.tab.inbox]: 'Submitted',
+      [this.tab.approved]: 'Approved',
+      [this.tab.pending]: 'Pending',
+      [this.tab.rejected]: 'Rejected'
+    };
+    this.currentStatus = statusMap[selectedTab];
+    
+    // Reset to defaults when switching tabs
+    this.sortField = DEFAULT_SORT_FIELD;
+    this.sortOrder = DEFAULT_SORT_ORDER;
+    this.pageSize = DEFAULT_PAGE_SIZE;
+    this.pageNum = DEFAULT_PAGE_NUM;
+    this.actionBy = '';
+    
+    // Reset UI filter buttons to "View All"
+    this.resetFilterButtons(selectedTab);
+    
+    // Always fetch fresh data with defaults when switching tabs
+    this.fetchApisByStatus(this.currentStatus, this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  private resetFilterButtons(tab: string): void {
+    switch (tab) {
+      case this.tab.inbox:
+        this.viewAllInbox = true;
+        this.myActionsInbox = false;
+        this.othersInbox = false;
+        break;
+      case this.tab.approved:
+        this.viewAllApproved = true;
+        this.myActionsApproved = false;
+        this.othersApproved = false;
+        break;
+      case this.tab.pending:
+        this.viewAllPending = true;
+        this.myActionsPending = false;
+        this.othersPending = false;
+        break;
+      case this.tab.rejected:
+        this.viewAllRejected = true;
+        this.myActionsRejected = false;
+        this.othersRejected = false;
+        break;
+    }
+  }
+
+  ngOnDestroy() {
+    this.destroyed$.next(true);
+    this.destroyed$.complete();
+  }
+
+  onRadioSelectionChanged(value: string) {
+    this.selectedDashboard = value;
+  }
+
+  private fetchApisByStatus(status: string, pageSize: number, pageNum: number, apiName: string, submittedBy: string, sortField: string, sortOrder: string): void {
+    pageSize = pageSize || DEFAULT_PAGE_SIZE;
+    pageNum = pageNum || DEFAULT_PAGE_NUM;
+    sortField = sortField || DEFAULT_SORT_FIELD;
+    sortOrder = sortOrder || DEFAULT_SORT_ORDER;
+
+    this.apiSubmissionService.getAdminDashboardEntries(status, pageSize, pageNum, apiName, submittedBy, sortField, sortOrder, this.actionBy).pipe(takeUntil(this.destroyed$)).subscribe(response => {
+      const data = response.data;
+      const totalCount = response.totalCount;
+
+      this.injectApiGatewayName(data);
+
+      switch (status) {
+        case 'Submitted':
+          this.submittedApis = data;
+          this.submittedTotalCount = totalCount;
+          break;
+        case 'Approved':
+          this.approvedApis = data;
+          this.approvedTotalCount = totalCount;
+          break;
+        case 'Pending':
+          this.pendingApis = data;
+          this.pendingTotalCount = totalCount;
+          break;
+        case 'Rejected':
+          this.rejectedApis = data;
+          this.rejectedTotalCount = totalCount;
+          break;
+      }
+    }, err => console.log('logged error', err));
+  }
+
+  onInboxPageChange(event: {pageSize: number, pageNum: number}) {
+    this.pageSize = event.pageSize;
+    this.pageNum = event.pageNum;
+    this.fetchApisByStatus('Submitted', this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  onApprovedPageChange(event: {pageSize: number, pageNum: number}) {
+    this.pageSize = event.pageSize;
+    this.pageNum = event.pageNum;
+    this.fetchApisByStatus('Approved', this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  onPendingPageChange(event: {pageSize: number, pageNum: number}) {
+    this.pageSize = event.pageSize;
+    this.pageNum = event.pageNum;
+    this.fetchApisByStatus('Pending', this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  onRejectedPageChange(event: {pageSize: number, pageNum: number}) {
+    this.pageSize = event.pageSize;
+    this.pageNum = event.pageNum;
+    this.fetchApisByStatus('Rejected', this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  onSortChange(sortField: string, sortOrder: string) {
+    this.sortField = sortField;
+    this.sortOrder = sortOrder;
+    this.pageNum = 1;
+    this.fetchApisByStatus(this.currentStatus, this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+  }
+
+  private setupSearchDebouncing(): void {
+    this.apiNameSubject$.pipe(
+      debounceTime(600),
+      distinctUntilChanged(),
+      takeUntil(this.destroyed$)
+    ).subscribe(value => {
+      this.apiName = value;
+      this.pageNum = 1;
+      this.fetchApisByStatus(this.currentStatus, this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+    });
+
+    this.submittedBySubject$.pipe(
+      debounceTime(600),
+      distinctUntilChanged(),
+      takeUntil(this.destroyed$)
+    ).subscribe(value => {
+      this.submittedBy = value;
+      this.pageNum = 1;
+      this.fetchApisByStatus(this.currentStatus, this.pageSize, this.pageNum, this.apiName, this.submittedBy, this.sortField, this.sortOrder);
+    });
+  }
+
+  private subscribeToFilters(): void {
+    this.pageTitleFilterService.filter1.pipe(takeUntil(this.destroyed$)).subscribe(value => {
+      this.apiNameSubject$.next(value);
+    });
+
+    this.pageTitleFilterService.filter2.pipe(takeUntil(this.destroyed$)).subscribe(value => {
+      this.submittedBySubject$.next(value);
+    });
+  }
+}
+----------------------------------------------
+----------------------------------------------
+admin.component.scss
+----------------------------------------------
+
+.count-text {
+  text-align: right;
+}
+
+.capsule-button {
+  background: rgb(221, 221, 221) 0% 0% no-repeat padding-box;
+  border-radius: 100px;
+  font: normal normal 600 12px/16px Open Sans,Helvetica, Arial, sans serif;
+  color: rgb(109, 109, 109);
+  display: inline-block;
+  padding-left: 14px;
+  padding-right: 14px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  margin-left: 5px;
+  margin-right: 5px;
+
+  cursor: pointer;
+  &.active {
+    background: #333333 0% 0% no-repeat padding-box;
+    color: white;
+  }
+}
