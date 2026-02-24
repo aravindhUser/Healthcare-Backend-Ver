@@ -1,0 +1,307 @@
+APIMC-4703 - API Catalog Filter Enhancement - Domain(s) filtering support
+
+Update the API Catalog page filtering mechanism to replace the existing category-based filters (Payments, Mobile, Accounts & Orders) with a new domain-based multi-select filter. The new filter should allow users to filter APIs by multiple domain categories while maintaining the existing View All and Favorites functionality.
+
+Current State
+Existing Filter Options
+View All - Shows all APIs (default selected, black chip)
+Favorites - Shows favorited APIs (gray chip)
+Payments - Category filter (gray chip)
+Mobile - Category filter (gray chip)
+Accounts & Orders - Category filter (gray chip)
+Current Behavior
+Single-select filter chips (only one can be active at a time)
+Active filter displays as black chip, inactive as gray
+No multi-select capability
+No domain-based filtering
+New Requirements
+New Filter Structure
+
+Replace category filters with a domain-based multi-select dropdown:
+
+Filter Options:
+
+View All (existing, keep as-is)
+Favorites (existing, keep as-is)
+Domain (NEW - multi-select dropdown)
+Domain Options (Dynamic)
+
+The Domain filter options should be fetched dynamically from the API endpoint:
+
+API Endpoint:
+
+
+
+
+GET https://${gateway-host-name}/pinxt-selfservice/v1/tags?categoryName=Domain
+Detailed Requirements
+1. Filter Chip Behavior (Mutually Exclusive)
+
+Rule: Only ONE of the three filters can be active at any given time.
+
+follow the selected/un-selected black/gray styling from existing implementation 
+2. Domain Filter Chip Display States
+
+State 1: No Selection (Default)
+
+Display: "Domain"
+Style: Refer to mock
+Behavior: Click to open dropdown 
+
+State 2: Single Domain Selected{}
+
+Display: "Domain: Ordering"
+Format: [Label] : [Value]
+Style: Refer to mock
+Elements: Dropdown arrow (▼) + Close button (×)
+Behavior: 
+  - Click chip body → Open dropdown to edit
+  - Click × → Clear filter, return to View All
+  - Hover → No tooltip needed 
+
+State 3: Multiple Domains Selected
+
+Display: "Domain: 3 selected"
+Format: [Label] : [Count] selected
+Style: Refer to Mock
+Elements: Dropdown arrow (▼) + Close button (×)
+Behavior:
+  - Click chip body → Open dropdown to edit
+  - Click × → Clear filter, return to View All
+  - Hover → Show tooltip with all selected domain names (comma-separated) 
+3. Domain Dropdown Behavior
+
+Opening the Dropdown:
+
+Click on Domain chip/button
+Dropdown appears below the chip
+Shows all 16 domain options with checkboxes
+Previously selected domains are pre-checked
+
+Selecting Domains:
+
+Users can check/uncheck multiple domains
+No limit on number of selections
+Checkboxes remain interactive while dropdown is open
+
+Closing the Dropdown:
+
+Option A: Click "Apply" Button
+
+Applies the current checkbox selections
+Closes the dropdown
+Updates the Domain chip display
+Sets Domain as the active filter (black chip)
+
+Option B: Click Outside Dropdown
+
+Auto-applies the current checkbox selections
+Closes the dropdown
+Updates the Domain chip display
+Sets Domain as the active filter (black chip)
+
+Option C: Click "Clear" Button
+
+Unchecks all checkboxes in the dropdown
+Does NOT close the dropdown
+Allows user to start fresh selection
+
+Option D: Click × on Domain Chip
+
+Clears all domain selections
+Closes dropdown if open
+Returns to View All as active filter
+5. Tooltip Behavior (Multi-Select Only)
+
+When to Show:
+
+Only when 2+ domains are selected
+On hover over the Domain chip
+
+Content:
+
+Comma-separated list of all selected domain names
+Example: "Ordering, Identity & Shared Services, Wireless"
+6. Filter Reset Logic
+
+Critical Behavior: When switching between filters, domain selections must be cleared and mutually exclusive logic needs to be applied to unselected filters.
+
+Acceptance Criteria
+AC1: Filter Chip Mutual Exclusivity
+[ ] Only one filter (View All, Favorites, or Domain) can be active/black at a time
+[ ] Active filter / Inactive filters styling matches with existing implementation.
+[ ] Clicking View All deactivates Favorites and clears Domain selections
+[ ] Clicking Favorites deactivates View All and clears Domain selections
+[ ] Selecting Domain(s) deactivates View All and Favorites
+AC2: Domain Filter - No Selection State
+[ ] Domain chip displays text "Domain"
+[ ] Domain chip has gray background and dark text
+[ ] Domain chip has dropdown arrow (▼)
+[ ] No close button (×) is visible
+[ ] Clicking chip opens dropdown with all 16 domain options
+[ ] All checkboxes are unchecked
+AC3: Domain Filter - Single Selection State
+[ ] Domain chip displays "Domain: [DomainName]" format
+[ ] Domain chip has black background and white text
+[ ] Domain chip shows dropdown arrow (▼) and close button (×)
+[ ] Clicking chip body opens dropdown with selected domain pre-checked
+[ ] Clicking × clears selection and returns to View All
+[ ] No tooltip appears on hover
+AC4: Domain Filter - Multiple Selection State
+[ ] Domain chip displays "Domain: X selected" where X is the count
+[ ] Domain chip has black background and white text
+[ ] Domain chip shows dropdown arrow (▼) and close button (×)
+[ ] Clicking chip body opens dropdown with all selected domains pre-checked
+[ ] Clicking × clears all selections and returns to View All
+[ ] Hovering over chip shows tooltip with comma-separated list of all selected domains
+[ ] Tooltip appears above the chip with dark background
+AC5: Domain Dropdown - Opening and Display
+[ ] Dropdown appears below the Domain chip when clicked
+[ ] Dropdown shows header "Select Domains"
+[ ] All 16 domain options are displayed with checkboxes
+[ ] Previously selected domains are pre-checked when dropdown opens
+[ ] Dropdown has white background with shadow
+[ ] Dropdown min-width is 320px
+AC6: Domain Dropdown - Selection Interaction
+[ ] Users can check multiple domains (no limit)
+[ ] Users can uncheck domains
+[ ] Checkbox state changes immediately on click
+[ ] Hover over domain option shows light gray background
+[ ] Clicking checkbox or label toggles selection
+[ ] If many domains, dropdown is scrollable (max-height: 350px)
+AC7: Domain Options - Dynamic Loading
+[ ] Domain options are fetched from API on page load
+[ ] API endpoint: GET https://${gateway-host-name}/pinxt-selfservice/v1/tags?categoryName=Domain
+[ ] While loading, dropdown shows "Loading domains..." message
+[ ] If API fails, dropdown shows error message
+[ ] Domain options are rendered dynamically from API response
+[ ] Domain list is sorted alphabetically 
+[ ] If API returns empty list, show appropriate message
+AC8: Domain Dropdown - Apply Button
+[ ] Apply button has black background and white text
+[ ] Apply button text is "Apply"
+[ ] Clicking Apply applies current checkbox selections
+[ ] Clicking Apply closes the dropdown
+[ ] Clicking Apply updates Domain chip display
+[ ] Clicking Apply sets Domain as active filter (black chip)
+AC8: Domain Dropdown - Clear Button
+[ ] Clear button has white background with black border
+[ ] Clear button text is "Clear"
+[ ] Clicking Clear unchecks all checkboxes
+[ ] Clicking Clear does NOT close the dropdown
+[ ] User can continue selecting after clicking Clear
+AC9: Domain Dropdown - Auto-Apply on Click Outside
+[ ] Clicking outside dropdown applies current selections
+[ ] Clicking outside dropdown closes the dropdown
+[ ] Clicking outside updates Domain chip display
+[ ] Clicking outside sets Domain as active filter if selections exist
+[ ] Clicking on View All or Favorites while dropdown is open closes dropdown and clears selections
+AC10: Domain Dropdown - Close Button (×) on Chip
+[ ] Close button only appears when Domain has selections
+[ ] Clicking × clears all domain selections
+[ ] Clicking × closes dropdown if open
+[ ] Clicking × resets Domain chip to default gray state
+[ ] Clicking × sets View All as active filter
+[ ] Clicking × does not trigger dropdown open
+AC11: Filter Reset When Switching
+[ ] Selecting View All clears any Domain selections
+[ ] Selecting Favorites clears any Domain selections
+[ ] Domain checkboxes are unchecked when View All is selected
+[ ] Domain checkboxes are unchecked when Favorites is selected
+[ ] Domain chip returns to default "Domain" text when cleared
+AC12: Tooltip Behavior
+[ ] Tooltip only appears when 2+ domains are selected
+[ ] Tooltip shows on hover over Domain chip
+[ ] Tooltip displays comma-separated list of all selected domains
+[ ] Tooltip text styling is consistent with other areas of app.
+[ ] Tooltip appears above the chip
+[ ] Tooltip has arrow pointing to chip
+[ ] Tooltip disappears when mouse leaves chip
+AC13: Visual Styling Consistency
+[ ] All filter chips have consistent
+[ ] Dropdown buttons match reference styling
+[ ] Hover states are implemented for all interactive elements
+AC14: Responsive Behavior
+[ ] Dropdown positioning adjusts if near viewport edge
+[ ] Tooltip doesn't overflow viewport
+[ ] Filter chips wrap to new line if needed on smaller screens
+[ ] Dropdown is scrollable if content exceeds max-height
+Testing Scenarios
+Test Case 1: Default State
+Load API Catalog page
+Verify View All is active (black chip)
+Verify Favorites is inactive (gray chip)
+Verify Domain shows "Domain" text (gray chip)
+Verify no Domain selections exist
+Test Case 2: Domain API Loading
+Load API Catalog page
+Verify "Loading domains..." message appears briefly in dropdown
+Verify domain options populate from API response
+Verify domains are displayed (check if alphabetically sorted)
+Count total domains loaded
+Test Case 3: Domain API Error Handling
+Simulate API failure (network error or 500 response)
+Click Domain chip
+Verify error message appears in dropdown
+Verify user can still interact with View All and Favorites
+Test Case 4: Single Domain Selection
+Click Domain chip
+Select "Ordering" checkbox
+Click Apply
+Verify Domain chip shows "Domain: Ordering" (black)
+Verify View All and Favorites are gray
+Verify close button (×) is visible
+Hover over chip - verify no tooltip appears
+Test Case 5: Multiple Domain Selection
+Click Domain chip
+Select 3 different domain checkboxes
+Click Apply
+Verify Domain chip shows "Domain: 3 selected" (black)
+Verify View All and Favorites are gray
+Hover over chip - verify tooltip shows all 3 domain names
+Test Case 6: Edit Domain Selection
+With domains already selected, click Domain chip
+Verify dropdown opens with previous selections checked
+Uncheck one domain
+Check a new domain
+Click Apply
+Verify chip updates with new count/selection
+Test Case 7: Clear Domain via × Button
+With domains selected, click × on Domain chip
+Verify all selections are cleared
+Verify Domain chip returns to "Domain" text (gray)
+Verify View All becomes active (black)
+Test Case 8: Clear via Clear Button
+Click Domain chip
+Select multiple domains
+Click Clear button
+Verify all checkboxes are unchecked
+Verify dropdown remains open
+Select new domains and click Apply
+Test Case 9: Auto-Apply on Click Outside
+Click Domain chip
+Select domains
+Click outside dropdown (on page background)
+Verify selections are applied
+Verify dropdown closes
+Verify Domain chip updates
+Test Case 10: Switch to View All
+Select domains (Domain chip is black)
+Click View All
+Verify Domain selections are cleared
+Verify Domain chip returns to "Domain" text (gray)
+Verify View All is black
+Test Case 11: Switch to Favorites
+Select domains (Domain chip is black)
+Click Favorites
+Verify Domain selections are cleared
+Verify Domain chip returns to "Domain" text (gray)
+Verify Favorites is black
+Test Case 12: Dropdown Interaction While Open
+Click Domain chip to open dropdown
+Click View All while dropdown is open
+Verify dropdown closes
+Verify Domain selections are cleared
+Verify View All is active
+
+
