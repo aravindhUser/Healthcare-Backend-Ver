@@ -1,0 +1,586 @@
+import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BREADCRUMB } from 'src/app/shared/components/breadcrumbs/breadcrumb';
+import { Router, ActivatedRoute } from '@angular/router';
+import { FormBuilder } from '@angular/forms';
+import { Observable, Subscription } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { PageTitleFilterService } from 'src/app/core/services/ui-util/page-title-filter/page-title-filter.service';
+import { COMPONENTS } from 'src/assets/constants/app.constants';
+import { IUser } from 'src/app/core/models/auth/iuser';
+import { AuthService } from 'src/app/core/services/auth/auth.service';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatSort, Sort } from '@angular/material/sort';
+import { ApiService } from 'src/app/core/services/api/api.service';
+import { EnvConfig } from 'src/app/core/config/env-config';
+import { EnvironmentLoaderService } from "src/app/core/config/environment-loader.service";
+import { DialogBoxActionEnum } from 'src/app/core/enum/DialogBoxActionEnum';
+import { DialogBoxComponent } from 'src/app/shared/components/dialog-box/dialog-box.component';
+import { MatDialog } from '@angular/material/dialog';
+import { TagService } from 'src/app/core/services/tag/tag.service';
+
+@Component({
+  selector: 'app-all-apis',
+  templateUrl: './all-apis.component.html',
+  styleUrls: ['./all-apis.component.scss']
+})
+export class AllApisComponent implements OnInit {
+  hasError: boolean = false;
+  noRecords: boolean = false;
+
+  breadcrumbArray;
+  apis = [];
+  allApis = []; // Add a property to store all APIs
+  changedCategory: string;
+  apiCategory: string;
+  COMPONENT = COMPONENTS;
+  filterName: string;
+  filterType: string;
+  searchTerm: string = ''; // Add a property for the search term
+  searchTimeout: any; // Add a property for the search timeout
+  public envConfig: EnvConfig;
+
+  domainOptions: string[] = [];
+  loadingDomains: boolean = false;
+  domainLoadError: string = '';
+  selectedDomains: string[] = [];
+  isDomainDropdownOpen: boolean = false;
+  domainsApplied: boolean = false;
+
+  gatewayOptions: string[] = [];
+  selectedGateway: string | null = null;
+  tempSelectedGateway: string | null = null;
+  isGatewayDropdownOpen: boolean = false;
+  isGatewayLoading: boolean = false;
+  gatewayLoadError: boolean = false;
+
+
+
+  errorMessage: string;
+  subscription: Subscription;
+  currentUser: IUser;
+
+  searchName: Observable<string> = this.pageTitleFilterService.filter1;
+  searchKeyword: Observable<string> = this.pageTitleFilterService.filter2;
+  searchTags: Observable<string> = this.pageTitleFilterService.filter3;
+
+  toggleValue: string;
+  pageNum: number = 1;
+  totalItems: number;
+  pageSize: number = 10; // Define pageSize with a default value
+  apiListOpensearchTimeoutInterval = this.envService.getEnvConfig().apiListOpensearchTimeoutInterval;
+
+  loadingStars = new Set<number>();//Code to implement APIMC-4419
+  dataSource: MatTableDataSource<any>;
+  displayedColumns: string[] = [
+    'favorite',//Code to implement APIMC-4419
+    'apiName',
+    'apiDescription',
+    'apiVersion',
+    'clientBasePath',
+    'gatewayName',
+    'lifeCycleStage',
+    'tags',
+  ];
+  
+  @ViewChild(MatPaginator) paginator: MatPaginator;
+  @ViewChild(MatSort) sort: MatSort;
+  constructor(
+    private activatedRoute: ActivatedRoute,
+    private pageTitleFilterService: PageTitleFilterService,
+    private authService: AuthService,
+    private apiService: ApiService,
+    public readonly envService: EnvironmentLoaderService,
+    private dialog: MatDialog, //Code to implement APIMC-4419
+    private tagService: TagService,
+  ) {
+    // this is intentional
+  }
+
+  ngOnInit(): void {
+    this.toggleValue = 'table'; // Set default view to table
+    this.dataSource = new MatTableDataSource([]);
+
+    this.activatedRoute.queryParams.subscribe(params => {
+      this.apiCategory = params.category || 'All';
+      this.changedCategory = params.category || 'All';
+    });
+
+    this.loadDomainOptions();
+    this.loadAllApis();
+    this.loadGateways();
+    this.currentUser = this.authService.currentUserValue;
+  }
+
+  ngAfterViewInit() {
+    // this.dataSource.paginator = this.paginator;//Code commented to implement APIMC-4471
+    this.dataSource.sort = this.sort;
+    this.dataSource.sortingDataAccessor = (data, sortHeaderId) => {
+    // Code to  implement APIMC-4419 start
+    if (sortHeaderId === 'favorite') {
+        return data.favorited ? 0 : 1;
+    }
+    // Code to implement APIMC-4419 end
+      if (sortHeaderId === 'apiVersion') {
+        const version = data.apiVersion || '';
+        const match = version.match(/v?([\d.]+)/i);
+        return match ? parseFloat(match[1]) : 0;
+      }
+      if (['apiName', 'apiDescription', 'clientBasePath'].includes(sortHeaderId)) {
+        return data[sortHeaderId]?.toLowerCase() || '';
+      }
+      return data[sortHeaderId];
+    };
+    // this.sort.sort({ id: 'favorite', start: 'asc', disableClear: false });//Code to implement APIMC-4419
+  }
+
+  resetApis(): void {
+    this.dataSource.data = this.allApis;
+  }
+
+  onViewChange(value: string) {
+    this.toggleValue = value;
+  }
+
+  onDomainChange(category: string) {
+    this.changedCategory = category;
+    this.pageNum = 1; // Reset pageNum to 1
+    this.paginator.pageIndex = 0; // Reset paginator's page index to 0
+
+    this.selectedDomains = [];
+    this.domainsApplied = false;
+    this.isDomainDropdownOpen = false;
+
+    this.selectedGateway = null;
+    this.tempSelectedGateway = null;
+    this.isGatewayDropdownOpen = false;
+
+     if (category === 'All' || category === 'Favorites') {
+      this.selectedDomains = [];
+      this.isDomainDropdownOpen = false;
+      this.domainsApplied = false;
+      this.selectedGateway = null;
+      this.isGatewayDropdownOpen = false;
+      this.tempSelectedGateway = null;
+    }
+
+    if (category === 'Favorites' && this.sort) {
+      this.sort.active = '';
+      this.sort.direction = '';
+      this.sort.sortChange.emit({ active: '', direction: '' });
+    }
+    this.updateApis();
+  }
+
+  onKeyUp(event: KeyboardEvent) {
+    const input = event.target as HTMLInputElement;
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => {
+      this.searchTerm = input.value;
+      this.pageNum = 1;//Code to implement PINXTSS-3106
+      this.paginator.firstPage();//Code to implement PINXTSS-3106
+      this.updateApis();
+    }, this.apiListOpensearchTimeoutInterval); // .3 second delay
+  
+    // Clear error message and reset hasError
+    this.errorMessage = '';
+    this.hasError = false;
+    this.noRecords = false;
+  }
+  
+  public loadAllApis() {
+    this.apiService.getApisOnDomainChange("", this.searchTerm,this.pageNum, this.pageSize).subscribe(
+      (data) => {
+        try {
+          this.allApis = data["documents"] || [];          
+          this.totalItems = data["totalNumOfDocuments"];
+          this.noRecords = this.allApis.length === 0;
+          this.hasError = false;
+          console.log('All APIs loaded:', this.allApis);
+          this.dataSource.data = this.allApis;
+          // this.paginator.length = this.totalItems; // Set the total number of items in the paginator//Code commented to implement APIMC-4419
+          // Code to implement APIMC-4419 start
+          if (this.paginator) {
+            this.paginator.length = this.totalItems;
+          }
+          // Code to implement APIMC-4419 end
+        } catch (error) {
+          this.hasError = true;
+          this.errorMessage = 'We encountered a problem while reading the search results.';
+          console.error('Error parsing API data:', error);
+        }
+      },
+      (error) => {
+        if (error.status === 400) {
+          this.hasError = true;
+          this.errorMessage = 'Something went wrong with your request. Please check your input and try again.';
+        } 
+        else if (error.status === 200) {
+          this.hasError = true;
+          this.errorMessage = 'We encountered a problem while reading the search results.';
+        } else {
+          this.hasError = true;
+          this.errorMessage = 'We encountered a problem while attempting to retrieve search results.';
+        }
+        this.noRecords = false;
+        console.error('Error loading APIs -->', error);
+      }
+    );
+  }
+
+  onPageChange(event: PageEvent) {
+    this.pageSize = event.pageSize;
+    this.pageNum = event.pageIndex + 1;
+    this.updateApis();
+  }
+  
+  private updateApis() {
+    let domain = '';
+    // console.log(this.changedCategory);
+    // if (this.changedCategory === 'Payments') {
+    //   domain = 'Spectrum Payment Services';
+    // } else if (this.changedCategory === 'Mobile') {
+    //   domain = 'Mobile';
+    // } else if (this.changedCategory === 'Accounts & Orders') {
+    //   domain = 'Enterprise';
+    // }else if(this.changedCategory === 'Favorites'){
+    //   domain = 'Favorites';
+    // }
+
+     if(this.changedCategory === 'Favorites'){
+      domain = 'Favorites';
+    }
+
+    else if(this.selectedDomains.length > 0){
+      domain = this.selectedDomains.join(',');
+    }
+
+    else if(this.selectedGateway){
+      domain = this.selectedGateway;
+    }
+
+    let searchText = '';
+    searchText = this.searchTerm;
+
+    // if (this.searchTerm.length >= 3) {
+    //   searchText = this.searchTerm;
+    // } else {
+    //   searchText = '';
+    // }
+  
+    this.apiService.getApisOnDomainChange(domain, searchText,this.pageNum, this.pageSize).subscribe(
+      (data) => {
+        try {
+          this.allApis = data["documents"] || [];
+          this.totalItems = data["totalNumOfDocuments"];
+          this.noRecords = this.allApis.length === 0;
+          this.hasError = false;
+          // console.log(this.allApis);
+          this.dataSource.data = this.allApis;
+          this.paginator.length = this.totalItems; // Set the total number of items in the paginator
+        } catch (error) {
+          this.hasError = true;
+          this.errorMessage = 'Error parsing API data. Please try again later.';
+          console.error('Error parsing API data:', error);
+        }
+      },
+      (error) => {
+        if (error.status === 400) {
+          this.hasError = true;
+          this.errorMessage = 'Bad request. Please check your input and try again.';
+        } else {
+          this.hasError = true;
+          this.errorMessage = 'We encountered a problem while attempting to retrieve search results';
+        }
+        this.noRecords = false;
+        console.error('Error loading APIs:', error);
+      }
+    );
+  }
+
+  // Code to implement APIMC-4419 start
+  toggleFavorite(api: any) {
+    if (this.loadingStars.has(api.apiId)) return;
+    
+    this.loadingStars.add(api.apiId);
+    
+    if (api.favorited) {
+      // Remove from favorites
+      this.apiService.removeFromFavorites(api.apiId).subscribe(
+        (response) => {
+          api.favorited = false;
+          this.loadingStars.delete(api.apiId);
+          
+          // If we're in favorites tab, refresh the list to update count
+          if (this.changedCategory === 'Favorites') {
+            // Check if current page will be empty after unfavoriting
+            const currentPageStartIndex = (this.pageNum - 1) * this.pageSize;
+            const remainingItems = this.totalItems - 1; // Subtract 1 for the unfavorited item
+            
+            if (currentPageStartIndex >= remainingItems && this.pageNum > 1) {
+              // Navigate to previous page if current page will be empty
+              this.pageNum = Math.max(1, Math.ceil(remainingItems / this.pageSize));
+              this.paginator.pageIndex = this.pageNum - 1;
+            }
+            
+            this.updateApis();
+          } else {
+            // For non-favorites tabs, just update the favorited status without sorting
+            const currentData = [...this.dataSource.data];
+            const apiIndex = currentData.findIndex(item => item.apiId === api.apiId);
+            if (apiIndex !== -1) {
+              currentData[apiIndex] = { ...currentData[apiIndex], favorited: false };
+              this.dataSource.data = currentData;
+            }
+          }
+        },
+        (error) => {
+            // Code for mock start
+            // api.favorited = false;
+            // this.loadingStars.delete(api.apiId);
+            // Code for mock end
+            const errorMessage = 'Failed to remove from favorites. Please try again.';
+            const data = { action: DialogBoxActionEnum.COMMON_ALERT_BOX, commonAlertBox:{title:'Error', message:errorMessage} };
+            const dialogRef = this.dialog.open(DialogBoxComponent, {
+              width: '600px',
+              data,
+            });
+            this.loadingStars.delete(api.apiId);
+        }
+      );
+    } else {
+      // Add to favorites
+      this.apiService.addToFavorites(api.apiId).subscribe(
+        (response) => {
+          api.favorited = true;
+          this.loadingStars.delete(api.apiId);
+          
+          // For non-favorites tabs, just update the favorited status without sorting
+          const currentData = [...this.dataSource.data];
+          const apiIndex = currentData.findIndex(item => item.apiId === api.apiId);
+          if (apiIndex !== -1) {
+            currentData[apiIndex] = { ...currentData[apiIndex], favorited: true };
+            this.dataSource.data = currentData;
+          }
+        },
+        (error) => {
+            // Code for mock start
+            // api.favorited = true;
+            // this.loadingStars.delete(api.apiId);
+            // Code for mock end
+            const errorMessage = 'Failed to add to favorites. Please try again.';
+            const data = { action: DialogBoxActionEnum.COMMON_ALERT_BOX, commonAlertBox:{title:'Error', message:errorMessage} };
+            const dialogRef = this.dialog.open(DialogBoxComponent, {
+              width: '600px',
+              data,
+            });
+            this.loadingStars.delete(api.apiId);
+        }
+      );
+    }
+  }
+  // Code to implement APIMC-4419 end
+
+  toggleDomainDropdown() {
+    this.isDomainDropdownOpen = !this.isDomainDropdownOpen;
+  }
+
+  toggleDomainSelection(domain: string) {
+    const index = this.selectedDomains.indexOf(domain);
+    if (index > -1) {
+      this.selectedDomains.splice(index, 1);
+    } else {
+      this.selectedDomains.push(domain);
+    }
+  }
+
+  isDomainSelected(domain: string): boolean {
+    return this.selectedDomains.includes(domain);
+  }
+
+  // applyDomainFilter() {
+  //   this.isDomainDropdownOpen = false;
+  //   if (this.selectedDomains.length > 0) {
+  //     this.changedCategory = 'Domain';
+  //     this.domainsApplied = true;
+  //   } else {
+  //     this.domainsApplied = false;
+  //   }
+  // }
+
+  applyDomainFilter() {
+    this.isDomainDropdownOpen = false;
+    if (this.selectedDomains.length > 0) {
+      
+      this.domainsApplied = true;
+
+      this.changedCategory = 'Domain';
+    } else {
+      this.domainsApplied = false;
+      this.changedCategory = 'All';
+    }
+    this.pageNum = 1;
+    this.paginator.pageIndex = 0;
+    this.updateApis();
+  }
+
+  clearDomainSelection() {
+    this.selectedDomains = [];
+    this.domainsApplied = false;
+  }
+
+  clearDomainFilter() {
+    this.selectedDomains = [];
+    this.isDomainDropdownOpen = false;
+    this.domainsApplied = false;
+
+    if(this.selectedGateway){
+      this.changedCategory = '';
+    } else {
+    this.changedCategory = 'All';
+    }
+    this.pageNum = 1;
+    this.paginator.pageIndex = 0;
+    this.updateApis();
+  }
+
+  getDomainChipLabel(): string {
+    if (this.selectedDomains.length === 0) return 'Domain';
+    if (this.selectedDomains.length === 1) return `Domain: ${this.selectedDomains[0]}`;
+    return `Domain: ${this.selectedDomains.length} selected`;
+  }
+
+  getDomainTooltip(): string {
+    return this.selectedDomains.join(', ');
+  }
+
+  // @HostListener('document:click', ['$event'])
+  // onDocumentClick(event: MouseEvent) {
+  //   const target = event.target as HTMLElement;
+  //   if (this.isDomainDropdownOpen && !target.closest('.domain-filter-chip')) {
+  //     this.applyDomainFilter();
+  //   }
+  // }
+
+  loadDomainOptions() {
+    this.loadingDomains = true;
+    this.domainLoadError = '';
+    this.tagService.getTagsPerCategory('Domain').subscribe({
+      next: (tags) => {
+        this.domainOptions = tags.map(tag => tag.tagName).sort((a, b) => a.localeCompare(b));
+        this.loadingDomains = false;
+      },
+      error: (error) => {
+        console.error('Error loading domain options:', error);
+        this.domainLoadError = 'Failed to load domain options';
+        this.loadingDomains = false;
+      }
+    });
+  }
+
+  toggleGatewayDropdown(event: Event){
+
+    event.stopPropagation();
+    this.isDomainDropdownOpen = false;
+    this.isGatewayDropdownOpen = !this.isGatewayDropdownOpen;
+    this.tempSelectedGateway = this.selectedGateway;
+  }
+
+  applyGatewayFilter(){
+    this.selectedGateway = this.tempSelectedGateway;
+    this.isGatewayDropdownOpen = false;
+
+    if(this.selectedDomains.length > 0) {
+      this.changedCategory = 'Domain';
+    }
+
+    else if(this.selectedGateway){
+      this.changedCategory = 'Gateway';
+    } 
+    else {
+      this.changedCategory = 'All';
+    }
+
+    this.pageNum = 1;
+    this.paginator.firstPage();
+
+    this.updateApis();
+  }
+
+  clearGatewaySelection(){
+    this.tempSelectedGateway = null;
+
+    // this.selectedGateway = null;
+    
+    // this.changedCategory = 'All';
+    // this.pageNum = 1;
+    // this.paginator.firstPage();
+    // this.updateApis();
+  }
+
+  removeGatewayChip(){
+    this.selectedGateway = null;
+    this.tempSelectedGateway = null;
+    this.isGatewayDropdownOpen = false;
+
+    if(this.selectedDomains.length > 0) {
+      this.changedCategory = 'Domain';
+    } else {
+    this.changedCategory = 'All';
+    }
+
+    this.pageNum = 1;
+    this.paginator.firstPage();
+
+    this.updateApis();
+  }
+
+  // @HostListener('document:click', ['$event'])
+  // handleOutsideClick(event: MouseEvent) {
+
+  //   const insideGateway = (event.target as HTMLElement).closest('.gateway-filter-chip');
+
+  //   if (!insideGateway && this.isGatewayDropdownOpen) {
+  //     this.applyGatewayFilter();
+  //   }
+  // }
+
+  @HostListener('document:click', ['$event'])
+  handleOutsideClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    const insideDomain = target.closest('.domain-filter-chip');
+    const insideGateway = target.closest('.gateway-filter-chip');
+
+    if (!insideDomain && this.isDomainDropdownOpen) {
+      this.applyDomainFilter();
+    }
+    if (!insideGateway && this.isGatewayDropdownOpen) {
+      this.applyGatewayFilter();
+    }
+  }
+
+  loadGateways(){
+    this.isGatewayLoading = true;
+    this.gatewayLoadError = false;
+
+    // setTimeout(() => {
+    this.apiService.getGateways().subscribe({
+      next: (data: any[]) => {
+        this.gatewayOptions = data
+          .map(g => g.gatewayName)
+          .sort((a, b) => a.localeCompare(b));
+          // .sort((a: string, b: string) =>
+          //  a.localeCompare(b, undefined, { sensitivity: 'base'})
+        // );
+        this.isGatewayLoading = false;
+      },
+      error: () => {
+        this.gatewayLoadError = true;
+        this.isGatewayLoading = false;
+      }
+    });
+  // }, 5000);
+  }
+
+}
